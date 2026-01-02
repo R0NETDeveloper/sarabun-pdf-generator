@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 PDF Test Page - ETDA Sarabun</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            color: #667eea;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(72, 187, 120, 0.4);
+        }
+        
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+        
+        .container {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+        }
+        
+        .sidebar {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            width: 300px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar h2 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .info-item {
+            margin-bottom: 12px;
+            padding: 10px;
+            background: #f7fafc;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .info-item strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .info-item code {
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        
+        .pdf-viewer {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .viewer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .viewer-header h2 {
+            color: #2d3748;
+            font-size: 18px;
+        }
+        
+        .status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status.loading {
+            background: #fef5e7;
+            color: #f39c12;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #28a745;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #dc3545;
+        }
+        
+        iframe {
+            flex: 1;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            min-height: 600px;
+        }
+        
+        .shortcuts {
+            margin-top: 20px;
+            padding: 15px;
+            background: #edf2f7;
+            border-radius: 8px;
+        }
+        
+        .shortcuts h3 {
+            color: #2d3748;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .shortcut {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 13px;
+            border-bottom: 1px solid #cbd5e0;
+        }
+        
+        .shortcut:last-child {
+            border-bottom: none;
+        }
+        
+        .key {
+            background: #4a5568;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .spinning {
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>
+            <span>📄</span>
+            PDF Live Preview - ETDA Sarabun
+        </h1>
+        <div class="controls">
+            <button class="btn btn-primary" onclick="loadPdf()" id="refreshBtn">
+                <span id="refreshIcon">🔄</span>
+                <span id="refreshText">โหลด PDF</span>
+            </button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="sidebar">
+            <h2>📊 ข้อมูลระบบ</h2>
+            
+            <div class="info-item">
+                <strong>Endpoint</strong>
+                <code>GET /api/pdf/view</code>
+            </div>
+            
+            <div class="info-item">
+                <strong>URL</strong>
+                <code id="apiUrl">Loading...</code>
+            </div>
+            
+            <div class="info-item">
+                <strong>Last Updated</strong>
+                <span id="lastUpdate">-</span>
+            </div>
+            
+            <div class="info-item">
+                <strong>DevTools</strong>
+                <span style="color: #48bb78;">✓ Auto-reload Active</span>
+            </div>
+            
+            <div class="shortcuts">
+                <h3>⌨️ Keyboard Shortcuts</h3>
+                <div class="shortcut">
+                    <span>โหลด PDF</span>
+                    <span class="key">F5</span>
+                </div>
+                <div class="shortcut">
+                    <span>เปิด DevTools</span>
+                    <span class="key">F12</span>
+                </div>
+            </div>
+            
+            <div class="info-item" style="margin-top: 20px; background: #e6fffa;">
+                <strong>💡 คำแนะนำ</strong>
+                <p style="margin-top: 8px; font-size: 13px; line-height: 1.6;">
+                    แก้ไขโค้ดใน <code>PdfService.java</code> 
+                    แล้วกด F5 ที่หน้านี้เลย! 
+                    DevTools จะ compile ใหม่อัตโนมัติ
+                </p>
+            </div>
+        </div>
+        
+        <div class="pdf-viewer">
+            <div class="viewer-header">
+                <h2>🖼️ PDF Preview</h2>
+                <div class="status" id="status">
+                    <span id="statusText">พร้อม</span>
+                </div>
+            </div>
+            
+            <iframe id="pdfFrame" src="" title="PDF Viewer"></iframe>
+        </div>
+    </div>
+
+    <script>
+        const baseUrl = window.location.origin;
+        const pdfUrl = `${baseUrl}/api/pdf/view`;
+        
+        // แสดง URL
+        document.getElementById('apiUrl').textContent = pdfUrl;
+        
+        // โหลด PDF
+        function loadPdf() {
+            const frame = document.getElementById('pdfFrame');
+            const status = document.getElementById('status');
+            const statusText = document.getElementById('statusText');
+            const refreshIcon = document.getElementById('refreshIcon');
+            const refreshText = document.getElementById('refreshText');
+            
+            // แสดงสถานะ loading
+            status.className = 'status loading';
+            statusText.textContent = 'กำลังโหลด...';
+            refreshIcon.classList.add('spinning');
+            refreshText.textContent = 'กำลังโหลด...';
+            
+            // เพิ่ม timestamp เพื่อ bypass cache
+            const timestamp = new Date().getTime();
+            frame.src = `${pdfUrl}?t=${timestamp}`;
+            
+            // รอให้ frame โหลดเสร็จ
+            frame.onload = function() {
+                status.className = 'status success';
+                statusText.textContent = 'โหลดสำเร็จ';
+                refreshIcon.classList.remove('spinning');
+                refreshText.textContent = 'โหลด PDF';
+                
+                const now = new Date();
+                document.getElementById('lastUpdate').textContent = 
+                    now.toLocaleTimeString('th-TH') + '.' + now.getMilliseconds();
+            };
+            
+            frame.onerror = function() {
+                status.className = 'status error';
+                statusText.textContent = 'เกิดข้อผิดพลาด';
+                refreshIcon.classList.remove('spinning');
+                refreshText.textContent = 'โหลด PDF';
+            };
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // F5
+            if (e.key === 'F5') {
+                e.preventDefault();
+                loadPdf();
+            }
+        });
+        
+        // ไม่โหลดอัตโนมัติ - ให้ผู้ใช้กดปุ่มเอง
+        window.onload = function() {
+            const status = document.getElementById('status');
+            const statusText = document.getElementById('statusText');
+            status.className = 'status';
+            statusText.textContent = 'พร้อม - กด F5 หรือปุ่ม "โหลด PDF" เพื่อเริ่มต้น';
+        };
+    </script>
+</body>
+</html>
