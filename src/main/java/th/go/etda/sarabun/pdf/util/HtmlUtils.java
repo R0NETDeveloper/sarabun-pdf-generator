@@ -54,8 +54,8 @@ public class HtmlUtils {
         String result = text.toString()
             .replaceAll("&nbsp;", " ")           // แปลง &nbsp; เป็น space
             .replaceAll("\\s+\n", "\n")          // ลบ space ก่อน newline
-            .replaceAll("\n\\s+", "\n")          // ลบ space หลัง newline
             .replaceAll("\n{3,}", "\n\n")        // ลด newline มากเกิน 2 ให้เหลือ 2
+            .replaceAll("\\[INDENT\\]", "    ")  // แปลง indent marker เป็น 4 spaces
             .trim();                              // ตัด whitespace หน้า-หลัง
         
         return result;
@@ -87,8 +87,8 @@ public class HtmlUtils {
                         if (text.length() > 0 && text.charAt(text.length() - 1) != '\n') {
                             text.append("\n");
                         }
-                        // เพิ่ม indent (เยื้อง) สำหรับบรรทัดแรกของย่อหน้า - 4 ช่องว่าง (ตามมาตรฐานเอกสารราชการ)
-                        text.append("    ");
+                        // เพิ่ม indent marker สำหรับบรรทัดแรกของย่อหน้า (จะถูกแปลงเป็น 4 spaces ภายหลัง)
+                        text.append("[INDENT]");
                         extractText(child, text);
                         text.append("\n");
                         break;

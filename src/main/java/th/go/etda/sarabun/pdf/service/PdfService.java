@@ -70,7 +70,7 @@ public class PdfService {
     private static final float FONT_SIZE_HEADER = 24f;        // หัวข้อ "บันทึกข้อความ"
     private static final float FONT_SIZE_FIELD = 18f;         // ฟิลด์ label (ส่วนราชการ, ที่, วันที่, เรื่อง)
     private static final float FONT_SIZE_FIELD_VALUE = 16f;   // ฟิลด์ value (ข้อความ model)
-    private static final float FONT_SIZE_CONTENT = 14f;       // เนื้อหา
+    private static final float FONT_SIZE_CONTENT = 16f;       // เนื้อหา
     private static final float FONT_SIZE_SIGNATURE = 14f;     // ลายเซ็น
     
     // ⚙️ Vertical Spacing - ระยะห่างระหว่างแต่ละบรรทัด (ปรับได้)
@@ -148,7 +148,10 @@ public class PdfService {
         // วาดหมายเลขหน้าและเลขที่หนังสือทันทีหลังสร้างหน้า
         int pageNumber = document.getNumberOfPages();
         try (PDPageContentStream stream = new PDPageContentStream(document, newPage)) {
-            drawPageNumber(stream, pageNumber, fontRegular);
+            // วาดหมายเลขหน้าเฉพาะหน้าที่ 2 ขึ้นไป (หน้าแรกไม่มีเลขหน้า)
+            if (pageNumber >= 2) {
+                drawPageNumber(stream, pageNumber, fontRegular);
+            }
             drawBookNumber(stream, bookNo, fontRegular);
             drawDebugBorders(stream); // วาดเส้นขอบ debug
         }
@@ -258,18 +261,9 @@ public class PdfService {
                 
                 // ============================================
                 // 📍 หมายเลขหน้า (กลางบน) - ตามมาตรฐานเอกสารราชการ (เลขไทย)
-                // หน้าแรก: -๑, หน้าที่สอง: -๒, หน้าที่สาม: -๓
+                // หน้าแรก: ไม่มีหมายเลข, หน้าที่สอง: -๒, หน้าที่สาม: -๓
                 // ============================================
-                int pageNumber = document.getNumberOfPages();
-                String thaiPageNumber = convertToThaiNumber(pageNumber);
-                String pageNumberText = "-" + thaiPageNumber;
-                
-                // คำนวณตำแหน่งกลาง
-                float textWidth = fontRegular.getStringWidth(pageNumberText) / 1000 * FONT_SIZE_CONTENT;
-                float pageNumX = (PAGE_WIDTH - textWidth) / 2; // ตรงกลางหน้า
-                float pageNumY = PAGE_HEIGHT - MARGIN_TOP + PAGE_NUMBER_Y_OFFSET;
-                
-                drawText(contentStream, pageNumberText, fontRegular, FONT_SIZE_CONTENT, pageNumX, pageNumY);
+                // หน้าแรกไม่ต้องมีหมายเลขหน้า
                 
                 // วาดเลขที่หนังสือในหน้าแรกด้วย (ขอบล่างซ้าย)
                 drawBookNumber(contentStream, bookNo, fontRegular);
@@ -967,26 +961,49 @@ public class PdfService {
                 continue;
             }
             
+            // เก็บ leading spaces (indent) ไว้
+            int leadingSpaces = 0;
+            while (leadingSpaces < paragraph.length() && paragraph.charAt(leadingSpaces) == ' ') {
+                leadingSpaces++;
+            }
+            String indent = leadingSpaces > 0 ? paragraph.substring(0, leadingSpaces) : "";
+            String content = paragraph.substring(leadingSpaces);
+            
             // แยกตามช่องว่าง
-            String[] words = paragraph.split(" ");
+            String[] words = content.split(" ");
             StringBuilder currentLine = new StringBuilder();
+            boolean isFirstLine = true;
             
             for (String word : words) {
                 if (word.isEmpty()) continue;
                 
                 String testLine = currentLine.length() == 0 ? word : currentLine + " " + word;
+                // เพิ่ม indent ถ้าเป็นบรรทัดแรก
+                if (isFirstLine && !indent.isEmpty()) {
+                    testLine = indent + testLine;
+                }
+                
                 float width = font.getStringWidth(testLine) / 1000 * fontSize;
                 
                 if (width > maxWidth && currentLine.length() > 0) {
-                    lines.add(currentLine.toString());
+                    // ถ้าเป็นบรรทัดแรก ให้ใส่ indent
+                    String lineToAdd = isFirstLine && !indent.isEmpty() ? indent + currentLine.toString() : currentLine.toString();
+                    lines.add(lineToAdd);
                     currentLine = new StringBuilder(word);
+                    isFirstLine = false; // บรรทัดต่อไปไม่ใส่ indent
                 } else {
                     currentLine = new StringBuilder(testLine);
+                    if (isFirstLine && !indent.isEmpty()) {
+                        // ลบ indent ออกจาก currentLine เพื่อคำนวณครั้งต่อไป
+                        currentLine = new StringBuilder(testLine.substring(indent.length()));
+                    }
                 }
             }
             
             if (currentLine.length() > 0) {
-                lines.add(currentLine.toString());
+                // ถ้าเป็นบรรทัดแรก ให้ใส่ indent
+                String lineToAdd = isFirstLine && !indent.isEmpty() ? indent + currentLine.toString() : currentLine.toString();
+                lines.add(lineToAdd);
             }
         }
         
