@@ -233,7 +233,8 @@ public class PdfService {
                                          String content,
                                          String speedLayer,
                                          String formatPdf,
-                                         List<String> signatures) throws Exception {
+                                         List<String> signatures,
+                                         List<String> signatureImagePaths) throws Exception {
         log.info("=== Generating official memo PDF ===");
         log.info("govName: {}", govName);
         log.info("date: {}", date);
@@ -430,20 +431,27 @@ public class PdfService {
                                        CLOSING_TEXT_X, yPosition);
                     yPosition -= CLOSING_TEXT_Y_OFFSET;
                     
-                    // วาดลายเซ็นแต่ละคน แบบแยกเป็นบรรทัด: (ลายเซ็น), ชื่อ, ตำแหน่ง
-                    for (String signature : signatures) {
+                    // วาดลายเซ็นแต่ละคน แบบแยกเป็นบรรทัด: เว้นช่องว่างสำหรับลายเซ็น, ชื่อ, ตำแหน่ง
+                    for (int i = 0; i < signatures.size(); i++) {
+                        String signature = signatures.get(i);
                         // แยกข้อมูลลายเซ็นออกเป็นชื่อและตำแหน่ง (คาดว่า format: ชื่อ\nตำแหน่ง)
                         String[] parts = signature.split("\\n");
                         
-                        // วาด "(ลายเซ็น)" - ชิดขวามาก
-                        yPosition = drawText(contentStream, "(ลายเซ็น)",
-                                           fontRegular, FONT_SIZE_SIGNATURE,
-                                           SIGNATURE_PLACEHOLDER_X, yPosition);
-                        yPosition -= 20f;
+                        // เจาะช่องว่างสำหรับวางลายเซ็นจริง (ไม่วาดข้อความ "(ลายเซ็น)")
+                        // ถ้ามีรูปภาพลายเซ็น ให้วางรูปภาพ
+                        if (signatureImagePaths != null && i < signatureImagePaths.size() 
+                            && signatureImagePaths.get(i) != null && !signatureImagePaths.get(i).isEmpty()) {
+                            // วางรูปภาพลายเซ็น
+                            yPosition = drawSignatureImage(contentStream, document, signatureImagePaths.get(i), 
+                                                          SIGNATURE_NAME_X, yPosition);
+                        } else {
+                            // เว้นพื้นที่ว่างสำหรับลายเซ็นมือเขียน
+                            yPosition -= 50f;
+                        }
                         
-                        // วาดชื่อ (ส่วนแรก) - ชิดขวาปานกลาง
+                        // วาดชื่อ (ส่วนแรก) - ชิดขวาปานกลาง พร้อมวงเล็บ
                         if (parts.length > 0) {
-                            yPosition = drawText(contentStream, parts[0],
+                            yPosition = drawText(contentStream, "(" + parts[0] + ")",
                                                fontRegular, FONT_SIZE_SIGNATURE,
                                                SIGNATURE_NAME_X, yPosition);
                             yPosition -= 20f;
@@ -1008,6 +1016,70 @@ public class PdfService {
         }
         
         return lines;
+    }
+    
+    /**
+     * วางรูปภาพลายเซ็นลงใน PDF
+     * 
+     * @param contentStream PDPageContentStream
+     * @param document PDDocument
+     * @param imagePath path ของรูปภาพลายเซ็น (รองรับ classpath:images/signature.png หรือ file path)
+     * @param x ตำแหน่ง x
+     * @param y ตำแหน่ง y (จะวาดลงมาจากตำแหน่งนี้)
+     * @return ตำแหน่ง y ใหม่หลังจากวาดรูปภาพ
+     */
+    private float drawSignatureImage(PDPageContentStream contentStream,
+                                    PDDocument document,
+                                    String imagePath,
+                                    float x,
+                                    float y) throws IOException {
+        try {
+            PDImageXObject signatureImage;
+            
+            // ตรวจสอบว่าเป็น classpath resource หรือ file path
+            if (imagePath.startsWith("classpath:")) {
+                // โหลดจาก classpath
+                String resourcePath = imagePath.substring("classpath:".length());
+                InputStream imageStream = getClass().getClassLoader().getResourceAsStream(resourcePath);
+                if (imageStream != null) {
+                    signatureImage = PDImageXObject.createFromByteArray(
+                        document, imageStream.readAllBytes(), "signature");
+                    imageStream.close();
+                } else {
+                    log.warn("Signature image not found in classpath: {}", resourcePath);
+                    return y - 50f; // return default spacing
+                }
+            } else {
+                // โหลดจาก file system
+                ClassPathResource resource = new ClassPathResource(imagePath);
+                if (resource.exists()) {
+                    try (InputStream imageStream = resource.getInputStream()) {
+                        signatureImage = PDImageXObject.createFromByteArray(
+                            document, imageStream.readAllBytes(), "signature");
+                    }
+                } else {
+                    log.warn("Signature image file not found: {}", imagePath);
+                    return y - 50f; // return default spacing
+                }
+            }
+            
+            // กำหนดขนาดรูปภาพลายเซ็น (ปรับได้ตามต้องการ)
+            float signatureWidth = 80f;  // ความกว้าง
+            float signatureHeight = 40f; // ความสูง
+            
+            // วาดรูปภาพลายเซ็น (วาดจากล่างขึ้นบน)
+            float imageY = y - signatureHeight;
+            contentStream.drawImage(signatureImage, x, imageY, signatureWidth, signatureHeight);
+            
+            log.debug("Signature image drawn at ({}, {}), size: {}x{}", 
+                     x, imageY, signatureWidth, signatureHeight);
+            
+            return imageY; // return ตำแหน่งล่างสุดของรูปภาพ
+            
+        } catch (Exception e) {
+            log.error("Error drawing signature image: {}", e.getMessage());
+            return y - 50f; // return default spacing กรณีเกิด error
+        }
     }
     
     /**

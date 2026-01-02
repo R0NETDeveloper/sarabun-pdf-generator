@@ -252,7 +252,8 @@ public class GeneratePdfService {
             content,
             request.getSpeedLayer(),
             request.getFormatPdf(),
-            signatures
+            signatures,
+            null  // signatureImagePaths - ไม่มีรูปภาพในการเรียกปกติ
         );
     }
     
@@ -299,7 +300,8 @@ public class GeneratePdfService {
             "",
             request.getSpeedLayerOther(),
             request.getFormatPdf(),
-            new ArrayList<>()  // PDF รองไม่มีลายเซ็น (diamond operator)
+            new ArrayList<>(),  // PDF รองไม่มีลายเซ็น (diamond operator)
+            null  // signatureImagePaths - ไม่มีรูปภาพสำหรับ PDF รอง
         );
     }
     
