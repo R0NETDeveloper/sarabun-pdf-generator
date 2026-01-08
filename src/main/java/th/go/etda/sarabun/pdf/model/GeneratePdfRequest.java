@@ -74,7 +74,9 @@ public class GeneratePdfRequest {
     private String pdfBase64;               // PDF เดิม (Base64)
     private String type;                    // ประเภท ("Main", "Other")
     private String year;                    // ปี พ.ศ.
-    private String endDoc;                  // ข้อความท้ายเอกสาร
+    private String endDoc;                  // ข้อความท้ายเอกสาร (เช่น "ขอแสดงความนับถือ", "ควรมิควรแล้วแต่จะโปรดเกล้าฯ")
+    private String salutation;              // คำขึ้นต้น (เช่น "ขอประทานกราบทูล", "ขอเรียน")
+    private String salutationEnding;        // คำลงท้ายขึ้นต้น (เช่น "เรียนถึงคนนั้น", "ทราบ")
     private String dateThai;                // วันที่ภาษาไทย
     private String timeThai;                // เวลาภาษาไทย
     private String bookNo;                  // เลขที่หนังสือ

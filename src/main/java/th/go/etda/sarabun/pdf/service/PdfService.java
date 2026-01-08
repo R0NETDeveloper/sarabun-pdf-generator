@@ -1014,7 +1014,8 @@ public class PdfService {
      * - อ้างถึง (แสดงแม้ว่าง)
      * - สิ่งที่ส่งมาด้วย (แสดงแม้ว่าง)
      * - เนื้อหา
-     * - ลายเซ็น
+     * - ข้อความท้ายเอกสาร (เช่น "ขอแสดงความนับถือ")
+     * - ลายเซ็น (1 จุด)
      */
     public String generateOutgoingLetterPdf(String bookNo,
                                             String address,
@@ -1026,7 +1027,14 @@ public class PdfService {
                                             List<String> attachments,
                                             String content,
                                             String speedLayer,
-                                            List<SignerInfo> signers) throws Exception {
+                                            List<SignerInfo> signers,
+                                            String salutation,
+                                            String salutationEnding,
+                                            String endDoc,
+                                            String contactDepartment,
+                                            String contactPhone,
+                                            String contactFax,
+                                            String contactEmail) throws Exception {
         log.info("=== Generating outgoing letter PDF ===");
         log.info("bookNo: {}", bookNo);
         log.info("address: {}", address);
@@ -1036,6 +1044,14 @@ public class PdfService {
         log.info("referTo: {}", referTo);
         log.info("attachments count: {}", attachments != null ? attachments.size() : 0);
         log.info("content length: {}", content != null ? content.length() : 0);
+        log.info("salutation: {}", salutation);
+        log.info("salutationEnding: {}", salutationEnding);
+        log.info("endDoc: {}", endDoc);
+        log.info("signers count: {}", signers != null ? signers.size() : 0);
+        log.info("contactDepartment: {}", contactDepartment);
+        log.info("contactPhone: {}", contactPhone);
+        log.info("contactFax: {}", contactFax);
+        log.info("contactEmail: {}", contactEmail);
         
         try (PDDocument document = new PDDocument()) {
             PDPage page = new PDPage(PDRectangle.A4);
@@ -1128,6 +1144,21 @@ public class PdfService {
                 yPosition -= SPACING_BETWEEN_FIELDS;
                 
                 // ============================================
+                // 📍 SECTION 3.5: คำขึ้นต้น (salutation) ถ้ามี
+                // เช่น "ขอประทานกราบทูล เรียนถึงคนนั้น"
+                // ============================================
+                if (salutation != null && !salutation.isEmpty()) {
+                    log.info("Drawing salutation: {} {}", salutation, salutationEnding);
+                    String salutationLine = salutation;
+                    if (salutationEnding != null && !salutationEnding.isEmpty()) {
+                        salutationLine += "  " + salutationEnding;
+                    }
+                    yPosition = drawText(contentStream, salutationLine, fontRegular, 
+                                        FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
+                    yPosition -= SPACING_BETWEEN_FIELDS;
+                }
+                
+                // ============================================
                 // 📍 SECTION 4: เรียน (2 บรรทัด: หน่วยงาน + ที่อยู่)
                 // ============================================
                 log.info("Drawing recipients: {}", recipients);
@@ -1203,7 +1234,92 @@ public class PdfService {
                     }
                 }
                 
- 
+                // ============================================
+                // 📍 SECTION 8: ข้อความท้ายเอกสาร (endDoc)
+                // เช่น "ขอแสดงความนับถือ", "ควรมิควรแล้วแต่จะโปรดเกล้าฯ"
+                // ============================================
+                if (endDoc != null && !endDoc.isEmpty()) {
+                    log.info("Drawing endDoc: {}", endDoc);
+                    yPosition -= SPACING_BETWEEN_FIELDS * 2;
+                    
+                    // ตรวจสอบพื้นที่เหลือ
+                    if (yPosition < MIN_Y_POSITION + 150) {
+                        log.info("EndDoc overflow, creating new page...");
+                        contentStream.close();
+                        
+                        PDPage newPage = createNewPage(document, fontRegular, bookNo);
+                        contentStream = new PDPageContentStream(document, newPage, PDPageContentStream.AppendMode.APPEND, true);
+                        yPosition = PAGE_HEIGHT - MARGIN_TOP - 50;
+                    }
+                    
+                    // วาดข้อความท้ายเอกสาร (ทางขวา ตรงกับช่องลงนาม)
+                    float endDocWidth = fontRegular.getStringWidth(endDoc) / 1000 * FONT_SIZE_FIELD_VALUE;
+                    // ช่องลงนามอยู่ที่ PAGE_WIDTH / 2 + 20, กว้าง 180
+                    float signatureBoxX = PAGE_WIDTH / 2 + 20;
+                    float signatureBoxWidth = 180f;
+                    float endDocX = signatureBoxX + (signatureBoxWidth - endDocWidth) / 2;
+                    yPosition = drawText(contentStream, endDoc, fontRegular, 
+                                        FONT_SIZE_FIELD_VALUE, endDocX, yPosition);
+                    yPosition -= 20; // ระยะห่างระหว่าง endDoc กับช่องลงนาม
+                }
+                
+                // ============================================
+                // 📍 SECTION 9: ช่องลงนาม (1 จุด)
+                // ใช้ผู้ลงนามคนแรกจาก bookSigned
+                // ============================================
+                if (signers != null && !signers.isEmpty()) {
+                    log.info("Drawing single signature block for outgoing letter");
+                    SignerInfo firstSigner = signers.get(0);
+                    
+                    // ตรวจสอบพื้นที่เหลือ
+                    if (yPosition < MIN_Y_POSITION + 150) {
+                        log.info("Signature overflow, creating new page...");
+                        contentStream.close();
+                        
+                        PDPage newPage = createNewPage(document, fontRegular, bookNo);
+                        contentStream = new PDPageContentStream(document, newPage, PDPageContentStream.AppendMode.APPEND, true);
+                        yPosition = PAGE_HEIGHT - MARGIN_TOP - 50;
+                    }
+                    
+                    yPosition -= 20;
+                    
+                    // สร้าง AcroForm ถ้ายังไม่มี
+                    PDAcroForm acroForm = document.getDocumentCatalog().getAcroForm();
+                    if (acroForm == null) {
+                        acroForm = new PDAcroForm(document);
+                        document.getDocumentCatalog().setAcroForm(acroForm);
+                    }
+                    
+                    // วาดช่องลงนาม
+                    yPosition = drawSignatureBlock(contentStream, document, acroForm,
+                                                   firstSigner, "OutgoingSigner", 0, yPosition, fontRegular,
+                                                   document.getNumberOfPages() - 1);
+                }
+                
+                // ============================================
+                // 📍 SECTION 10: ข้อมูลติดต่อ (มุมซ้ายล่าง)
+                // ============================================
+                float contactY = MARGIN_BOTTOM + 60; // ตำแหน่ง Y สำหรับข้อมูลติดต่อ
+                float contactX = MARGIN_LEFT;
+                float contactFontSize = 14f;
+                
+                if (contactDepartment != null && !contactDepartment.isEmpty()) {
+                    log.info("Drawing contact info at bottom left");
+                    drawText(contentStream, contactDepartment, fontRegular, contactFontSize, contactX, contactY);
+                    contactY -= 18;
+                }
+                if (contactPhone != null && !contactPhone.isEmpty()) {
+                    drawText(contentStream, "เลขหมาย " + contactPhone, fontRegular, contactFontSize, contactX, contactY);
+                    contactY -= 18;
+                }
+                if (contactFax != null && !contactFax.isEmpty()) {
+                    drawText(contentStream, "โทรสาร " + contactFax, fontRegular, contactFontSize, contactX, contactY);
+                    contactY -= 18;
+                }
+                if (contactEmail != null && !contactEmail.isEmpty()) {
+                    drawText(contentStream, "อีเมล " + contactEmail, fontRegular, contactFontSize, contactX, contactY);
+                }
+
                 log.info("All content drawn successfully");
                 
             } finally {
@@ -1527,11 +1643,11 @@ public class PdfService {
         contentStream.setStrokingColor(0, 0, 0);
         
         // วาดข้อความในกรอบตาม fieldPrefix
-        // "Submit" = "เสนอผ่าน", "Learner" = "เรียน", อื่นๆ = "รับทราบ"
+        // "Submit" = "เสนอผ่าน", "Learner" หรือ "OutgoingSigner" = "เรียน", อื่นๆ = "รับทราบ"
         String labelText;
         if ("Submit".equals(fieldPrefix)) {
             labelText = "เสนอผ่าน";
-        } else if ("Learner".equals(fieldPrefix)) {
+        } else if ("Learner".equals(fieldPrefix) || "OutgoingSigner".equals(fieldPrefix)) {
             labelText = "เรียน";
         } else {
             labelText = "รับทราบ";

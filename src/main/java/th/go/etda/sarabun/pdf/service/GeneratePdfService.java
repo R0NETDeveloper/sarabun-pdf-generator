@@ -296,6 +296,29 @@ public class GeneratePdfService {
         
         log.info("generateOutgoingLetterPdf - bookNo: {}, title: {}, content length: {}", 
                 request.getBookNo(), request.getBookTitle(), content.length());
+        log.info("generateOutgoingLetterPdf - salutation: {}, salutationEnding: {}, endDoc: {}",
+                request.getSalutation(), request.getSalutationEnding(), request.getEndDoc());
+        
+        // ดึงข้อมูลติดต่อ
+        String contactDepartment = request.getDepartment();
+        String contactPhone = null;
+        String contactFax = null;
+        String contactEmail = null;
+        
+        // แยกข้อมูลจาก contact field (ถ้ามี)
+        if (request.getContact() != null && !request.getContact().isEmpty()) {
+            String[] contactLines = request.getContact().split("\n");
+            for (String line : contactLines) {
+                line = line.trim();
+                if (line.startsWith("เลขหมาย") || line.startsWith("โทร.") || line.startsWith("โทรศัพท์")) {
+                    contactPhone = line.replaceFirst("^(เลขหมาย|โทร\\.|โทรศัพท์)\\s*", "");
+                } else if (line.startsWith("โทรสาร") || line.startsWith("แฟกซ์")) {
+                    contactFax = line.replaceFirst("^(โทรสาร|แฟกซ์)\\s*", "");
+                } else if (line.startsWith("อีเมล") || line.contains("@")) {
+                    contactEmail = line.replaceFirst("^อีเมล\\s*", "");
+                }
+            }
+        }
         
         return pdfService.generateOutgoingLetterPdf(
             request.getBookNo(),
@@ -308,7 +331,14 @@ public class GeneratePdfService {
             attachments,
             content,
             request.getSpeedLayer(),
-            signers
+            signers,
+            request.getSalutation(),       // คำขึ้นต้น (เช่น "ขอประทานกราบทูล")
+            request.getSalutationEnding(), // คำลงท้ายขึ้นต้น (เช่น "เรียนถึงคนนั้น")
+            request.getEndDoc(),           // ข้อความท้ายเอกสาร (เช่น "ขอแสดงความนับถือ")
+            contactDepartment,             // ชื่อหน่วยงาน
+            contactPhone,                  // เลขหมายโทรศัพท์
+            contactFax,                    // เลขหมายโทรสาร
+            contactEmail                   // อีเมล
         );
     }
     
@@ -652,9 +682,15 @@ public class GeneratePdfService {
             // มี PDF เดียว
             mergedBase64 = pdfArray.get(0).getPdfBase64();
         } else {
-            // หา PDF หลักและรอง
+            // หา PDF หลัก (Main = หนังสือส่งออก หรือ บันทึกข้อความ)
             PdfResult mainPdf = pdfArray.stream()
                 .filter(p -> "Main".equals(p.getType()))
+                .findFirst()
+                .orElse(null);
+            
+            // หา PDF บันทึกข้อความ (Memo = สำหรับ merge กับหนังสือส่งออก)
+            PdfResult memoPdf = pdfArray.stream()
+                .filter(p -> "Memo".equals(p.getType()))
                 .findFirst()
                 .orElse(null);
                 
@@ -662,11 +698,17 @@ public class GeneratePdfService {
                 .filter(p -> "Other".equals(p.getType()))
                 .collect(Collectors.toList());
             
-            // สร้างรายการ PDF ที่จะรวม
+            // สร้างรายการ PDF ที่จะรวม (ตามลำดับ: Main -> Memo -> Other)
             List<String> pdfsToMerge = new ArrayList<>();
             
             if (mainPdf != null) {
                 pdfsToMerge.add(cleanBase64Prefix(mainPdf.getPdfBase64()));
+            }
+            
+            // เพิ่ม Memo (บันทึกข้อความ) ต่อจาก Main (หนังสือส่งออก)
+            if (memoPdf != null) {
+                pdfsToMerge.add(cleanBase64Prefix(memoPdf.getPdfBase64()));
+                log.info("Adding Memo PDF to merge (บันทึกข้อความ + หนังสือส่งออก)");
             }
             
             for (PdfResult other : otherPdfs) {
