@@ -242,7 +242,7 @@ public class PdfService {
                                          String content,
                                          String speedLayer,
                                          String formatPdf,
-                                         List<String> signatures,
+                                         List<SignerInfo> signers,
                                          List<String> signatureImagePaths) throws Exception {
         log.info("=== Generating official memo PDF ===");
         log.info("govName: {}", govName);
@@ -417,73 +417,35 @@ public class PdfService {
                 }
                 
                 // ============================================
-                // 📍 SECTION 7: ลายเซ็น (ไม่วาดกรอบ - ใช้ช่องที่เจาะไว้แล้ว + ขึ้นหน้าใหม่ถ้าจำเป็น)
+                // 📍 SECTION 7: ช่องลงนาม (Signature Boxes)
+                // วาดช่องลงนามสีฟ้าประ ต่อจากเนื้อหา
                 // ============================================
-                if (signatures != null && !signatures.isEmpty()) {
-                    log.info("Drawing {} signatures (text only)", signatures.size());
-                    
-                    // เช็คว่ามีพื้นที่พอสำหรับลายเซ็นหรือไม่ (ต้องการอย่างน้อย 150 points)
-                    if (yPosition < MIN_Y_POSITION + 150) {
-                        log.info("Not enough space for signatures, creating new page...");
-                        contentStream.close();
-                        
-                        PDPage newPage = createNewPage(document, fontRegular, bookNo);
-                        contentStream = new PDPageContentStream(document, newPage, PDPageContentStream.AppendMode.APPEND, true);
-                        yPosition = PAGE_HEIGHT - MARGIN_TOP - 50;
-                    }
-                    
+                if (signers != null && !signers.isEmpty()) {
+                    log.info("Drawing {} signature boxes", signers.size());
                     yPosition -= SPACING_BEFORE_SIGNATURES;
                     
-                    // วางข้อความปิดท้าย
-                    yPosition = drawText(contentStream, "จึงเรียนมาเพื่อทราบและพิจารณา", 
-                                       fontRegular, FONT_SIZE_CONTENT, 
-                                       CLOSING_TEXT_X, yPosition);
-                    yPosition -= CLOSING_TEXT_Y_OFFSET;
-                    
-                    // วาดลายเซ็นแต่ละคน แบบแยกเป็นบรรทัด: เว้นช่องว่างสำหรับลายเซ็น, ชื่อ, ตำแหน่ง
-                    for (int i = 0; i < signatures.size(); i++) {
-                        String signature = signatures.get(i);
-                        // แยกข้อมูลลายเซ็นออกเป็นชื่อและตำแหน่ง (คาดว่า format: ชื่อ\nตำแหน่ง)
-                        String[] parts = signature.split("\\n");
+                    for (int i = 0; i < signers.size(); i++) {
+                        SignerInfo signer = signers.get(i);
                         
-                        // เจาะช่องว่างสำหรับวางลายเซ็นจริง (ไม่วาดข้อความ "(ลายเซ็น)")
-                        // ถ้ามีรูปภาพลายเซ็น ให้วางรูปภาพ
-                        if (signatureImagePaths != null && i < signatureImagePaths.size() 
-                            && signatureImagePaths.get(i) != null && !signatureImagePaths.get(i).isEmpty()) {
-                            // วางรูปภาพลายเซ็น
-                            yPosition = drawSignatureImage(contentStream, document, signatureImagePaths.get(i), 
-                                                          SIGNATURE_NAME_X, yPosition);
-                        } else {
-                            // เว้นพื้นที่ว่างสำหรับลายเซ็นมือเขียน
-                            yPosition -= 50f;
+                        // ตรวจสอบพื้นที่เหลือ - ถ้าไม่พอให้ขึ้นหน้าใหม่
+                        float requiredHeight = 120f; // ความสูงที่ต้องการสำหรับช่องลงนาม
+                        if (yPosition < MIN_Y_POSITION + requiredHeight) {
+                            log.info("Signature overflow, creating new page...");
+                            contentStream.close();
+                            
+                            PDPage newPage = createNewPage(document, fontRegular, bookNo);
+                            contentStream = new PDPageContentStream(document, newPage, PDPageContentStream.AppendMode.APPEND, true);
+                            yPosition = PAGE_HEIGHT - MARGIN_TOP - 50;
                         }
                         
-                        // วาดชื่อ (ส่วนแรก) - ชิดขวาปานกลาง พร้อมวงเล็บ
-                        if (parts.length > 0) {
-                            yPosition = drawText(contentStream, "(" + parts[0] + ")",
-                                               fontRegular, FONT_SIZE_SIGNATURE,
-                                               SIGNATURE_NAME_X, yPosition);
-                            yPosition -= 20f;
-                        }
+                        // วาดช่องลงนามสีฟ้าประ
+                        yPosition = drawSignerBox(contentStream, signer, fontRegular, yPosition);
                         
-                        // วาดตำแหน่ง (ส่วนที่สอง) - ชิดซ้ายกว่า
-                        if (parts.length > 1) {
-                            yPosition = drawText(contentStream, parts[1],
-                                               fontRegular, FONT_SIZE_SIGNATURE,
-                                               SIGNATURE_POSITION_X, yPosition);
-                        }
-                        
+                        // เว้นระยะระหว่างช่องลงนาม
                         yPosition -= SPACING_BETWEEN_SIGNATURES;
                     }
                 }
-                
-                // ============================================
-                // 📍 SECTION 8: เลขที่หนังสือถูกวาดแล้วในแต่ละหน้า
-                // ไม่ต้องวาดซ้ำที่นี่เพราะวาดไปแล้วใน:
-                // - หน้าแรก: หลังวาด page number (บรรทัด ~254)
-                // - หน้าอื่น ๆ: ใน createNewPage method
-                // ============================================
-                
+ 
                 log.info("All content drawn successfully");
                 
             } finally {
@@ -1279,6 +1241,70 @@ public class PdfService {
             
             return convertToBase64(document);
         }
+    }
+    
+    /**
+     * วาดช่องลงนามสีฟ้าประ (สำหรับหน้าเนื้อหาหลัก - ต่อจากเนื้อหา)
+     * ไม่สร้าง AcroForm Field เพราะเป็นแค่ placeholder สำหรับ preview
+     * 
+     * @param contentStream PDPageContentStream
+     * @param signer ข้อมูลผู้ลงนาม
+     * @param font ฟอนต์
+     * @param yPosition ตำแหน่ง Y ปัจจุบัน
+     * @return ตำแหน่ง Y ใหม่หลังวาดเสร็จ
+     */
+    private float drawSignerBox(PDPageContentStream contentStream,
+                                SignerInfo signer,
+                                PDFont font,
+                                float yPosition) throws IOException {
+        // กำหนดตำแหน่งกรอบลายเซ็น (ตรงกลาง-ขวา ตามรูปภาพตัวอย่าง)
+        float boxWidth = 180f;
+        float boxHeight = 50f;
+        float boxX = PAGE_WIDTH / 2 + 20;  // ขยับไปทางขวา
+        float boxY = yPosition - boxHeight;
+        
+        // วาดกรอบสีฟ้าประ (dashed border)
+        contentStream.setStrokingColor(0.4f, 0.7f, 0.9f); // สีฟ้าอ่อน
+        contentStream.setLineDashPattern(new float[]{5, 3}, 0); // เส้นประ
+        contentStream.setLineWidth(1.5f);
+        contentStream.addRect(boxX, boxY, boxWidth, boxHeight);
+        contentStream.stroke();
+        
+        // รีเซ็ตเส้นกลับเป็นปกติ
+        contentStream.setLineDashPattern(new float[]{}, 0);
+        contentStream.setStrokingColor(0, 0, 0);
+        
+        // วาดข้อความ "ช่องลงนาม" ในกรอบ
+        String labelText = "ช่องลงนาม";
+        float labelWidth = font.getStringWidth(labelText) / 1000 * 14;
+        float textX = boxX + (boxWidth - labelWidth) / 2;
+        float textY = boxY + (boxHeight / 2) - 5;
+        drawText(contentStream, labelText, font, 14, textX, textY);
+        
+        yPosition = boxY - 15;
+        
+        // วาดชื่อ (พร้อมวงเล็บ)
+        String fullName = String.format("(%s%s %s)",
+            signer.getPrefixName() != null ? signer.getPrefixName() : "",
+            signer.getFirstname() != null ? signer.getFirstname() : "",
+            signer.getLastname() != null ? signer.getLastname() : "");
+        
+        float nameWidth = font.getStringWidth(fullName) / 1000 * 14;
+        float nameX = boxX + (boxWidth - nameWidth) / 2;
+        drawText(contentStream, fullName, font, 14, nameX, yPosition);
+        yPosition -= 18;
+        
+        // วาดตำแหน่ง
+        if (signer.getPositionName() != null && !signer.getPositionName().isEmpty()) {
+            float posWidth = font.getStringWidth(signer.getPositionName()) / 1000 * 12;
+            float posX = boxX + (boxWidth - posWidth) / 2;
+            drawText(contentStream, signer.getPositionName(), font, 12, posX, yPosition);
+            yPosition -= 20;
+        }
+        
+        log.debug("Drew signer box for: {} at Y={}", fullName, boxY);
+        
+        return yPosition;
     }
     
     /**

@@ -229,21 +229,19 @@ public class GeneratePdfService {
         log.info("generateMainPdf - govName: {}, title: {}, content length: {}", 
                 govName, title, content.length());
         
-        // รวบรวมลายเซ็น (ถ้ามี)
-        List<String> signatures = new ArrayList<>();
+        // รวบรวมผู้ลงนาม (ถ้ามี) - แปลงเป็น SignerInfo
+        List<PdfService.SignerInfo> signers = new ArrayList<>();
         if (request.getBookSigned() != null && !request.getBookSigned().isEmpty()) {
             for (var signer : request.getBookSigned()) {
-                String signerText = String.format("(%s %s %s)", 
-                    signer.getPrefixName() != null ? signer.getPrefixName() : "",
-                    signer.getFirstname() != null ? signer.getFirstname() : "",
-                    signer.getLastname() != null ? signer.getLastname() : ""
-                ).trim();
-                
-                if (signer.getPositionName() != null && !signer.getPositionName().isEmpty()) {
-                    signerText += "\n" + signer.getPositionName();
-                }
-                
-                signatures.add(signerText);
+                signers.add(PdfService.SignerInfo.builder()
+                    .prefixName(signer.getPrefixName())
+                    .firstname(signer.getFirstname())
+                    .lastname(signer.getLastname())
+                    .positionName(signer.getPositionName())
+                    .departmentName(signer.getDepartmentName())
+                    .email(signer.getEmail())
+                    .signatureBase64(signer.getSignatureBase64())
+                    .build());
             }
         }
         
@@ -257,7 +255,7 @@ public class GeneratePdfService {
             content,
             request.getSpeedLayer(),
             request.getFormatPdf(),
-            signatures,
+            signers,
             null  // signatureImagePaths - ไม่มีรูปภาพในการเรียกปกติ
         );
     }
@@ -305,7 +303,7 @@ public class GeneratePdfService {
             "",
             request.getSpeedLayerOther(),
             request.getFormatPdf(),
-            new ArrayList<>(),  // PDF รองไม่มีลายเซ็น (diamond operator)
+            new ArrayList<PdfService.SignerInfo>(),  // PDF รองไม่มีผู้ลงนาม
             null  // signatureImagePaths - ไม่มีรูปภาพสำหรับ PDF รอง
         );
     }
