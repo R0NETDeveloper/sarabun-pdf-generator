@@ -1,5 +1,6 @@
 package th.go.etda.sarabun.pdf.service;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -8,6 +9,8 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
+import org.apache.pdfbox.io.MemoryUsageSetting;
+import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -15,27 +18,33 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType0Font;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
+import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.apache.pdfbox.pdmodel.interactive.form.PDSignatureField;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Core PDF Service สำหรับการสร้างและจัดการ PDF โดยใช้ Apache PDFBox
+ * Core PDF Service สำหรับการสร้างและจัดการ PDF โดยใช้ Apache PDFBox 2.x
  * 
  * แปลงมาจาก: ETDA.SarabunMultitenant.Service/PdfService.cs
  * 
  * การเปลี่ยนแปลงสำคัญ:
- * 1. แทนที่ iText7 ด้วย Apache PDFBox (ฟรี 100%)
+ * 1. แทนที่ iText7 ด้วย Apache PDFBox 2.0.31 (ฟรี 100%)
  * 2. ใช้ PDType0Font สำหรับโหลด TrueType fonts (TH Sarabun)
  * 3. รองรับ UTF-8 และ Thai language
  * 4. ใช้ Java NIO สำหรับจัดการไฟล์
+ * 5. ใช้ stream แทนการ save file ชั่วคราว
  * 
- * PDFBox เป็น open-source library จาก Apache:
+ * PDFBox 2.x เป็น open-source library จาก Apache:
  * - License: Apache License 2.0 (ฟรี 100%)
- * - รองรับ PDF 1.7 และ 2.0
+ * - รองรับ PDF 1.7
  * - รองรับ Unicode และ Thai fonts
  * - Cross-platform (Windows, Linux, Mac)
+ * 
+ * หมายเหตุ: ตาม migrateToJava.txt ต้องใช้ PDFBox 2.x เท่านั้น (ไม่ใช่ 3.x)
  * 
  * @author Migrated from .NET to Java
  */
@@ -510,7 +519,7 @@ public class PdfService {
                                   List<GeneratePdfService.SignatureFieldInfo> signatureFields) throws Exception {
         log.debug("Adding {} signature fields to PDF", signatureFields.size());
         
-        try (PDDocument document = org.apache.pdfbox.Loader.loadPDF(inputFile)) {
+        try (PDDocument document = PDDocument.load(inputFile)) {
             
             // ถ้าไม่มีหน้า ให้สร้างหน้าใหม่
             if (document.getNumberOfPages() == 0) {
@@ -570,7 +579,7 @@ public class PdfService {
      * แปลงมาจาก: CheckAndAddPageNumbers() method
      */
     public void addPageNumbers(File inputFile, File outputFile) throws Exception {
-        try (PDDocument document = org.apache.pdfbox.Loader.loadPDF(inputFile)) {
+        try (PDDocument document = PDDocument.load(inputFile)) {
             PDFont font = loadThaiFont(document, FONT_PATH);
             
             int totalPages = document.getNumberOfPages();
@@ -1082,6 +1091,319 @@ public class PdfService {
         }
     }
     
+    // ============================================
+    // 📍 เสนอผ่าน / ผู้เรียน - Signature Pages
+    // ============================================
+    
+    /**
+     * สร้าง PDF หน้า "เสนอผ่าน" พร้อม AcroForm Signature Fields
+     * 
+     * @param existingPdfBase64 PDF เดิมในรูปแบบ Base64 (จะต่อหน้าจากนี้)
+     * @param submiters รายการผู้เสนอผ่าน
+     * @return PDF ที่มีหน้าเสนอผ่านต่อท้าย ในรูปแบบ Base64
+     */
+    public String addSubmitPages(String existingPdfBase64, 
+                                  List<SignerInfo> submiters) throws Exception {
+        if (submiters == null || submiters.isEmpty()) {
+            return existingPdfBase64;
+        }
+        
+        log.info("Adding submit pages for {} submiters", submiters.size());
+        
+        // แปลง Base64 เป็น bytes
+        String cleanBase64 = existingPdfBase64;
+        if (existingPdfBase64.startsWith("data:application/pdf;base64,")) {
+            cleanBase64 = existingPdfBase64.substring("data:application/pdf;base64,".length());
+        }
+        byte[] pdfBytes = Base64.getDecoder().decode(cleanBase64);
+        
+        try (PDDocument document = PDDocument.load(new ByteArrayInputStream(pdfBytes))) {
+            PDFont fontRegular = loadThaiFont(document, FONT_PATH);
+            PDFont fontBold = loadThaiFont(document, FONT_BOLD_PATH);
+            
+            // คำนวณเลขหน้าที่จะต่อ
+            int currentPageNumber = document.getNumberOfPages() + 1;
+            
+            // สร้างหน้าใหม่สำหรับ "เสนอผ่าน"
+            PDPage newPage = new PDPage(PDRectangle.A4);
+            document.addPage(newPage);
+            
+            // สร้าง AcroForm ถ้ายังไม่มี
+            PDAcroForm acroForm = document.getDocumentCatalog().getAcroForm();
+            if (acroForm == null) {
+                acroForm = new PDAcroForm(document);
+                document.getDocumentCatalog().setAcroForm(acroForm);
+            }
+            
+            PDPageContentStream contentStream = new PDPageContentStream(document, newPage);
+            try {
+                float yPosition = PAGE_HEIGHT - MARGIN_TOP;
+                
+                // วาดเลขหน้า (ต่อจากหน้าเดิม)
+                String pageNumThai = "- " + convertToThaiNumber(currentPageNumber) + " -";
+                drawCenteredText(contentStream, pageNumThai, fontRegular, 16, yPosition);
+                yPosition -= 50;
+                
+                // วาดหัวข้อ "เสนอผ่าน"
+                drawCenteredText(contentStream, "เสนอผ่าน", fontBold, 28, yPosition);
+                yPosition -= 80;
+                
+                // วาดลายเซ็นแต่ละคน
+                for (int i = 0; i < submiters.size(); i++) {
+                    SignerInfo submiter = submiters.get(i);
+                    
+                    // ตรวจสอบพื้นที่เหลือ - ถ้าไม่พอให้ขึ้นหน้าใหม่
+                    if (yPosition < MIN_Y_POSITION + 150) {
+                        contentStream.close();
+                        
+                        // สร้างหน้าใหม่
+                        PDPage nextPage = new PDPage(PDRectangle.A4);
+                        document.addPage(nextPage);
+                        currentPageNumber++;
+                        
+                        contentStream = new PDPageContentStream(document, nextPage);
+                        yPosition = PAGE_HEIGHT - MARGIN_TOP;
+                        
+                        // วาดเลขหน้า
+                        String nextPageNum = "- " + convertToThaiNumber(currentPageNumber) + " -";
+                        drawCenteredText(contentStream, nextPageNum, fontRegular, 16, yPosition);
+                        yPosition -= 50;
+                    }
+                    
+                    // วาดลายเซ็น
+                    yPosition = drawSignatureBlock(contentStream, document, acroForm,
+                                                   submiter, "Submit", i, yPosition, fontRegular,
+                                                   document.getNumberOfPages() - 1);
+                    
+                    // วาดเส้นแบ่ง (ถ้าไม่ใช่คนสุดท้าย)
+                    if (i < submiters.size() - 1) {
+                        yPosition = drawDashedLine(contentStream, yPosition);
+                    }
+                }
+            } finally {
+                contentStream.close();
+            }
+            
+            return convertToBase64(document);
+        }
+    }
+    
+    /**
+     * สร้าง PDF หน้า "ผู้เรียน/รับทราบ" พร้อม AcroForm Signature Fields
+     * 
+     * @param existingPdfBase64 PDF เดิมในรูปแบบ Base64 (จะต่อหน้าจากนี้)
+     * @param learners รายการผู้เรียน/รับทราบ
+     * @return PDF ที่มีหน้าผู้เรียนต่อท้าย ในรูปแบบ Base64
+     */
+    public String addLearnerPages(String existingPdfBase64, 
+                                   List<SignerInfo> learners) throws Exception {
+        if (learners == null || learners.isEmpty()) {
+            return existingPdfBase64;
+        }
+        
+        log.info("Adding learner pages for {} learners", learners.size());
+        
+        // แปลง Base64 เป็น bytes
+        String cleanBase64 = existingPdfBase64;
+        if (existingPdfBase64.startsWith("data:application/pdf;base64,")) {
+            cleanBase64 = existingPdfBase64.substring("data:application/pdf;base64,".length());
+        }
+        byte[] pdfBytes = Base64.getDecoder().decode(cleanBase64);
+        
+        try (PDDocument document = PDDocument.load(new ByteArrayInputStream(pdfBytes))) {
+            PDFont fontRegular = loadThaiFont(document, FONT_PATH);
+            PDFont fontBold = loadThaiFont(document, FONT_BOLD_PATH);
+            
+            // คำนวณเลขหน้าที่จะต่อ
+            int currentPageNumber = document.getNumberOfPages() + 1;
+            
+            // สร้างหน้าใหม่สำหรับ "ผู้เรียน/รับทราบ"
+            PDPage newPage = new PDPage(PDRectangle.A4);
+            document.addPage(newPage);
+            
+            // สร้าง AcroForm ถ้ายังไม่มี
+            PDAcroForm acroForm = document.getDocumentCatalog().getAcroForm();
+            if (acroForm == null) {
+                acroForm = new PDAcroForm(document);
+                document.getDocumentCatalog().setAcroForm(acroForm);
+            }
+            
+            PDPageContentStream contentStream = new PDPageContentStream(document, newPage);
+            try {
+                float yPosition = PAGE_HEIGHT - MARGIN_TOP;
+                
+                // วาดเลขหน้า
+                String pageNumThai = "- " + convertToThaiNumber(currentPageNumber) + " -";
+                drawCenteredText(contentStream, pageNumThai, fontRegular, 16, yPosition);
+                yPosition -= 50;
+                
+                // วาดหัวข้อ
+                drawCenteredText(contentStream, "ผู้รับทราบ", fontBold, 28, yPosition);
+                yPosition -= 80;
+                
+                // วาดลายเซ็นแต่ละคน
+                for (int i = 0; i < learners.size(); i++) {
+                    SignerInfo learner = learners.get(i);
+                    
+                    // ตรวจสอบพื้นที่เหลือ - ถ้าไม่พอให้ขึ้นหน้าใหม่
+                    if (yPosition < MIN_Y_POSITION + 150) {
+                        contentStream.close();
+                        
+                        // สร้างหน้าใหม่
+                        PDPage nextPage = new PDPage(PDRectangle.A4);
+                        document.addPage(nextPage);
+                        currentPageNumber++;
+                        
+                        contentStream = new PDPageContentStream(document, nextPage);
+                        yPosition = PAGE_HEIGHT - MARGIN_TOP;
+                        
+                        // วาดเลขหน้า
+                        String nextPageNum = "- " + convertToThaiNumber(currentPageNumber) + " -";
+                        drawCenteredText(contentStream, nextPageNum, fontRegular, 16, yPosition);
+                        yPosition -= 50;
+                    }
+                    
+                    // วาดลายเซ็น
+                    yPosition = drawSignatureBlock(contentStream, document, acroForm,
+                                                   learner, "Learner", i, yPosition, fontRegular,
+                                                   document.getNumberOfPages() - 1);
+                    
+                    // วาดเส้นแบ่ง (ถ้าไม่ใช่คนสุดท้าย)
+                    if (i < learners.size() - 1) {
+                        yPosition = drawDashedLine(contentStream, yPosition);
+                    }
+                }
+            } finally {
+                contentStream.close();
+            }
+            
+            return convertToBase64(document);
+        }
+    }
+    
+    /**
+     * วาดกรอบลายเซ็น (Signature Block) พร้อม AcroForm Field
+     * แสดงกรอบสีฟ้าประ พร้อมชื่อและตำแหน่ง
+     */
+    private float drawSignatureBlock(PDPageContentStream contentStream,
+                                     PDDocument document,
+                                     PDAcroForm acroForm,
+                                     SignerInfo signer,
+                                     String fieldPrefix,
+                                     int index,
+                                     float yPosition,
+                                     PDFont font,
+                                     int pageIndex) throws IOException {
+        // กำหนดตำแหน่งกรอบลายเซ็น (ตรงกลาง-ขวา)
+        float boxWidth = 180f;
+        float boxHeight = 50f;
+        float boxX = PAGE_WIDTH / 2 + 20;  // ขยับไปทางขวา
+        float boxY = yPosition - boxHeight;
+        
+        // วาดกรอบสีฟ้าประ (dashed border)
+        contentStream.setStrokingColor(0.4f, 0.7f, 0.9f); // สีฟ้าอ่อน
+        contentStream.setLineDashPattern(new float[]{5, 3}, 0); // เส้นประ
+        contentStream.setLineWidth(1.5f);
+        contentStream.addRect(boxX, boxY, boxWidth, boxHeight);
+        contentStream.stroke();
+        
+        // รีเซ็ตเส้นกลับเป็นปกติ
+        contentStream.setLineDashPattern(new float[]{}, 0);
+        contentStream.setStrokingColor(0, 0, 0);
+        
+        // วาดข้อความ "เสนอผ่าน" หรือ "รับทราบ" ในกรอบ
+        String labelText = "Submit".equals(fieldPrefix) ? "เสนอผ่าน" : "รับทราบ";
+        float labelWidth = font.getStringWidth(labelText) / 1000 * 14;
+        float textX = boxX + (boxWidth - labelWidth) / 2;
+        float textY = boxY + (boxHeight / 2) - 5;
+        drawText(contentStream, labelText, font, 14, textX, textY);
+        
+        yPosition = boxY - 15;
+        
+        // วาดชื่อ (พร้อมวงเล็บ)
+        String fullName = String.format("(%s%s %s)",
+            signer.getPrefixName() != null ? signer.getPrefixName() : "",
+            signer.getFirstname() != null ? signer.getFirstname() : "",
+            signer.getLastname() != null ? signer.getLastname() : "");
+        
+        float nameWidth = font.getStringWidth(fullName) / 1000 * 14;
+        float nameX = boxX + (boxWidth - nameWidth) / 2;
+        drawText(contentStream, fullName, font, 14, nameX, yPosition);
+        yPosition -= 20;
+        
+        // วาดตำแหน่ง
+        if (signer.getPositionName() != null && !signer.getPositionName().isEmpty()) {
+            float posWidth = font.getStringWidth(signer.getPositionName()) / 1000 * 12;
+            float posX = boxX + (boxWidth - posWidth) / 2;
+            drawText(contentStream, signer.getPositionName(), font, 12, posX, yPosition);
+            yPosition -= 25;
+        }
+        
+        // สร้าง AcroForm Signature Field
+        try {
+            String fieldName = fieldPrefix + "_" + index + "_" + 
+                              (signer.getEmail() != null ? signer.getEmail().replace("@", "_").replace(".", "_") : "user" + index);
+            
+            PDSignatureField signatureField = new PDSignatureField(acroForm);
+            signatureField.setPartialName(fieldName);
+            
+            PDAnnotationWidget widget = signatureField.getWidgets().get(0);
+            PDRectangle rect = new PDRectangle(boxX, boxY, boxWidth, boxHeight);
+            widget.setRectangle(rect);
+            widget.setPage(document.getPage(pageIndex));
+            
+            // เพิ่ม widget เข้า page
+            document.getPage(pageIndex).getAnnotations().add(widget);
+            
+            acroForm.getFields().add(signatureField);
+            
+            log.debug("Created signature field: {} at ({}, {})", fieldName, boxX, boxY);
+            
+        } catch (Exception e) {
+            log.warn("Could not create AcroForm signature field: {}", e.getMessage());
+        }
+        
+        return yPosition - 20;
+    }
+    
+    /**
+     * วาดเส้นประแบ่งระหว่างผู้ลงนามแต่ละคน
+     */
+    private float drawDashedLine(PDPageContentStream contentStream, float yPosition) throws IOException {
+        float lineY = yPosition - 15;
+        
+        contentStream.setStrokingColor(0.6f, 0.6f, 0.6f); // สีเทา
+        contentStream.setLineDashPattern(new float[]{8, 4}, 0); // เส้นประ
+        contentStream.setLineWidth(0.5f);
+        
+        contentStream.moveTo(MARGIN_LEFT + 50, lineY);
+        contentStream.lineTo(PAGE_WIDTH - MARGIN_RIGHT - 50, lineY);
+        contentStream.stroke();
+        
+        // รีเซ็ตเส้น
+        contentStream.setLineDashPattern(new float[]{}, 0);
+        contentStream.setStrokingColor(0, 0, 0);
+        
+        return lineY - 30;
+    }
+    
+    /**
+     * Inner class สำหรับข้อมูลผู้ลงนาม
+     */
+    @lombok.Data
+    @lombok.Builder
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class SignerInfo {
+        private String prefixName;
+        private String firstname;
+        private String lastname;
+        private String positionName;
+        private String departmentName;
+        private String email;
+        private String signatureBase64;
+    }
+    
     /**
      * แปลงเลขอารบิก (0-9) เป็นเลขไทย (๐-๙)
      * 
@@ -1120,5 +1442,124 @@ public class PdfService {
         byte[] pdfBytes = baos.toByteArray();
         log.debug("PDF converted to Base64, size: {} bytes", pdfBytes.length);
         return Base64.getEncoder().encodeToString(pdfBytes);
+    }
+    
+    // ============================================
+    // PDF Merge Methods (PDFBox 2.x)
+    // ตาม migrateToJava.txt Section 8.3
+    // ============================================
+    
+    /**
+     * รวม PDF หลายไฟล์ (PDFBox 2.x)
+     * 
+     * แปลงมาจาก: MergeMultiplePdfFiles() method
+     * ใช้ PDFMergerUtility + MemoryUsageSetting ตาม migrateToJava.txt
+     * 
+     * @param pdfBytesList รายการ PDF ในรูปแบบ byte array
+     * @return PDF รวมในรูปแบบ byte array
+     */
+    public byte[] mergePdfFiles(List<byte[]> pdfBytesList) throws IOException {
+        if (pdfBytesList == null || pdfBytesList.isEmpty()) {
+            throw new IllegalArgumentException("PDF list is empty");
+        }
+        
+        if (pdfBytesList.size() == 1) {
+            return pdfBytesList.get(0);
+        }
+        
+        PDFMergerUtility merger = new PDFMergerUtility();
+        
+        for (byte[] pdfBytes : pdfBytesList) {
+            merger.addSource(new ByteArrayInputStream(pdfBytes));
+        }
+        
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        merger.setDestinationStream(outputStream);
+        
+        // ใช้ MemoryUsageSetting ตาม migrateToJava.txt Section 9.5
+        merger.mergeDocuments(MemoryUsageSetting.setupMainMemoryOnly());
+        
+        log.info("Merged {} PDFs successfully", pdfBytesList.size());
+        return outputStream.toByteArray();
+    }
+    
+    /**
+     * รวม PDF 2 ไฟล์ (PDFBox 2.x)
+     * 
+     * @param pdf1 PDF แรก
+     * @param pdf2 PDF ที่สอง
+     * @return PDF รวม
+     */
+    public byte[] mergeTwoPdfs(byte[] pdf1, byte[] pdf2) throws IOException {
+        List<byte[]> pdfList = new ArrayList<>();
+        pdfList.add(pdf1);
+        pdfList.add(pdf2);
+        return mergePdfFiles(pdfList);
+    }
+    
+    /**
+     * รวม PDF จาก Base64 strings
+     * 
+     * @param base64Pdfs รายการ PDF ในรูปแบบ Base64
+     * @return PDF รวมในรูปแบบ Base64
+     */
+    public String mergePdfBase64(List<String> base64Pdfs) throws IOException {
+        List<byte[]> pdfBytesList = new ArrayList<>();
+        
+        for (String base64 : base64Pdfs) {
+            // ลบ prefix "data:application/pdf;base64," ถ้ามี
+            String cleanBase64 = base64;
+            if (base64.startsWith("data:application/pdf;base64,")) {
+                cleanBase64 = base64.substring("data:application/pdf;base64,".length());
+            }
+            pdfBytesList.add(Base64.getDecoder().decode(cleanBase64));
+        }
+        
+        byte[] mergedPdf = mergePdfFiles(pdfBytesList);
+        return Base64.getEncoder().encodeToString(mergedPdf);
+    }
+    
+    // ============================================
+    // Utility Methods
+    // ============================================
+    
+    /**
+     * แปลงเลขอารบิกเป็นเลขไทย (public)
+     * 
+     * ตาม migrateToJava.txt Section 8.4
+     */
+    public String convertToThaiDigits(int number) {
+        return convertToThaiNumber(number);
+    }
+    
+    /**
+     * แปลงเดือนเป็นภาษาไทย
+     * 
+     * ตาม migrateToJava.txt Section 7.4
+     */
+    public String getThaiMonth(int month) {
+        String[] thaiMonths = {
+            "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", 
+            "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม",
+            "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+        };
+        
+        if (month >= 1 && month <= 12) {
+            return thaiMonths[month - 1];
+        }
+        return "";
+    }
+    
+    /**
+     * แปลงวันที่เป็นรูปแบบไทย (วัน เดือน พ.ศ.)
+     * 
+     * ตาม migrateToJava.txt Section 7.4
+     */
+    public String toThaiDate(int day, int month, int year) {
+        String thaiDay = convertToThaiNumber(day);
+        String thaiMonth = getThaiMonth(month);
+        String thaiYear = convertToThaiNumber(year + 543); // แปลง ค.ศ. เป็น พ.ศ.
+        
+        return String.format("%s %s %s", thaiDay, thaiMonth, thaiYear);
     }
 }

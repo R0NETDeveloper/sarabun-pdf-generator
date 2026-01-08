@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF API Tester - Sarabun PDF Generator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-size: 24px;
+        }
+        
+        .panel {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+        
+        .panel-header {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+            color: white;
+            padding: 12px 20px;
+            font-weight: bold;
+            font-size: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .panel-body {
+            padding: 15px 20px;
+        }
+        
+        /* Request Panel - Horizontal Layout */
+        .request-row {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+        
+        .request-left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .request-right {
+            flex: 2;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .form-group {
+            margin-bottom: 0;
+            flex: 1;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 13px;
+        }
+        
+        select, input[type="text"] {
+            width: 100%;
+            padding: 8px 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: border-color 0.3s;
+        }
+        
+        select:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 180px;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        /* Response Panel */
+        .response-content {
+            display: flex;
+            gap: 15px;
+            height: calc(100vh - 380px);
+            min-height: 400px;
+        }
+        
+        .pdf-section {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            background: #f7fafc;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .pdf-section-header {
+            background: #4a5568;
+            color: white;
+            padding: 8px 15px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .pdf-section-body {
+            flex: 1;
+            position: relative;
+            min-height: 500px;
+        }
+        
+        #pdfViewer {
+            width: 100%;
+            height: 100%;
+            border: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+        }
+        
+        .json-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #1a202c;
+            border-radius: 8px;
+            overflow: hidden;
+            min-width: 300px;
+            max-width: 400px;
+        }
+        
+        .json-section-header {
+            background: #2d3748;
+            color: white;
+            padding: 8px 15px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        #jsonResponse {
+            flex: 1;
+            width: 100%;
+            padding: 12px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 11px;
+            background: #1a202c;
+            color: #68d391;
+            border: none;
+            resize: none;
+        }
+        
+        .status-bar {
+            padding: 8px 15px;
+            background: #f7fafc;
+            border-top: 1px solid #e2e8f0;
+            font-size: 12px;
+            color: #718096;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-bar.success {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .status-bar.error {
+            background: #fed7d7;
+            color: #822727;
+        }
+        
+        .loading-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.9);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 10;
+        }
+        
+        .loading-overlay.active {
+            display: flex;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e2e8f0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .endpoint-info {
+            background: #edf2f7;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #4a5568;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .method-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            background: #48bb78;
+            color: white;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 11px;
+        }
+        
+        .sample-select {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .sample-select label {
+            margin-bottom: 0;
+            white-space: nowrap;
+        }
+        
+        .sample-select select {
+            width: auto;
+            min-width: 200px;
+        }
+        
+        .no-pdf {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            color: #a0aec0;
+            font-size: 16px;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .no-pdf-icon {
+            font-size: 48px;
+        }
+        
+        @media (max-width: 1200px) {
+            .request-row {
+                flex-direction: column;
+            }
+            
+            .response-content {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .pdf-section, .json-section {
+                min-height: 400px;
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 PDF API Tester</h1>
+        
+        <!-- Request Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <span>📤 Request</span>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="sendRequest()">🚀 ส่ง Request</button>
+                    <button class="btn btn-secondary" onclick="formatJson()">📝 Format</button>
+                    <button class="btn btn-secondary" onclick="clearAll()">🗑️ Clear</button>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div class="request-row">
+                    <div class="request-left">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Endpoint</label>
+                                <select id="endpoint">
+                                    <option value="/api/pdf/preview">POST /api/pdf/preview</option>
+                                    <option value="/api/pdf/generate">POST /api/pdf/generate</option>
+                                    <option value="/api/pdf/health">GET /api/pdf/health</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="endpoint-info">
+                            <span class="method-badge" id="methodBadge">POST</span>
+                            <span id="fullEndpoint">http://localhost:8888/api/pdf/preview</span>
+                        </div>
+                        
+                        <div class="sample-select">
+                            <label>� ประเภทเอกสาร:</label>
+                            <select id="documentType" onchange="loadDocumentType()">
+                                <option value="">-- เลือกประเภท --</option>
+                                <option value="officialMemo">บันทึกข้อความ</option>
+                                <option value="officialDocument">หนังสือภายนอก</option>
+                                <option value="regulation">หนังสือระเบียบ</option>
+                                <option value="announce">หนังสือประกาศ</option>
+                                <option value="command">หนังสือคำสั่ง</option>
+                                <option value="rules">หนังสือข้อบังคับ</option>
+                                <option value="seal">หนังสือประทับตรา</option>
+                            </select>
+                        </div>
+                        
+                        <div class="sample-select">
+                            <label>⚙️ ตัวเลือกเพิ่มเติมปปปป:</label>
+                            <select id="sampleOptions" onchange="applyOptions()">
+                                <option value="basic">พื้นฐาน (ไม่มีลายเซ็น)</option>
+                                <option value="withSigned">+ ลงนาม (ต่อจากเนื้อหา)</option>
+                                <option value="withSubmited">+ เสนอผ่าน (ขึ้นหน้าใหม่)</option>
+                                <option value="withLearner">+ เรียน (ขึ้นหน้าใหม่)</option>
+                                <option value="urgent">+ ด่วนที่สุด</option>
+                                <option value="full">+ ครบทุกตัวเลือก</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="request-right">
+                        <label>Request Body (JSON)</label>
+                        <textarea id="requestBody">{
+    "bookNameId": "1",
+    "bookTitle": "บันทึกข้อความทดสอบ",
+    "bookNo": "สผ 0101/2568",
+    "dateThai": "29 ธันวาคม พ.ศ. 2568",
+    "timeThai": "10:30 น.",
+    "department": "กองพัฒนาระบบบริการ",
+    "divisionName": "ฝ่ายพัฒนาระบบ",
+    "formatPdf": "A4",
+    "bookContent": [
+        {"bookContentTitle": "เรื่อง", "bookContent": "ขออนุมัติจัดซื้ออุปกรณ์คอมพิวเตอร์", "nextPageStatus": false},
+        {"bookContentTitle": "เรียน", "bookContent": "ผู้อำนวยการกองพัฒนาระบบบริการ", "nextPageStatus": false},
+        {"bookContentTitle": "", "bookContent": "        ตามที่ฝ่ายพัฒนาระบบได้มีความประสงค์ จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ", "nextPageStatus": false}
+    ]
+}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Response Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <span>📥 Response</span>
+                <span id="statusText">พร้อมใช้งาน</span>
+            </div>
+            <div class="panel-body" style="padding: 15px;">
+                <div class="response-content">
+                    <!-- PDF Preview Section -->
+                    <div class="pdf-section">
+                        <div class="pdf-section-header">📄 PDF Preview</div>
+                        <div class="pdf-section-body">
+                            <div class="loading-overlay" id="loading">
+                                <div class="spinner"></div>
+                                <p>กำลังสร้าง PDF...</p>
+                            </div>
+                            <div class="no-pdf" id="noPdf">
+                                <div class="no-pdf-icon">📄</div>
+                                <div>กดปุ่ม "ส่ง Request" เพื่อสร้าง PDF</div>
+                            </div>
+                            <iframe id="pdfViewer" style="display: none;"></iframe>
+                        </div>
+                    </div>
+                    
+                    <!-- JSON Response Section -->
+                    <div class="json-section">
+                        <div class="json-section-header">📋 JSON Response</div>
+                        <textarea id="jsonResponse" readonly placeholder="Response จะแสดงที่นี่..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="status-bar" id="statusBar">
+                <span id="statusMessage">พร้อมใช้งาน - กรุณาส่ง Request</span>
+                <span id="responseTime"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // BookNameId ตามประเภทเอกสาร
+        const BOOK_NAME_IDS = {
+            officialMemo: "4B3EB169-6203-4A71-A3BD-A442FEAAA91F",      // บันทึกข้อความ
+            officialDocument: "90F72F0E-528D-4992-907A-F2C6B37AD9A5",  // หนังสือภายนอก
+            regulation: "50792880-F85A-4343-9672-7B61AF828A5B",        // หนังสือระเบียบ
+            announce: "23065068-BB18-49EA-8CE7-22945E16CB6D",          // หนังสือประกาศ
+            command: "3FEDE42B-078A-4D2C-9B21-3EAD3E418F3D",           // หนังสือคำสั่ง
+            rules: "4AB1EC00-9E5E-4113-B577-D8ED46BA7728",             // หนังสือข้อบังคับ
+            seal: "AF3E7697-6F7E-4AD8-B76C-E2134DB98747"               // หนังสือประทับตรา
+        };
+        
+        // Template ตามประเภทเอกสาร
+        const documentTemplates = {
+            officialMemo: {
+                bookNameId: BOOK_NAME_IDS.officialMemo,
+                bookTitle: "บันทึกข้อความ",
+                bookNo: "สผ 0101/2568",
+                dateThai: "8 มกราคม พ.ศ. 2569",
+                timeThai: "10:30 น.",
+                department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                divisionName: "กองพัฒนาระบบบริการ",
+                formatPdf: "A4",
+                bookContent: [
+                    { bookContentTitle: "เรื่อง", bookContent: "ขออนุมัติจัดซื้ออุปกรณ์คอมพิวเตอร์", nextPageStatus: false },
+                    { bookContentTitle: "เรียน", bookContent: "ผู้อำนวยการสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", nextPageStatus: false },
+                    { bookContentTitle: "", bookContent: "        ด้วยกองพัฒนาระบบบริการมีความประสงค์ขอจัดซื้ออุปกรณ์คอมพิวเตอร์ เพื่อใช้ในการปฏิบัติงานพัฒนาระบบสารบรรณอิเล็กทรอนิกส์\n\n        จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ", nextPageStatus: false }
+                ]
+            },
+            officialDocument: {
+                bookNameId: BOOK_NAME_IDS.officialDocument,
+                bookTitle: "หนังสือภายนอก",
+                bookNo: "สพธอ. 0102/2568",
+                dateThai: "8 มกราคม พ.ศ. 2569",
+                department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                divisionName: "กองพัฒนาระบบบริการ",
+                address: "อาคารเดอะ ไนน์ ทาวเวอร์ แกรนด์ พระรามเก้า ชั้น 21",
+                formatPdf: "A4",
+                bookContent: [
+                    { bookContentTitle: "เรื่อง", bookContent: "ขอเชิญเข้าร่วมประชุมสัมมนา", nextPageStatus: false },
+                    { bookContentTitle: "เรียน", bookContent: "ผู้อำนวยการกองเทคโนโลยีสารสนเทศ", nextPageStatus: false },
+                    { bookContentTitle: "อ้างถึง", bookContent: "หนังสือกระทรวงดิจิทัลฯ ที่ ดศ 0201/1234 ลงวันที่ 1 มกราคม 2569", nextPageStatus: false },
+                    { bookContentTitle: "สิ่งที่ส่งมาด้วย", bookContent: "1. กำหนดการประชุม จำนวน 1 ฉบับ\n2. แบบตอบรับ จำนวน 1 ฉบับ", nextPageStatus: false },
+                    { bookContentTitle: "", bookContent: "        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์จะจัดการประชุมสัมมนาในหัวข้อ \"การพัฒนาระบบสารบรรณอิเล็กทรอนิกส์\" ในวันที่ 15 มกราคม 2569\n\n        จึงเรียนมาเพื่อโปรดพิจารณาเข้าร่วม", nextPageStatus: false }
+                ]
+            },
+            regulation: {
+                bookNameId: BOOK_NAME_IDS.regulation,
+                bookTitle: "ระเบียบสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                bookNo: "",
+                dateThai: "8 มกราคม พ.ศ. 2569",
+                department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                divisionName: "",
+                year: "พ.ศ. 2569",
+                formatPdf: "A4",
+                bookContent: [
+                    { bookContentTitle: "เรื่อง", bookContent: "ว่าด้วยการปฏิบัติงานระบบสารบรรณอิเล็กทรอนิกส์", nextPageStatus: false },
+                    { bookContentTitle: "", bookContent: "        โดยที่เป็นการสมควรกำหนดระเบียบว่าด้วยการปฏิบัติงานระบบสารบรรณอิเล็กทรอนิกส์\n\n        อาศัยอำนาจตามความในมาตรา 8 แห่งพระราชบัญญัติว่าด้วยธุรกรรมทางอิเล็กทรอนิกส์ พ.ศ. 2544 ผู้อำนวยการสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ออกระเบียบไว้ดังต่อไปนี้\n\n        ข้อ 1 ระเบียบนี้เรียกว่า \"ระเบียบสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ว่าด้วยการปฏิบัติงานระบบสารบรรณอิเล็กทรอนิกส์ พ.ศ. 2569\"\n\n        ข้อ 2 ระเบียบนี้ให้ใช้บังคับตั้งแต่วันถัดจากวันประกาศเป็นต้นไป", nextPageStatus: false }
+                ]
+            },
+            announce: {
+                bookNameId: BOOK_NAME_IDS.announce,
+                bookTitle: "ประกาศสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                bookNo: "",
+                dateThai: "8 มกราคม พ.ศ. 2569",
+                department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                divisionName: "",
+                year: "พ.ศ. 2569",
+                formatPdf: "A4",
+                bookContent: [
+                    { bookContentTitle: "เรื่อง", bookContent: "รับสมัครพนักงานตำแหน่งนักพัฒนาระบบ", nextPageStatus: false },
+                    { bookContentTitle: "", bookContent: "        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์มีความประสงค์จะรับสมัครบุคคลเพื่อคัดเลือกเข้าเป็นพนักงาน ตำแหน่งนักพัฒนาระบบ จำนวน 2 อัตรา\n\n        1. คุณสมบัติของผู้สมัคร\n            1.1 สำเร็จการศึกษาระดับปริญญาตรีขึ้นไป สาขาวิทยาการคอมพิวเตอร์หรือสาขาที่เกี่ยวข้อง\n            1.2 มีประสบการณ์ในการพัฒนาระบบไม่น้อยกว่า 2 ปี\n\n        2. กำหนดการรับสมัคร\n            ตั้งแต่วันที่ 8 - 31 มกราคม 2569", nextPageStatus: false }
+                ]
+            },
+            command: {
+                bookNameId: BOOK_NAME_IDS.command,
+                bookTitle: "คำสั่งสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                bookNo: "ที่ 1/2569",
+                dateThai: "8 มกราคม พ.ศ. 2569",
+                department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                divisionName: "",
+                year: "พ.ศ. 2569",
+                formatPdf: "A4",
+                bookContent: [
+                    { bookContentTitle: "เรื่อง", bookContent: "แต่งตั้งคณะทำงานพัฒนาระบบสารบรรณอิเล็กทรอนิกส์", nextPageStatus: false },
+                    { bookContentTitle: "", bookContent: "        เพื่อให้การพัฒนาระบบสารบรรณอิเล็กทรอนิกส์เป็นไปอย่างมีประสิทธิภาพ จึงแต่งตั้งคณะทำงานประกอบด้วย\n\n        1. ผู้อำนวยการกองพัฒนาระบบบริการ     ประธานคณะทำงาน\n        2. หัวหน้าฝ่ายพัฒนาระบบ                   คณะทำงาน\n        3. นักพัฒนาระบบ                            คณะทำงานและเลขานุการ\n\n        ทั้งนี้ ตั้งแต่บัดนี้เป็นต้นไป", nextPageStatus: false }
+                ]
+            },
+            rules: {
+                bookNameId: BOOK_NAME_IDS.rules,
+                bookTitle: "ข้อบังคับสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                bookNo: "",
+                dateThai: "8 มกราคม พ.ศ. 2569",
+                department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                divisionName: "",
+                year: "พ.ศ. 2569",
+                formatPdf: "A4",
+                bookContent: [
+                    { bookContentTitle: "เรื่อง", bookContent: "ว่าด้วยจรรยาบรรณพนักงาน", nextPageStatus: false },
+                    { bookContentTitle: "", bookContent: "        อาศัยอำนาจตามความในมาตรา 8 แห่งพระราชบัญญัติว่าด้วยธุรกรรมทางอิเล็กทรอนิกส์ พ.ศ. 2544 ผู้อำนวยการสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ออกข้อบังคับไว้ดังต่อไปนี้\n\n        ข้อ 1 ข้อบังคับนี้เรียกว่า \"ข้อบังคับสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ว่าด้วยจรรยาบรรณพนักงาน พ.ศ. 2569\"\n\n        ข้อ 2 พนักงานต้องปฏิบัติหน้าที่ด้วยความซื่อสัตย์สุจริต\n\n        ข้อ 3 พนักงานต้องรักษาความลับของทางราชการ", nextPageStatus: false }
+                ]
+            },
+            seal: {
+                bookNameId: BOOK_NAME_IDS.seal,
+                bookTitle: "หนังสือประทับตรา",
+                bookNo: "สพธอ. 0103/2568",
+                dateThai: "8 มกราคม พ.ศ. 2569",
+                department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                divisionName: "กองพัฒนาระบบบริการ",
+                formatPdf: "A4",
+                bookContent: [
+                    { bookContentTitle: "ถึง", bookContent: "หัวหน้าส่วนราชการทุกแห่ง", nextPageStatus: false },
+                    { bookContentTitle: "", bookContent: "        ขอส่งสำเนาประกาศสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ เรื่อง การใช้งานระบบสารบรรณอิเล็กทรอนิกส์ มาเพื่อทราบ", nextPageStatus: false }
+                ]
+            }
+        };
+        
+        // ตัวเลือกเพิ่มเติม
+        const optionsData = {
+            // ลงนาม - ต่อจากเนื้อหา
+            withSigned: {
+                bookSigned: [
+                    { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", signatureBase64: "" }
+                ]
+            },
+            // เสนอผ่าน - ขึ้นหน้าใหม่ แล้ววางลายเซ็นตามลำดับ
+            withSubmited: {
+                bookSubmited: [
+                    { relatedNo: "1", prefixName: "นาย", firstname: "วิชัย", lastname: "เสนอผ่าน", positionName: "หัวหน้าฝ่ายบริหาร", departmentName: "กองบริหารงานทั่วไป" },
+                    { relatedNo: "2", prefixName: "นาง", firstname: "สมศรี", lastname: "ตรวจสอบ", positionName: "ผู้จัดการฝ่าย", departmentName: "กองพัฒนาระบบบริการ" }
+                ]
+            },
+            // ผู้เรียน/รับทราบ - ขึ้นหน้าใหม่ แล้ววางจุดลายเซ็นตามลำดับ
+            withLearner: {
+                bookLearner: [
+                    { relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "หัวหน้าฝ่ายพัฒนา", departmentName: "กองพัฒนาระบบบริการ" },
+                    { relatedNo: "2", prefixName: "นางสาว", firstname: "วิไล", lastname: "สุขสำราญ", positionName: "นักวิเคราะห์ระบบ", departmentName: "กองพัฒนาระบบบริการ" }
+                ]
+            },
+            // ด่วนที่สุด
+            urgent: {
+                speedLayer: "ด่วนที่สุด",
+                speedLayerId: "3"
+            },
+            // ครบทุกตัวเลือก: ลงนาม + เสนอผ่าน + ผู้เรียน + ด่วน
+            full: {
+                bookSigned: [
+                    { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", signatureBase64: "" }
+                ],
+                bookSubmited: [
+                    { relatedNo: "1", prefixName: "นาย", firstname: "วิชัย", lastname: "เสนอผ่าน", positionName: "หัวหน้าฝ่ายบริหาร", departmentName: "กองบริหารงานทั่วไป" }
+                ],
+                bookLearner: [
+                    { relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "หัวหน้าฝ่ายพัฒนา", departmentName: "กองพัฒนาระบบบริการ" }
+                ],
+                speedLayer: "ด่วนที่สุด",
+                speedLayerId: "3"
+            }
+        };
+        
+        // Current state
+        let currentTemplate = null;
+
+        // Load document type
+        function loadDocumentType() {
+            const docType = document.getElementById('documentType').value;
+            if (docType && documentTemplates[docType]) {
+                currentTemplate = JSON.parse(JSON.stringify(documentTemplates[docType]));
+                document.getElementById('sampleOptions').value = 'basic';
+                updateRequestBody();
+            }
+        }
+        
+        // Apply options
+        function applyOptions() {
+            if (!currentTemplate) {
+                alert('กรุณาเลือกประเภทเอกสารก่อน');
+                document.getElementById('sampleOptions').value = 'basic';
+                return;
+            }
+            updateRequestBody();
+        }
+        
+        // Update request body
+        function updateRequestBody() {
+            if (!currentTemplate) return;
+            
+            let data = JSON.parse(JSON.stringify(currentTemplate));
+            const option = document.getElementById('sampleOptions').value;
+            
+            if (option !== 'basic' && optionsData[option]) {
+                data = { ...data, ...optionsData[option] };
+            }
+            
+            document.getElementById('requestBody').value = JSON.stringify(data, null, 2);
+        }
+
+        // Update endpoint display
+        document.getElementById('endpoint').addEventListener('change', function() {
+            const endpoint = this.value;
+            const isGet = endpoint.includes('health');
+            document.getElementById('methodBadge').textContent = isGet ? 'GET' : 'POST';
+            document.getElementById('fullEndpoint').textContent = 'http://localhost:8888' + endpoint;
+            document.getElementById('requestBody').disabled = isGet;
+        });
+
+        // Format JSON
+        function formatJson() {
+            const textarea = document.getElementById('requestBody');
+            try {
+                const parsed = JSON.parse(textarea.value);
+                textarea.value = JSON.stringify(parsed, null, 2);
+            } catch (e) {
+                alert('Invalid JSON: ' + e.message);
+            }
+        }
+
+        // Clear all
+        function clearAll() {
+            document.getElementById('requestBody').value = '{}';
+            document.getElementById('jsonResponse').value = '';
+            document.getElementById('pdfViewer').src = '';
+            document.getElementById('pdfViewer').style.display = 'none';
+            document.getElementById('noPdf').style.display = 'flex';
+            document.getElementById('statusBar').className = 'status-bar';
+            document.getElementById('statusMessage').textContent = 'พร้อมใช้งาน - กรุณาส่ง Request';
+            document.getElementById('statusText').textContent = 'พร้อมใช้งาน';
+            document.getElementById('responseTime').textContent = '';
+            document.getElementById('sampleData').value = '';
+        }
+
+        // Send request
+        async function sendRequest() {
+            const endpoint = document.getElementById('endpoint').value;
+            const isGet = endpoint.includes('health');
+            const body = document.getElementById('requestBody').value;
+            const statusBar = document.getElementById('statusBar');
+            const loading = document.getElementById('loading');
+            const noPdf = document.getElementById('noPdf');
+            const pdfViewer = document.getElementById('pdfViewer');
+            
+            // Show loading
+            loading.classList.add('active');
+            noPdf.style.display = 'none';
+            pdfViewer.style.display = 'none';
+            document.getElementById('statusText').textContent = 'กำลังประมวลผล...';
+            
+            const startTime = Date.now();
+            
+            try {
+                const options = {
+                    method: isGet ? 'GET' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                };
+                
+                if (!isGet) {
+                    options.body = body;
+                }
+                
+                const response = await fetch('http://localhost:8888' + endpoint, options);
+                const elapsed = Date.now() - startTime;
+                
+                const data = await response.json();
+                
+                // Hide loading
+                loading.classList.remove('active');
+                
+                // Display JSON response
+                document.getElementById('jsonResponse').value = JSON.stringify(data, null, 2);
+                document.getElementById('responseTime').textContent = `⏱️ ${elapsed}ms`;
+                
+                // Update status bar
+                if (response.ok && data.isOK) {
+                    statusBar.className = 'status-bar success';
+                    document.getElementById('statusMessage').textContent = `✅ สำเร็จ! Status: ${response.status}`;
+                    document.getElementById('statusText').textContent = '✅ สำเร็จ';
+                    
+                    // Try to display PDF if available
+                    let pdfData = data.data;
+                    console.log('PDF data length:', pdfData ? pdfData.length : 0);
+                    
+                    if (pdfData && typeof pdfData === 'string' && pdfData.length > 100) {
+                        // Remove data URL prefix if present (handles both cases: with and without prefix)
+                        const base64Prefix = 'data:application/pdf;base64,';
+                        if (pdfData.startsWith(base64Prefix)) {
+                            pdfData = pdfData.substring(base64Prefix.length);
+                            console.log('Removed base64 prefix from PDF data');
+                        }
+                        
+                        // Create blob from base64 for better browser compatibility
+                        try {
+                            const byteCharacters = atob(pdfData);
+                            const byteNumbers = new Array(byteCharacters.length);
+                            for (let i = 0; i < byteCharacters.length; i++) {
+                                byteNumbers[i] = byteCharacters.charCodeAt(i);
+                            }
+                            const byteArray = new Uint8Array(byteNumbers);
+                            const blob = new Blob([byteArray], { type: 'application/pdf' });
+                            const blobUrl = URL.createObjectURL(blob);
+                            
+                            pdfViewer.src = blobUrl;
+                            pdfViewer.style.display = 'block';
+                            noPdf.style.display = 'none';
+                            console.log('PDF blob URL created:', blobUrl);
+                        } catch (e) {
+                            console.error('Error creating PDF blob:', e);
+                            // Fallback to data URL
+                            pdfViewer.src = 'data:application/pdf;base64,' + pdfData;
+                            pdfViewer.style.display = 'block';
+                            noPdf.style.display = 'none';
+                        }
+                    } else {
+                        noPdf.innerHTML = '<div class="no-pdf-icon">📋</div><div>Response ไม่มี PDF data</div>';
+                        noPdf.style.display = 'flex';
+                    }
+                } else {
+                    statusBar.className = 'status-bar error';
+                    document.getElementById('statusMessage').textContent = `❌ Error! Status: ${response.status} | ${data.message || 'Unknown error'}`;
+                    document.getElementById('statusText').textContent = '❌ Error';
+                    noPdf.innerHTML = '<div class="no-pdf-icon">❌</div><div>เกิดข้อผิดพลาด</div>';
+                    noPdf.style.display = 'flex';
+                }
+                
+            } catch (error) {
+                // Hide loading
+                loading.classList.remove('active');
+                
+                statusBar.className = 'status-bar error';
+                document.getElementById('statusMessage').textContent = `❌ Network Error: ${error.message}`;
+                document.getElementById('statusText').textContent = '❌ Error';
+                document.getElementById('jsonResponse').value = JSON.stringify({error: error.message}, null, 2);
+                document.getElementById('responseTime').textContent = '';
+                
+                noPdf.innerHTML = '<div class="no-pdf-icon">🔌</div><div>ไม่สามารถเชื่อมต่อ Server ได้<br><small>ตรวจสอบว่า Server ทำงานอยู่ที่ port 8888</small></div>';
+                noPdf.style.display = 'flex';
+            }
+        }
+    </script>
+</body>
+</html>

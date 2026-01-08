@@ -232,11 +232,11 @@ public class GeneratePdfController {
         
         // ========== SubDetail - ข้อมูลเพิ่มเติม ==========
         GeneratePdfRequest.BookSubDetail subDetail = new GeneratePdfRequest.BookSubDetail();
-        java.util.List<GeneratePdfRequest.BookSubDetail.SubDetailLearner> subDetailLearners = 
+        java.util.List<GeneratePdfRequest.SubDetailLearner> subDetailLearners = 
             new java.util.ArrayList<>();
         
-        GeneratePdfRequest.BookSubDetail.SubDetailLearner subLearner = 
-            new GeneratePdfRequest.BookSubDetail.SubDetailLearner();
+        GeneratePdfRequest.SubDetailLearner subLearner = 
+            new GeneratePdfRequest.SubDetailLearner();
         subLearner.setEmailEnding("@etda.or.th");
         subLearner.setDetail("สำหรับผู้ทราบเพิ่มเติม");
         subDetailLearners.add(subLearner);

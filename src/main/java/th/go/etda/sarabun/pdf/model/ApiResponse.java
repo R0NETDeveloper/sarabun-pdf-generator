@@ -11,10 +11,7 @@ import org.springframework.http.HttpStatus;
  * Generic Response Model
  * 
  * แปลงมาจาก: ETDA.SarabunMultitenant.Model/BaseModel.cs ResponseData<T>
- * การเปลี่ยนแปลง:
- * - ใช้ Generic Type <T> เหมือนเดิม
- * - แปลง HttpStatusCode เป็น HttpStatus ของ Spring
- * - เพิ่ม success flag เพื่อความชัดเจน
+ * สืบทอดจาก TableData (page, total, pageCount)
  */
 @Data
 @Builder
@@ -22,6 +19,12 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public class ApiResponse<T> {
     
+    // === จาก TableData ===
+    private Integer page;           // หน้าปัจจุบัน
+    private Integer total;          // จำนวนข้อมูลทั้งหมด
+    private Integer pageCount;      // จำนวนหน้าทั้งหมด
+    
+    // === จาก ResponseData ===
     @JsonProperty("isOK")
     @Builder.Default
     private Boolean isOk = true;
@@ -32,6 +35,8 @@ public class ApiResponse<T> {
     private String message;
     
     private T data;
+    
+    private Integer totalCount;     // จำนวนข้อมูลทั้งหมด (alias)
     
     /**
      * สร้าง Response สำเร็จ

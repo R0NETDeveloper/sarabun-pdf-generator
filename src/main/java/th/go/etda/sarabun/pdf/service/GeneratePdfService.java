@@ -1,5 +1,6 @@
 package th.go.etda.sarabun.pdf.service;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,7 +12,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.io.MemoryUsageSetting;
+import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -27,11 +29,12 @@ import th.go.etda.sarabun.pdf.util.HtmlUtils;
  * แปลงมาจาก: ETDA.SarabunMultitenant.Service/GeneratePdfService.cs
  * 
  * การเปลี่ยนแปลงสำคัญ:
- * 1. แทนที่ iText7/iTextSharp ด้วย Apache PDFBox (ฟรี 100%, Apache License 2.0)
+ * 1. แทนที่ iText7/iTextSharp ด้วย Apache PDFBox 2.0.31 (ฟรี 100%, Apache License 2.0)
  * 2. ใช้ PDType0Font สำหรับโหลด Thai fonts (TH Sarabun)
  * 3. รองรับทั้ง Windows และ Linux
- * 4. ใช้ Java NIO สำหรับจัดการไฟล์
+ * 4. ใช้ stream แทนการ save file ชั่วคราว (ตาม migrateToJava.txt Notes #6)
  * 5. ใช้ try-with-resources สำหรับ auto-close resources
+ * 6. ใช้ PDFMergerUtility + MemoryUsageSetting (ตาม migrateToJava.txt Section 9.5)
  * 
  * ฟีเจอร์หลัก:
  * - สร้าง PDF หลักและรอง
@@ -39,6 +42,8 @@ import th.go.etda.sarabun.pdf.util.HtmlUtils;
  * - รวม PDF หลายไฟล์
  * - รองรับ Thai fonts
  * - Base64 encoding/decoding
+ * 
+ * หมายเหตุ: ตาม migrateToJava.txt ต้องใช้ PDFBox 2.x เท่านั้น (ไม่ใช่ 3.x)
  * 
  * @author Migrated from .NET to Java
  */
@@ -287,7 +292,7 @@ public class GeneratePdfService {
      * สร้าง PDF รองแต่ละฉบับ
      */
     private String generateSecondaryPdf(GeneratePdfRequest request, 
-                                       GeneratePdfRequest.BookSubDetail.SubDetailLearner learner,
+                                       GeneratePdfRequest.SubDetailLearner learner,
                                        int index) throws Exception {
         // Implementation สำหรับสร้าง PDF รอง
         // ใช้ PdfService เหมือนกับ main PDF
@@ -371,7 +376,7 @@ public class GeneratePdfService {
             
             // อ่านผลลัพธ์
             byte[] resultBytes = Files.readAllBytes(outputFile);
-            return "data:application/pdf;base64," + Base64.getEncoder().encodeToString(resultBytes);
+            return  Base64.getEncoder().encodeToString(resultBytes);
             
         } finally {
             // ลบไฟล์ชั่วคราว
@@ -477,73 +482,107 @@ public class GeneratePdfService {
             throw new IllegalArgumentException("PDF array is empty");
         }
         
+        String mergedBase64;
+        
         if (pdfArray.size() == 1) {
             // มี PDF เดียว
-            return pdfArray.get(0).getPdfBase64();
-        }
-        
-        // หา PDF หลักและรอง
-        PdfResult mainPdf = pdfArray.stream()
-            .filter(p -> "Main".equals(p.getType()))
-            .findFirst()
-            .orElse(null);
+            mergedBase64 = pdfArray.get(0).getPdfBase64();
+        } else {
+            // หา PDF หลักและรอง
+            PdfResult mainPdf = pdfArray.stream()
+                .filter(p -> "Main".equals(p.getType()))
+                .findFirst()
+                .orElse(null);
+                
+            List<PdfResult> otherPdfs = pdfArray.stream()
+                .filter(p -> "Other".equals(p.getType()))
+                .collect(Collectors.toList());
             
-        List<PdfResult> otherPdfs = pdfArray.stream()
-            .filter(p -> "Other".equals(p.getType()))
-            .collect(Collectors.toList());
-        
-        // สร้างรายการ PDF ที่จะรวม
-        List<String> pdfsToMerge = new ArrayList<>();
-        
-        if (mainPdf != null) {
-            pdfsToMerge.add(cleanBase64Prefix(mainPdf.getPdfBase64()));
+            // สร้างรายการ PDF ที่จะรวม
+            List<String> pdfsToMerge = new ArrayList<>();
+            
+            if (mainPdf != null) {
+                pdfsToMerge.add(cleanBase64Prefix(mainPdf.getPdfBase64()));
+            }
+            
+            for (PdfResult other : otherPdfs) {
+                pdfsToMerge.add(cleanBase64Prefix(other.getPdfBase64()));
+            }
+            
+            // รวม PDFs
+            mergedBase64 = mergePdfFiles(pdfsToMerge);
         }
         
-        for (PdfResult other : otherPdfs) {
-            pdfsToMerge.add(cleanBase64Prefix(other.getPdfBase64()));
+        // ===== เพิ่มหน้า "เสนอผ่าน" (ขึ้นหน้าใหม่) =====
+        if (request.getBookSubmited() != null && !request.getBookSubmited().isEmpty()) {
+            log.info("Adding Submit pages for {} submiters", request.getBookSubmited().size());
+            
+            List<PdfService.SignerInfo> submiters = request.getBookSubmited().stream()
+                .map(s -> PdfService.SignerInfo.builder()
+                    .prefixName(s.getPrefixName())
+                    .firstname(s.getFirstname())
+                    .lastname(s.getLastname())
+                    .positionName(s.getPositionName())
+                    .departmentName(s.getDepartmentName())
+                    .email(s.getEmail())
+                    .signatureBase64(s.getSignatureBase64())
+                    .build())
+                .collect(Collectors.toList());
+            
+            mergedBase64 = pdfService.addSubmitPages(mergedBase64, submiters);
         }
         
-        // รวม PDFs
-        String mergedBase64 = mergePdfFiles(pdfsToMerge);
-        return "data:application/pdf;base64," + mergedBase64;
+        // ===== เพิ่มหน้า "ผู้เรียน/รับทราบ" (ขึ้นหน้าใหม่) =====
+        if (request.getBookLearner() != null && !request.getBookLearner().isEmpty()) {
+            log.info("Adding Learner pages for {} learners", request.getBookLearner().size());
+            
+            List<PdfService.SignerInfo> learners = request.getBookLearner().stream()
+                .map(l -> PdfService.SignerInfo.builder()
+                    .prefixName(l.getPrefixName())
+                    .firstname(l.getFirstname())
+                    .lastname(l.getLastname())
+                    .positionName(l.getPositionName())
+                    .departmentName(l.getDepartmentName())
+                    .email(l.getEmail())
+                    .signatureBase64(l.getSignatureBase64())
+                    .build())
+                .collect(Collectors.toList());
+            
+            mergedBase64 = pdfService.addLearnerPages(mergedBase64, learners);
+        }
+        
+        return mergedBase64;
     }
     
     /**
-     * รวม PDF files โดยใช้ PDFBox
+     * รวม PDF files โดยใช้ PDFBox 2.x
+     * 
+     * ใช้ PDFMergerUtility + MemoryUsageSetting ตาม migrateToJava.txt Section 8.3 และ 9.5
      */
     private String mergePdfFiles(List<String> base64Pdfs) throws Exception {
-        List<PDDocument> documents = new ArrayList<>();
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        
-        try {
-            // โหลด PDF ทั้งหมด
-            for (String base64Pdf : base64Pdfs) {
-                byte[] pdfBytes = Base64.getDecoder().decode(base64Pdf);
-                PDDocument doc = org.apache.pdfbox.Loader.loadPDF(pdfBytes);
-                documents.add(doc);
-            }
-            
-            // Merge PDFs - วิธีง่ายๆ คือเพิ่มทุกหน้าเข้าใน document เดียว
-            PDDocument resultDoc = new PDDocument();
-            for (PDDocument doc : documents) {
-                for (int i = 0; i < doc.getNumberOfPages(); i++) {
-                    resultDoc.addPage(doc.getPage(i));
-                }
-            }
-            
-            // Save to output stream
-            resultDoc.save(outputStream);
-            resultDoc.close();
-            
-            return Base64.getEncoder().encodeToString(outputStream.toByteArray());
-            
-        } finally {
-            // ปิด documents ทั้งหมด
-            for (PDDocument doc : documents) {
-                try { doc.close(); } catch (Exception ignored) {}
-            }
-            outputStream.close();
+        if (base64Pdfs == null || base64Pdfs.isEmpty()) {
+            throw new IllegalArgumentException("PDF list is empty");
         }
+        
+        if (base64Pdfs.size() == 1) {
+            return base64Pdfs.get(0);
+        }
+        
+        PDFMergerUtility merger = new PDFMergerUtility();
+        
+        for (String base64Pdf : base64Pdfs) {
+            byte[] pdfBytes = Base64.getDecoder().decode(base64Pdf);
+            merger.addSource(new ByteArrayInputStream(pdfBytes));
+        }
+        
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        merger.setDestinationStream(outputStream);
+        
+        // ใช้ MemoryUsageSetting ตาม migrateToJava.txt Section 9.5
+        merger.mergeDocuments(MemoryUsageSetting.setupMainMemoryOnly());
+        
+        log.info("Merged {} PDFs successfully using PDFMergerUtility", base64Pdfs.size());
+        return Base64.getEncoder().encodeToString(outputStream.toByteArray());
     }
     
     // Utility methods

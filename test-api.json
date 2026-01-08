@@ -1,0 +1,16 @@
+{
+    "bookNameId": "1",
+    "bookTitle": "Test PDF",
+    "bookNo": "001/2568",
+    "dateThai": "29 Dec 2568",
+    "department": "Test Dept",
+    "divisionName": "Test Div",
+    "formatPdf": "A4",
+    "bookContent": [
+        {
+            "bookContentTitle": "Subject",
+            "bookContent": "Test content body",
+            "nextPageStatus": false
+        }
+    ]
+}

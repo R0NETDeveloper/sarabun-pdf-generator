@@ -16,7 +16,8 @@
 	<url/>
 	<properties>
 		<java.version>17</java.version>
-		<pdfbox.version>3.0.3</pdfbox.version>
+		<pdfbox.version>2.0.31</pdfbox.version>
+		<openhtmltopdf.version>1.0.10</openhtmltopdf.version>
 	</properties>
 	<dependencies>
 		<!-- Spring Boot Web -->
@@ -50,18 +51,35 @@
 			<scope>runtime</scope>
 		</dependency>
 		
-		<!-- Apache PDFBox - ฟรี 100% ใช้แทน iText -->
+		<!-- Apache PDFBox 2.x - ฟรี 100% ใช้แทน iText (ตาม migrateToJava.txt ต้องใช้ 2.x เท่านั้น) -->
 		<dependency>
 			<groupId>org.apache.pdfbox</groupId>
 			<artifactId>pdfbox</artifactId>
 			<version>${pdfbox.version}</version>
 		</dependency>
 		
-		<!-- PDFBox Layout สำหรับจัดการ layout ง่ายขึ้น -->
+		<!-- FontBox สำหรับจัดการ fonts (PDFBox 2.x) -->
 		<dependency>
 			<groupId>org.apache.pdfbox</groupId>
-			<artifactId>pdfbox-io</artifactId>
+			<artifactId>fontbox</artifactId>
 			<version>${pdfbox.version}</version>
+		</dependency>
+		
+		<!-- OpenHTMLtoPDF สำหรับ HTML to PDF -->
+		<dependency>
+			<groupId>com.openhtmltopdf</groupId>
+			<artifactId>openhtmltopdf-core</artifactId>
+			<version>${openhtmltopdf.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.openhtmltopdf</groupId>
+			<artifactId>openhtmltopdf-pdfbox</artifactId>
+			<version>${openhtmltopdf.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.openhtmltopdf</groupId>
+			<artifactId>openhtmltopdf-slf4j</artifactId>
+			<version>${openhtmltopdf.version}</version>
 		</dependency>
 		
 		<!-- Lombok สำหรับลด boilerplate code -->
