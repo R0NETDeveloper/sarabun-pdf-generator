@@ -80,7 +80,7 @@ public class PdfService {
     private static final float FONT_SIZE_FIELD = 18f;         // ฟิลด์ label (ส่วนราชการ, ที่, วันที่, เรื่อง)
     private static final float FONT_SIZE_FIELD_VALUE = 16f;   // ฟิลด์ value (ข้อความ model)
     private static final float FONT_SIZE_CONTENT = 16f;       // เนื้อหา
-    private static final float FONT_SIZE_SIGNATURE = 14f;     // ลายเซ็น
+
     
     // ⚙️ Vertical Spacing - ระยะห่างระหว่างแต่ละบรรทัด (ปรับได้)
     private static final float SPACING_AFTER_HEADER = 30f;  // หลัง "บันทึกข้อความ"
@@ -91,15 +91,6 @@ public class PdfService {
     
     // ⚙️ Field Positions - ตำแหน่งแนวนอนของฟิลด์ต่างๆ (ปรับได้)
     private static final float DATE_X_POSITION = PAGE_WIDTH - 320; // ตำแหน่ง "วันที่" (ขวามือ)
-    
-    // ⚙️ Signature Settings - ตำแหน่งและขนาดลายเซ็น (ปรับได้)
-    private static final float CLOSING_TEXT_X = PAGE_WIDTH - MARGIN_RIGHT - 170; // ตำแหน่ง "จึงเรียนมา..." (เพิ่ม = เลื่อนขวา)
-    private static final float CLOSING_TEXT_Y_OFFSET = 30f; // ระยะห่างก่อนลายเซ็น (เพิ่ม = เว้นช่องมากขึ้น)
-    private static final float SIGNATURE_PLACEHOLDER_X = PAGE_WIDTH - MARGIN_RIGHT - 120; // ตำแหน่ง "(ลายเซ็น)" - ชิดขวามาก
-    private static final float SIGNATURE_NAME_X = PAGE_WIDTH - MARGIN_RIGHT - 140; // ตำแหน่งชื่อผู้ลงนาม
-    private static final float SIGNATURE_POSITION_X = CLOSING_TEXT_X; // ตำแหน่งตำแหน่งงาน - กึ่งกลางแบบ "จึงเรียนมา..."
-    private static final float SIGNATURE_BOX_WIDTH = 150f; // ความกว้างกรอบลายเซ็น
-    private static final float SIGNATURE_BOX_HEIGHT = 60f; // ความสูงกรอบลายเซ็น
     
     // ⚙️ Multi-page Settings - การจัดการหลายหน้า (ปรับได้)
     private static final float MIN_Y_POSITION = MARGIN_BOTTOM + 100; // พื้นที่ขั้นต่ำก่อนขึ้นหน้าใหม่ (เพิ่ม = ขึ้นหน้าเร็วขึ้น)
@@ -468,9 +459,10 @@ public class PdfService {
     }
     
     /**
-     * เพิ่มฟิลด์ลายเซ็นลงใน PDF
+     * เพิ่มฟิลด์ลายเซ็นลงใน PDF (Legacy method)
      * 
-     * แปลงมาจาก: AddMultipleSignatureFields() method
+     * หมายเหตุ: Method นี้ถูกแทนที่ด้วยการวาดช่องลงนามใน generateOfficialMemoPdf() SECTION 7
+     * คง method ไว้เพื่อ backward compatibility แต่ไม่ทำอะไรแล้ว
      * 
      * @param inputFile ไฟล์ PDF input
      * @param outputFile ไฟล์ PDF output
@@ -479,59 +471,12 @@ public class PdfService {
     public void addSignatureFields(File inputFile, 
                                   File outputFile,
                                   List<GeneratePdfService.SignatureFieldInfo> signatureFields) throws Exception {
-        log.debug("Adding {} signature fields to PDF", signatureFields.size());
+        log.debug("addSignatureFields() called - SKIPPED (signature boxes are now drawn in main PDF generation)");
         
+        // เพียงแค่ copy ไฟล์ต้นฉบับไปยัง output โดยไม่เพิ่มอะไร
+        // เพราะช่องลงนามถูกวาดใน generateOfficialMemoPdf() แล้ว
         try (PDDocument document = PDDocument.load(inputFile)) {
-            
-            // ถ้าไม่มีหน้า ให้สร้างหน้าใหม่
-            if (document.getNumberOfPages() == 0) {
-                document.addPage(new PDPage(PDRectangle.A4));
-            }
-            
-            // เพิ่มลายเซ็นในหน้าสุดท้าย
-            PDPage lastPage = document.getPage(document.getNumberOfPages() - 1);
-            PDFont font = loadThaiFont(document, FONT_PATH);
-            
-            try (PDPageContentStream contentStream = new PDPageContentStream(
-                    document, lastPage, PDPageContentStream.AppendMode.APPEND, true)) {
-                
-                float yPosition = 200; // เริ่มจากด้านล่างของหน้า
-                
-                for (GeneratePdfService.SignatureFieldInfo field : signatureFields) {
-                    // วาดข้อความลายเซ็น
-                    drawText(contentStream, 
-                           field.getType() + " " + field.getName(), 
-                           font, 12, MARGIN_LEFT, yPosition);
-                    
-                    if (field.getPosition() != null) {
-                        yPosition -= 15;
-                        drawText(contentStream, field.getPosition(), font, 10, 
-                               MARGIN_LEFT + 20, yPosition);
-                    }
-                    
-                    yPosition -= 30;
-                    
-                    // ถ้า yPosition ต่ำเกินไป ให้เพิ่มหน้าใหม่
-                    if (yPosition < MARGIN_BOTTOM) {
-                        contentStream.close();
-                        PDPage newPage = new PDPage(PDRectangle.A4);
-                        document.addPage(newPage);
-                        
-                        try (PDPageContentStream newContentStream = new PDPageContentStream(
-                                document, newPage)) {
-                            yPosition = PAGE_HEIGHT - MARGIN_TOP;
-                        }
-                        break;
-                    }
-                }
-            }
-            
             document.save(outputFile);
-            log.debug("Signature fields added successfully");
-            
-        } catch (Exception e) {
-            log.error("Error adding signature fields: ", e);
-            throw new Exception("ไม่สามารถเพิ่มลายเซ็นได้: " + e.getMessage(), e);
         }
     }
     
@@ -1054,6 +999,231 @@ public class PdfService {
     }
     
     // ============================================
+    // 📍 หนังสือส่งออก (Outgoing Letter)
+    // ============================================
+    
+    /**
+     * สร้างหนังสือส่งออก (หนังสือราชการภายนอก)
+     * 
+     * โครงสร้างตามรูปแบบราชการ:
+     * - โลโก้ ETDA (ขวาบน)
+     * - "ที่" (ซ้าย ว่างๆ) + ที่อยู่สำนักงาน (ขวา)
+     * - วันที่ (ขวา ใต้ที่อยู่)
+     * - เรื่อง (แสดงแม้ว่าง)
+     * - เรียน (2 บรรทัด: หน่วยงาน + ที่อยู่)
+     * - อ้างถึง (แสดงแม้ว่าง)
+     * - สิ่งที่ส่งมาด้วย (แสดงแม้ว่าง)
+     * - เนื้อหา
+     * - ลายเซ็น
+     */
+    public String generateOutgoingLetterPdf(String bookNo,
+                                            String address,
+                                            String date,
+                                            String title,
+                                            String recipients,
+                                            String recipientsAddress,
+                                            String referTo,
+                                            List<String> attachments,
+                                            String content,
+                                            String speedLayer,
+                                            List<SignerInfo> signers) throws Exception {
+        log.info("=== Generating outgoing letter PDF ===");
+        log.info("bookNo: {}", bookNo);
+        log.info("address: {}", address);
+        log.info("date: {}", date);
+        log.info("title: {}", title);
+        log.info("recipients: {}", recipients);
+        log.info("referTo: {}", referTo);
+        log.info("attachments count: {}", attachments != null ? attachments.size() : 0);
+        log.info("content length: {}", content != null ? content.length() : 0);
+        
+        try (PDDocument document = new PDDocument()) {
+            PDPage page = new PDPage(PDRectangle.A4);
+            document.addPage(page);
+            log.info("PDF page created");
+            
+            // โหลด fonts
+            log.info("Loading fonts...");
+            PDFont fontRegular = loadThaiFont(document, FONT_PATH);
+            PDFont fontBold = loadThaiFont(document, FONT_BOLD_PATH);
+            log.info("Fonts loaded successfully");
+            
+            PDPageContentStream contentStream = new PDPageContentStream(document, page);
+            try {
+                log.info("Content stream created, starting to draw...");
+                float yPosition = PAGE_HEIGHT - MARGIN_TOP;
+                
+                // วาดเลขที่หนังสือในหน้าแรกด้วย (ขอบล่างซ้าย)
+                drawBookNumber(contentStream, bookNo, fontRegular);
+                
+                // วาดเส้นขอบ debug (ถ้าเปิด)
+                drawDebugBorders(contentStream);
+                
+                // ============================================
+                // 📍 SECTION 0: Logo ETDA (ขวาบน - ไม่ทับข้อความ)
+                // ============================================
+                float logoBottomY = yPosition; // ตำแหน่งล่างสุดของ logo
+                try {
+                    InputStream logoStream = getClass().getClassLoader()
+                        .getResourceAsStream("images/logoETDA.png");
+                    if (logoStream != null) {
+                        PDImageXObject logoImage = PDImageXObject.createFromByteArray(
+                            document, logoStream.readAllBytes(), "logo");
+                        
+                        // ตำแหน่งโลโก้ขวาบน
+                        float logoX = PAGE_WIDTH - MARGIN_RIGHT - LOGO_WIDTH;
+                        float logoY = yPosition - LOGO_HEIGHT;
+                        logoBottomY = logoY; // เก็บตำแหน่งล่างสุดของ logo
+                        
+                        contentStream.drawImage(logoImage, logoX, logoY, LOGO_WIDTH, LOGO_HEIGHT);
+                        log.info("ETDA logo drawn at ({}, {}), size: {}x{}", 
+                                logoX, logoY, LOGO_WIDTH, LOGO_HEIGHT);
+                        logoStream.close();
+                    }
+                } catch (Exception e) {
+                    log.warn("Could not load ETDA logo: {}", e.getMessage());
+                }
+                
+                // ============================================
+                // 📍 SECTION 1: "ที่" (ซ้าย) + ที่อยู่สำนักงาน (ขวา)
+                // ขยับลงมาใต้ logo เล็กน้อย
+                // ============================================
+                yPosition = logoBottomY - 15; // ขยับลงมาใต้ logo
+                
+                // วาด "ที่" ทางซ้าย (ไม่มีค่า - แสดงแค่หัวข้อ)
+                float fieldY = yPosition;
+                drawText(contentStream, "ที่", fontBold, FONT_SIZE_FIELD, MARGIN_LEFT, fieldY);
+                
+                // วาดที่อยู่สำนักงานทางขวา (ขยับขวาอีก แต่ไม่ตกขอบ)
+                float addressX = PAGE_WIDTH - MARGIN_RIGHT - 180; // ขยับขวาอีก (ห่างจากขอบขวา 180pt)
+                float addressY = fieldY;
+                
+                if (address != null && !address.isEmpty()) {
+                    String[] addressLines = address.split("\n");
+                    for (String line : addressLines) {
+                        addressY = drawText(contentStream, line.trim(), fontRegular, FONT_SIZE_FIELD_VALUE, 
+                                           addressX, addressY);
+                    }
+                }
+                
+                // ============================================
+                // 📍 SECTION 2: วันที่ (ขวา ใต้ที่อยู่)
+                // ============================================
+                if (date != null && !date.isEmpty()) {
+                    log.info("Drawing date: {}", date);
+                    addressY -= 5;
+                    drawText(contentStream, date, fontRegular, FONT_SIZE_FIELD_VALUE, addressX, addressY);
+                }
+                
+                // กำหนด yPosition สำหรับส่วนถัดไป (ใช้ค่าต่ำสุด)
+                yPosition = Math.min(fieldY - 30, addressY - 30);
+                
+                // ============================================
+                // 📍 SECTION 3: เรื่อง (แสดงแม้ว่าง)
+                // ============================================
+                log.info("Drawing subject: {}", title);
+                String titleValue = (title != null && !title.isEmpty()) ? title : "";
+                yPosition = drawText(contentStream, "เรื่อง  " + titleValue, fontRegular, 
+                                    FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
+                yPosition -= SPACING_BETWEEN_FIELDS;
+                
+                // ============================================
+                // 📍 SECTION 4: เรียน (2 บรรทัด: หน่วยงาน + ที่อยู่)
+                // ============================================
+                log.info("Drawing recipients: {}", recipients);
+                // บรรทัดที่ 1: เรียน + ชื่อหน่วยงาน
+                String recipientsValue = (recipients != null && !recipients.isEmpty()) ? recipients : "";
+                yPosition = drawText(contentStream, "เรียน  " + recipientsValue, fontRegular, 
+                                    FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
+                
+                // บรรทัดที่ 2: เรียน + ที่อยู่หน่วยงานผู้รับ (ถ้ามี)
+                if (recipientsAddress != null && !recipientsAddress.isEmpty()) {
+                    yPosition = drawText(contentStream, "เรียน  " + recipientsAddress, fontRegular, 
+                                        FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
+                }
+                yPosition -= SPACING_BETWEEN_FIELDS;
+                
+                // ============================================
+                // 📍 SECTION 5: อ้างถึง (แสดงแม้ว่าง)
+                // ============================================
+                log.info("Drawing referTo: {}", referTo);
+                String referToValue = (referTo != null && !referTo.isEmpty()) ? referTo : "";
+                yPosition = drawText(contentStream, "อ้างถึง  " + referToValue, fontRegular, 
+                                    FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
+                yPosition -= SPACING_BETWEEN_FIELDS;
+                
+                // ============================================
+                // 📍 SECTION 6: สิ่งที่ส่งมาด้วย (แสดงแม้ว่าง)
+                // ============================================
+                log.info("Drawing attachments");
+                if (attachments != null && !attachments.isEmpty()) {
+                    if (attachments.size() == 1) {
+                        yPosition = drawText(contentStream, "สิ่งที่ส่งมาด้วย  " + attachments.get(0), 
+                                           fontRegular, FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
+                    } else {
+                        yPosition = drawText(contentStream, "สิ่งที่ส่งมาด้วย", fontRegular, 
+                                           FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
+                        float indentX = MARGIN_LEFT + fontRegular.getStringWidth("สิ่งที่ส่งมาด้วย  ") / 1000 * FONT_SIZE_FIELD_VALUE;
+                        for (int i = 0; i < attachments.size(); i++) {
+                            String attachItem = convertToThaiNumber(i + 1) + ". " + attachments.get(i);
+                            yPosition = drawText(contentStream, attachItem, fontRegular, 
+                                               FONT_SIZE_FIELD_VALUE, indentX, yPosition);
+                        }
+                    }
+                } else {
+                    // แสดง "สิ่งที่ส่งมาด้วย" แม้ไม่มีค่า
+                    yPosition = drawText(contentStream, "สิ่งที่ส่งมาด้วย", fontRegular, 
+                                        FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
+                }
+                yPosition -= SPACING_BETWEEN_FIELDS;
+                
+                // ============================================
+                // 📍 SECTION 7: เนื้อหา (รองรับขึ้นหน้าใหม่)
+                // ============================================
+                if (content != null && !content.isEmpty()) {
+                    yPosition -= SPACING_BEFORE_CONTENT;
+                    log.info("Drawing content, length: {}", content.length());
+                    
+                    String[] lines = content.split("\n");
+                    
+                    for (String line : lines) {
+                        if (yPosition < MIN_Y_POSITION) {
+                            log.info("Content overflow, creating new page...");
+                            contentStream.close();
+                            
+                            PDPage newPage = createNewPage(document, fontRegular, bookNo);
+                            contentStream = new PDPageContentStream(document, newPage, PDPageContentStream.AppendMode.APPEND, true);
+                            yPosition = PAGE_HEIGHT - MARGIN_TOP - 50;
+                        }
+                        
+                        yPosition = drawMultilineText(contentStream, line, 
+                                                    fontRegular, FONT_SIZE_CONTENT, 
+                                                    MARGIN_LEFT, yPosition, 
+                                                    PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT);
+                    }
+                }
+                
+ 
+                log.info("All content drawn successfully");
+                
+            } finally {
+                if (contentStream != null) {
+                    contentStream.close();
+                }
+            }
+            
+            log.info("Converting to Base64...");
+            String base64 = convertToBase64(document);
+            log.info("PDF generated successfully, Base64 length: {}", base64.length());
+            return base64;
+            
+        } catch (Exception e) {
+            log.error("Error generating outgoing letter PDF: ", e);
+            throw new Exception("ไม่สามารถสร้าง PDF หนังสือส่งออกได้: " + e.getMessage(), e);
+        }
+    }
+    
+    // ============================================
     // 📍 เสนอผ่าน / ผู้เรียน - Signature Pages
     // ============================================
     
@@ -1114,8 +1284,8 @@ public class PdfService {
                 for (int i = 0; i < submiters.size(); i++) {
                     SignerInfo submiter = submiters.get(i);
                     
-                    // ตรวจสอบพื้นที่เหลือ - ถ้าไม่พอให้ขึ้นหน้าใหม่
-                    if (yPosition < MIN_Y_POSITION + 150) {
+                    // ตรวจสอบพื้นที่เหลือ - ถ้าไม่พอให้ขึ้นหน้าใหม่ (ลดจาก 150 เป็น 50 เพื่อวาง 3 คน/หน้า)
+                    if (yPosition < MIN_Y_POSITION + 50) {
                         contentStream.close();
                         
                         // สร้างหน้าใหม่
@@ -1155,10 +1325,12 @@ public class PdfService {
      * 
      * @param existingPdfBase64 PDF เดิมในรูปแบบ Base64 (จะต่อหน้าจากนี้)
      * @param learners รายการผู้เรียน/รับทราบ
+     * @param signers รายการผู้ลงนาม (สำหรับแสดง "เรียน" ที่ด้านบน)
      * @return PDF ที่มีหน้าผู้เรียนต่อท้าย ในรูปแบบ Base64
      */
     public String addLearnerPages(String existingPdfBase64, 
-                                   List<SignerInfo> learners) throws Exception {
+                                   List<SignerInfo> learners,
+                                   List<SignerInfo> signers) throws Exception {
         if (learners == null || learners.isEmpty()) {
             return existingPdfBase64;
         }
@@ -1199,16 +1371,33 @@ public class PdfService {
                 drawCenteredText(contentStream, pageNumThai, fontRegular, 16, yPosition);
                 yPosition -= 50;
                 
-                // วาดหัวข้อ
-                drawCenteredText(contentStream, "ผู้รับทราบ", fontBold, 28, yPosition);
-                yPosition -= 80;
+                // วาด "เรียน ชื่อผู้ลงนาม1, ชื่อผู้ลงนาม2, ..." ที่ด้านบน (ใช้ signers ไม่ใช่ learners)
+                StringBuilder namesBuilder = new StringBuilder("เรียน ");
+                List<SignerInfo> displayNames = (signers != null && !signers.isEmpty()) ? signers : learners;
+                for (int i = 0; i < displayNames.size(); i++) {
+                    SignerInfo signer = displayNames.get(i);
+                    String fullName = String.format("%s%s %s",
+                        signer.getPrefixName() != null ? signer.getPrefixName() : "",
+                        signer.getFirstname() != null ? signer.getFirstname() : "",
+                        signer.getLastname() != null ? signer.getLastname() : "");
+                    namesBuilder.append(fullName);
+                    if (i < displayNames.size() - 1) {
+                        namesBuilder.append(", ");
+                    }
+                }
+                
+                // วาดรายชื่อ (รองรับหลายบรรทัดถ้ายาวเกิน)
+                yPosition = drawMultilineText(contentStream, namesBuilder.toString(), 
+                                             fontRegular, 16, MARGIN_LEFT, yPosition,
+                                             PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT);
+                yPosition -= 50;
                 
                 // วาดลายเซ็นแต่ละคน
                 for (int i = 0; i < learners.size(); i++) {
                     SignerInfo learner = learners.get(i);
                     
-                    // ตรวจสอบพื้นที่เหลือ - ถ้าไม่พอให้ขึ้นหน้าใหม่
-                    if (yPosition < MIN_Y_POSITION + 150) {
+                    // ตรวจสอบพื้นที่เหลือ - ถ้าไม่พอให้ขึ้นหน้าใหม่ (ลดจาก 150 เป็น 50 เพื่อวาง 3 คน/หน้า)
+                    if (yPosition < MIN_Y_POSITION + 50) {
                         contentStream.close();
                         
                         // สร้างหน้าใหม่
@@ -1337,8 +1526,16 @@ public class PdfService {
         contentStream.setLineDashPattern(new float[]{}, 0);
         contentStream.setStrokingColor(0, 0, 0);
         
-        // วาดข้อความ "เสนอผ่าน" หรือ "รับทราบ" ในกรอบ
-        String labelText = "Submit".equals(fieldPrefix) ? "เสนอผ่าน" : "รับทราบ";
+        // วาดข้อความในกรอบตาม fieldPrefix
+        // "Submit" = "เสนอผ่าน", "Learner" = "เรียน", อื่นๆ = "รับทราบ"
+        String labelText;
+        if ("Submit".equals(fieldPrefix)) {
+            labelText = "เสนอผ่าน";
+        } else if ("Learner".equals(fieldPrefix)) {
+            labelText = "เรียน";
+        } else {
+            labelText = "รับทราบ";
+        }
         float labelWidth = font.getStringWidth(labelText) / 1000 * 14;
         float textX = boxX + (boxWidth - labelWidth) / 2;
         float textY = boxY + (boxHeight / 2) - 5;

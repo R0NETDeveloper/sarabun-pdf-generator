@@ -139,6 +139,17 @@ public class GeneratePdfService {
                (request.getBookLearner() != null && !request.getBookLearner().isEmpty());
     }
     
+    // BookNameId Constants
+    private static final String BOOK_NAME_ID_OUTGOING_LETTER = "90F72F0E-528D-4992-907A-F2C6B37AD9A5"; // หนังสือส่งออก
+    private static final String BOOK_NAME_ID_MEMO = "4B3EB169-6203-4A71-A3BD-A442FEAAA91F"; // บันทึกข้อความ
+    
+    /**
+     * ตรวจสอบว่าเป็นหนังสือส่งออกหรือไม่
+     */
+    private boolean isOutgoingLetter(String bookNameId) {
+        return BOOK_NAME_ID_OUTGOING_LETTER.equalsIgnoreCase(bookNameId);
+    }
+    
     /**
      * สร้าง PDF array (อาจมีหลายไฟล์)
      * 
@@ -147,13 +158,37 @@ public class GeneratePdfService {
     private List<PdfResult> generatePdfArray(GeneratePdfRequest request) throws Exception {
         List<PdfResult> results = new ArrayList<>();
         
-        // สร้าง PDF หลัก (บันทึกข้อความ)
-        String mainPdfBase64 = generateMainPdf(request);
-        results.add(PdfResult.builder()
-            .pdfBase64(mainPdfBase64)
-            .type("Main")
-            .description("หนังสือบันทึกข้อความหลัก")
-            .build());
+        String bookNameId = request.getBookNameId();
+        
+        // ตรวจสอบประเภทเอกสาร
+        if (isOutgoingLetter(bookNameId)) {
+            // หนังสือส่งออก + บันทึกข้อความ
+            log.info("Generating outgoing letter + memo PDF");
+            
+            // 1. สร้างหนังสือส่งออก
+            String outgoingPdfBase64 = generateOutgoingLetterPdf(request);
+            results.add(PdfResult.builder()
+                .pdfBase64(outgoingPdfBase64)
+                .type("Main")
+                .description("หนังสือส่งออก")
+                .build());
+            
+            // 2. สร้างบันทึกข้อความ (สำเนาเก็บ)
+            String memoPdfBase64 = generateMainPdf(request);
+            results.add(PdfResult.builder()
+                .pdfBase64(memoPdfBase64)
+                .type("Memo")
+                .description("บันทึกข้อความ (สำเนาเก็บ)")
+                .build());
+        } else {
+            // บันทึกข้อความ (ปกติ)
+            String mainPdfBase64 = generateMainPdf(request);
+            results.add(PdfResult.builder()
+                .pdfBase64(mainPdfBase64)
+                .type("Main")
+                .description("หนังสือบันทึกข้อความหลัก")
+                .build());
+        }
         
         // สร้าง PDF รอง (ถ้ามี)
         if (needsSecondaryPdfs(request)) {
@@ -165,12 +200,143 @@ public class GeneratePdfService {
     }
     
     /**
+     * สร้าง PDF หนังสือส่งออก
+     */
+    private String generateOutgoingLetterPdf(GeneratePdfRequest request) throws Exception {
+        log.debug("Generating outgoing letter PDF");
+        
+        // รวบรวมที่อยู่สำนักงาน
+        String address = request.getAddress() != null ? request.getAddress() : "";
+        
+        // รวบรวมรายชื่อผู้รับ (บรรทัดแรก: ชื่อหน่วยงาน)
+        String recipients = "";
+        // รวบรวมที่อยู่ผู้รับ (บรรทัดที่สอง: ที่อยู่หน่วยงาน)
+        String recipientsAddress = "";
+        
+        if (request.getRecipients() != null && !request.getRecipients().isEmpty()) {
+            recipients = request.getRecipients();
+        } else if (request.getBookLearner() != null && !request.getBookLearner().isEmpty()) {
+            // ใช้ข้อมูลจาก bookLearner
+            var firstLearner = request.getBookLearner().get(0);
+            if (firstLearner.getPositionName() != null) {
+                recipients = firstLearner.getPositionName();
+            }
+            if (firstLearner.getDepartmentName() != null) {
+                recipientsAddress = firstLearner.getDepartmentName();
+            }
+        }
+        
+        // รวบรวมอ้างถึง
+        String referTo = "";
+        if (request.getBookReferTo() != null && !request.getBookReferTo().isEmpty()) {
+            referTo = request.getBookReferTo().stream()
+                .map(ref -> {
+                    StringBuilder sb = new StringBuilder();
+                    if (ref.getBookReferToName() != null) {
+                        sb.append(ref.getBookReferToName());
+                    }
+                    if (ref.getBookReferToNo() != null && !ref.getBookReferToNo().isEmpty()) {
+                        sb.append(" ที่ ").append(ref.getBookReferToNo());
+                    }
+                    if (ref.getCreateDate() != null) {
+                        sb.append(" ลงวันที่ ").append(formatThaiDate(ref.getCreateDate()));
+                    }
+                    return sb.toString();
+                })
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.joining("\n"));
+        }
+        
+        // รวบรวมสิ่งที่ส่งมาด้วย
+        List<String> attachments = new ArrayList<>();
+        if (request.getAttachment() != null && !request.getAttachment().isEmpty()) {
+            for (var attach : request.getAttachment()) {
+                String attachName = attach.getName() != null ? attach.getName() : "";
+                String attachRemark = attach.getRemark() != null ? " (" + attach.getRemark() + ")" : "";
+                attachments.add(attachName + attachRemark);
+            }
+        }
+        
+        // รวบรวมเนื้อหา
+        StringBuilder contentBuilder = new StringBuilder();
+        if (request.getBookContent() != null && !request.getBookContent().isEmpty()) {
+            for (var item : request.getBookContent()) {
+                if (item.getBookContentTitle() != null && !item.getBookContentTitle().isEmpty()) {
+                    String title_text = HtmlUtils.isHtml(item.getBookContentTitle()) 
+                        ? HtmlUtils.htmlToPlainText(item.getBookContentTitle())
+                        : item.getBookContentTitle();
+                    contentBuilder.append(title_text).append("  ");
+                }
+                if (item.getBookContent() != null && !item.getBookContent().isEmpty()) {
+                    String content_text = HtmlUtils.isHtml(item.getBookContent())
+                        ? HtmlUtils.htmlToPlainText(item.getBookContent())
+                        : item.getBookContent();
+                    contentBuilder.append(content_text);
+                }
+                contentBuilder.append("\n\n");
+            }
+        }
+        String content = contentBuilder.toString().trim();
+        
+        // รวบรวมผู้ลงนาม
+        List<PdfService.SignerInfo> signers = new ArrayList<>();
+        if (request.getBookSigned() != null && !request.getBookSigned().isEmpty()) {
+            for (var signer : request.getBookSigned()) {
+                signers.add(PdfService.SignerInfo.builder()
+                    .prefixName(signer.getPrefixName())
+                    .firstname(signer.getFirstname())
+                    .lastname(signer.getLastname())
+                    .positionName(signer.getPositionName())
+                    .departmentName(signer.getDepartmentName())
+                    .email(signer.getEmail())
+                    .signatureBase64(signer.getSignatureBase64())
+                    .build());
+            }
+        }
+        
+        log.info("generateOutgoingLetterPdf - bookNo: {}, title: {}, content length: {}", 
+                request.getBookNo(), request.getBookTitle(), content.length());
+        
+        return pdfService.generateOutgoingLetterPdf(
+            request.getBookNo(),
+            address,
+            request.getDateThai(),
+            request.getBookTitle() != null ? request.getBookTitle() : "",
+            recipients,
+            recipientsAddress,  // เพิ่ม parameter นี้
+            referTo,
+            attachments,
+            content,
+            request.getSpeedLayer(),
+            signers
+        );
+    }
+    
+    /**
+     * แปลง LocalDateTime เป็นวันที่ไทย
+     */
+    private String formatThaiDate(java.time.LocalDateTime dateTime) {
+        if (dateTime == null) return "";
+        int day = dateTime.getDayOfMonth();
+        int month = dateTime.getMonthValue();
+        int year = dateTime.getYear() + 543; // แปลงเป็น พ.ศ.
+        return pdfService.toThaiDate(day, month, year);
+    }
+    
+    /**
      * ตรวจสอบว่าต้องการ PDF รองหรือไม่
+     * หมายเหตุ: หนังสือส่งออก (90F72F0E...) ไม่ต้องสร้าง secondary PDFs 
+     * เพราะบันทึกข้อความถูกสร้างใน generatePdfArray แล้ว
      */
     private boolean needsSecondaryPdfs(GeneratePdfRequest request) {
         String bookNameId = request.getBookNameId();
-        return ("90F72F0E-528D-4992-907A-F2C6B37AD9A5".equals(bookNameId) ||
-                "C2905724-04D3-46AF-81EA-BF3045A59BF2".equals(bookNameId)) &&
+        
+        // หนังสือส่งออกไม่ต้องสร้าง secondary PDFs (บันทึกข้อความถูกรวมใน Main flow แล้ว)
+        if (isOutgoingLetter(bookNameId)) {
+            return false;
+        }
+        
+        return ("C2905724-04D3-46AF-81EA-BF3045A59BF2".equals(bookNameId)) &&
                request.getSubDetail() != null &&
                request.getSubDetail().getSubDetailLearner() != null &&
                !request.getSubDetail().getSubDetailLearner().isEmpty();
@@ -546,7 +712,20 @@ public class GeneratePdfService {
                     .build())
                 .collect(Collectors.toList());
             
-            mergedBase64 = pdfService.addLearnerPages(mergedBase64, learners);
+            // สร้าง signers สำหรับแสดง "เรียน ชื่อผู้ลงนาม" ที่ด้านบน
+            List<PdfService.SignerInfo> signersForDisplay = null;
+            if (request.getBookSigned() != null && !request.getBookSigned().isEmpty()) {
+                signersForDisplay = request.getBookSigned().stream()
+                    .map(s -> PdfService.SignerInfo.builder()
+                        .prefixName(s.getPrefixName())
+                        .firstname(s.getFirstname())
+                        .lastname(s.getLastname())
+                        .positionName(s.getPositionName())
+                        .build())
+                    .collect(Collectors.toList());
+            }
+            
+            mergedBase64 = pdfService.addLearnerPages(mergedBase64, learners, signersForDisplay);
         }
         
         return mergedBase64;
