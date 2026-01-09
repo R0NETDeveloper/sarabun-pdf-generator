@@ -264,18 +264,19 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                     }
                 }
                 
-                // SECTION 8: ข้อความท้ายเอกสาร (เช่น "ขอแสดงความนับถือ")
-                if (endDoc != null && !endDoc.isEmpty()) {
-                    yPosition -= 20;
-                    yPosition = drawCenteredText(contentStream, endDoc, fontRegular, FONT_SIZE_CONTENT, yPosition);
-                }
-                
-                // SECTION 9: ช่องลงนาม
+                // SECTION 8+9: ช่องลงนาม (รวม endDoc เป็น label บนกรอบ)
                 if (signers != null && !signers.isEmpty()) {
                     yPosition -= SPACING_BEFORE_SIGNATURES;
                     
-                    for (SignerInfo signer : signers) {
-                        float requiredHeight = 120f;
+                    for (int i = 0; i < signers.size(); i++) {
+                        SignerInfo signer = signers.get(i);
+                        
+                        // คำนวณความสูงที่ต้องการ (รวม label ยาวถ้ามี)
+                        float requiredHeight = 100f;
+                        if (i == 0 && endDoc != null && !endDoc.isEmpty()) {
+                            requiredHeight += 25f; // เพิ่มพื้นที่สำหรับ label บนกรอบ
+                        }
+                        
                         if (yPosition < MIN_Y_POSITION + requiredHeight) {
                             contentStream.close();
                             
@@ -285,12 +286,18 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                             yPosition = PAGE_HEIGHT - MARGIN_TOP - 50;
                         }
                         
-                        yPosition = drawSignerBox(contentStream, 
+                        // กำหนด label: signer แรกใช้ endDoc, ที่เหลือใช้ "ช่องลงนาม"
+                        String boxLabel = "ช่องลงนาม";
+                        if (i == 0 && endDoc != null && !endDoc.isEmpty()) {
+                            boxLabel = endDoc;
+                        }
+                        
+                        yPosition = drawSignerBoxWithLabel(contentStream, 
                                                   signer.getPrefixName(),
                                                   signer.getFirstname(),
                                                   signer.getLastname(),
                                                   signer.getPositionName(),
-                                                  fontRegular, yPosition);
+                                                  fontRegular, yPosition, boxLabel);
                         yPosition -= SPACING_BETWEEN_SIGNATURES;
                     }
                 }

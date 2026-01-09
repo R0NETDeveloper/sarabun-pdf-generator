@@ -711,7 +711,23 @@ public abstract class PdfGeneratorBase {
         float boxWidth = 180f;
         float boxHeight = 50f;
         float boxX = PAGE_WIDTH / 2 + 20;  // ขยับไปทางขวา
-        float boxY = yPosition - boxHeight;
+        
+        // ตรวจสอบความยาว label
+        float labelWidth = font.getStringWidth(labelText) / 1000 * 14f;
+        boolean isLongLabel = labelWidth > boxWidth - 20;
+        
+        float currentY = yPosition;
+        
+        // ถ้า label ยาว → วางไว้บนหัวกรอบ (ตรงกลางเหนือกรอบ)
+        if (isLongLabel) {
+            // center label เหนือกรอบ (boxX + boxWidth/2 เป็นจุดกึ่งกลางกรอบ)
+            float boxCenterX = boxX + (boxWidth / 2);
+            float longLabelX = boxCenterX - (labelWidth / 2);
+            drawText(contentStream, labelText, font, 14f, longLabelX, currentY);
+            currentY -= 25;
+        }
+        
+        float boxY = currentY - boxHeight;
         
         // วาดกรอบสีฟ้าประ
         contentStream.setStrokingColor(0.4f, 0.7f, 0.9f); // สีฟ้าอ่อน
@@ -724,13 +740,14 @@ public abstract class PdfGeneratorBase {
         contentStream.setLineDashPattern(new float[]{}, 0);
         contentStream.setStrokingColor(0, 0, 0);
         
-        // วาด label ตรงกลางในกรอบ
-        float labelWidth = font.getStringWidth(labelText) / 1000 * 14f;
-        float textX = boxX + (boxWidth - labelWidth) / 2;
-        float textY = boxY + (boxHeight / 2) - 5;
-        drawText(contentStream, labelText, font, 14f, textX, textY);
+        // ถ้า label สั้น → วางในกรอบ
+        if (!isLongLabel) {
+            float textX = boxX + (boxWidth - labelWidth) / 2;
+            float textY = boxY + (boxHeight / 2) - 5;
+            drawText(contentStream, labelText, font, 14f, textX, textY);
+        }
         
-        yPosition = boxY - 15;
+        currentY = boxY - 15;
         
         // สร้างชื่อเต็ม
         String fullName = buildFullName(prefixName, firstname, lastname);
@@ -740,19 +757,19 @@ public abstract class PdfGeneratorBase {
             String nameText = "(" + fullName + ")";
             float nameWidth = font.getStringWidth(nameText) / 1000 * 14f;
             float nameX = boxX + (boxWidth - nameWidth) / 2;
-            drawText(contentStream, nameText, font, 14f, nameX, yPosition);
-            yPosition -= 20;
+            drawText(contentStream, nameText, font, 14f, nameX, currentY);
+            currentY -= 20;
         }
         
         // วาดตำแหน่ง (ตรงกลางใต้ชื่อ)
         if (positionName != null && !positionName.isEmpty()) {
             float posWidth = font.getStringWidth(positionName) / 1000 * 12f;
             float posX = boxX + (boxWidth - posWidth) / 2;
-            drawText(contentStream, positionName, font, 12f, posX, yPosition);
-            yPosition -= 25;
+            drawText(contentStream, positionName, font, 12f, posX, currentY);
+            currentY -= 25;
         }
         
-        return yPosition;
+        return currentY;
     }
     
     /**
