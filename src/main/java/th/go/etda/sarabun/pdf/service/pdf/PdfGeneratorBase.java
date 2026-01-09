@@ -14,6 +14,9 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType0Font;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
+import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.apache.pdfbox.pdmodel.interactive.form.PDSignatureField;
 import org.springframework.core.io.ClassPathResource;
 
 import lombok.extern.slf4j.Slf4j;
@@ -787,6 +790,127 @@ public abstract class PdfGeneratorBase {
             fullName.append(" ").append(lastname);
         }
         return fullName.toString().trim();
+    }
+    
+    // ============================================
+    // Signature Field Methods (เจาะช่องจริง)
+    // ============================================
+    
+    /**
+     * วาดช่องลงนามพร้อมเจาะ AcroForm Signature Field จริง
+     * 
+     * @param document PDDocument
+     * @param page PDPage ที่จะเพิ่ม signature field
+     * @param contentStream PDPageContentStream
+     * @param signer ข้อมูลผู้ลงนาม
+     * @param font ฟอนต์
+     * @param yPosition ตำแหน่ง Y ปัจจุบัน
+     * @param fieldPrefix prefix สำหรับชื่อ field (เช่น "Sign", "Submit")
+     * @param index ลำดับผู้ลงนาม
+     * @param labelText ข้อความ label (เช่น "ช่องลงนาม", "เสนอผ่าน")
+     * @return ตำแหน่ง Y ใหม่หลังวาดเสร็จ
+     */
+    protected float drawSignerBoxWithSignatureField(PDDocument document,
+                                                    PDPage page,
+                                                    PDPageContentStream contentStream,
+                                                    SignerInfo signer,
+                                                    PDFont font, 
+                                                    float yPosition,
+                                                    String fieldPrefix,
+                                                    int index,
+                                                    String labelText) throws Exception {
+        // กำหนดขนาดและตำแหน่งกรอบ (ตรงกลาง-ขวา)
+        float boxWidth = 180f;
+        float boxHeight = 50f;
+        float boxX = PAGE_WIDTH / 2 + 20;
+        
+        // ตรวจสอบความยาว label
+        float labelWidth = font.getStringWidth(labelText) / 1000 * 14f;
+        boolean isLongLabel = labelWidth > boxWidth - 20;
+        
+        float currentY = yPosition;
+        
+        // ถ้า label ยาว → วางไว้บนหัวกรอบ
+        if (isLongLabel) {
+            float boxCenterX = boxX + (boxWidth / 2);
+            float longLabelX = boxCenterX - (labelWidth / 2);
+            drawText(contentStream, labelText, font, 14f, longLabelX, currentY);
+            currentY -= 25;
+        }
+        
+        float boxY = currentY - boxHeight;
+        
+        // วาดกรอบสีฟ้าประ (visual)
+        contentStream.setStrokingColor(0.4f, 0.7f, 0.9f);
+        contentStream.setLineDashPattern(new float[]{5, 3}, 0);
+        contentStream.setLineWidth(1.5f);
+        contentStream.addRect(boxX, boxY, boxWidth, boxHeight);
+        contentStream.stroke();
+        
+        // รีเซ็ตเส้นกลับเป็นปกติ
+        contentStream.setLineDashPattern(new float[]{}, 0);
+        contentStream.setStrokingColor(0, 0, 0);
+        
+        // ถ้า label สั้น → วางในกรอบ
+        if (!isLongLabel) {
+            float textX = boxX + (boxWidth - labelWidth) / 2;
+            float textY = boxY + (boxHeight / 2) - 5;
+            drawText(contentStream, labelText, font, 14f, textX, textY);
+        }
+        
+        // ===== สร้าง AcroForm Signature Field จริง =====
+        try {
+            PDAcroForm acroForm = document.getDocumentCatalog().getAcroForm();
+            if (acroForm == null) {
+                acroForm = new PDAcroForm(document);
+                document.getDocumentCatalog().setAcroForm(acroForm);
+            }
+            
+            String email = signer.getEmail() != null ? signer.getEmail() : "user" + index;
+            String fieldName = fieldPrefix + "_" + index + "_" + 
+                              email.replace("@", "_").replace(".", "_");
+            
+            PDSignatureField signatureField = new PDSignatureField(acroForm);
+            signatureField.setPartialName(fieldName);
+            
+            PDAnnotationWidget widget = signatureField.getWidgets().get(0);
+            PDRectangle rect = new PDRectangle(boxX, boxY, boxWidth, boxHeight);
+            widget.setRectangle(rect);
+            widget.setPage(page);
+            
+            // เพิ่ม widget เข้า page
+            page.getAnnotations().add(widget);
+            
+            acroForm.getFields().add(signatureField);
+            
+            log.debug("Created signature field: {} at ({}, {})", fieldName, boxX, boxY);
+            
+        } catch (Exception e) {
+            log.warn("Could not create AcroForm signature field: {}", e.getMessage());
+        }
+        
+        currentY = boxY - 15;
+        
+        // วาดชื่อผู้ลงนาม
+        String fullName = buildFullName(signer.getPrefixName(), signer.getFirstname(), signer.getLastname());
+        if (!fullName.isEmpty()) {
+            String nameText = "(" + fullName + ")";
+            float nameWidth = font.getStringWidth(nameText) / 1000 * 14f;
+            float nameX = boxX + (boxWidth - nameWidth) / 2;
+            drawText(contentStream, nameText, font, 14f, nameX, currentY);
+            currentY -= 20;
+        }
+        
+        // วาดตำแหน่ง
+        String positionName = signer.getPositionName();
+        if (positionName != null && !positionName.isEmpty()) {
+            float posWidth = font.getStringWidth(positionName) / 1000 * 12f;
+            float posX = boxX + (boxWidth - posWidth) / 2;
+            drawText(contentStream, positionName, font, 12f, posX, currentY);
+            currentY -= 25;
+        }
+        
+        return currentY;
     }
     
     // ============================================

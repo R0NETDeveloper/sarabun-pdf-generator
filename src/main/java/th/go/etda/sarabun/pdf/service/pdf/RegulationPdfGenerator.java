@@ -223,27 +223,27 @@ public class RegulationPdfGenerator extends PdfGeneratorBase {
                     yPosition = drawCenteredText(contentStream, announcementDate, fontRegular, FONT_SIZE_FIELD_VALUE, yPosition);
                 }
                 
-                // SECTION 8: ช่องลงนาม
+                // SECTION 8: ช่องลงนาม (เจาะ Signature Field จริง)
                 if (signers != null && !signers.isEmpty()) {
                     yPosition -= SPACING_BEFORE_SIGNATURES;
                     
-                    for (SignerInfo signer : signers) {
+                    PDPage currentPage = page; // track หน้าปัจจุบัน
+                    
+                    for (int i = 0; i < signers.size(); i++) {
+                        SignerInfo signer = signers.get(i);
                         float requiredHeight = 120f;
                         if (yPosition < MIN_Y_POSITION + requiredHeight) {
                             contentStream.close();
                             
-                            PDPage newPage = createNewPage(document, fontRegular, bookNo);
-                            contentStream = new PDPageContentStream(document, newPage, 
+                            currentPage = createNewPage(document, fontRegular, bookNo);
+                            contentStream = new PDPageContentStream(document, currentPage, 
                                     PDPageContentStream.AppendMode.APPEND, true);
                             yPosition = PAGE_HEIGHT - MARGIN_TOP - 50;
                         }
                         
-                        yPosition = drawSignerBox(contentStream, 
-                                                  signer.getPrefixName(),
-                                                  signer.getFirstname(),
-                                                  signer.getLastname(),
-                                                  signer.getPositionName(),
-                                                  fontRegular, yPosition);
+                        yPosition = drawSignerBoxWithSignatureField(document, currentPage, 
+                                                  contentStream, signer, fontRegular, yPosition,
+                                                  "Sign", i, "ช่องลงนาม");
                         yPosition -= SPACING_BETWEEN_SIGNATURES;
                     }
                 }

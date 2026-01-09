@@ -264,9 +264,11 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                     }
                 }
                 
-                // SECTION 8+9: ช่องลงนาม (รวม endDoc เป็น label บนกรอบ)
+                // SECTION 8+9: ช่องลงนาม (เจาะ Signature Field จริง + รวม endDoc เป็น label บนกรอบ)
                 if (signers != null && !signers.isEmpty()) {
                     yPosition -= SPACING_BEFORE_SIGNATURES;
+                    
+                    PDPage currentPage = page; // track หน้าปัจจุบัน
                     
                     for (int i = 0; i < signers.size(); i++) {
                         SignerInfo signer = signers.get(i);
@@ -280,8 +282,8 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                         if (yPosition < MIN_Y_POSITION + requiredHeight) {
                             contentStream.close();
                             
-                            PDPage newPage = createNewPage(document, fontRegular, bookNo);
-                            contentStream = new PDPageContentStream(document, newPage, 
+                            currentPage = createNewPage(document, fontRegular, bookNo);
+                            contentStream = new PDPageContentStream(document, currentPage, 
                                     PDPageContentStream.AppendMode.APPEND, true);
                             yPosition = PAGE_HEIGHT - MARGIN_TOP - 50;
                         }
@@ -292,12 +294,9 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                             boxLabel = endDoc;
                         }
                         
-                        yPosition = drawSignerBoxWithLabel(contentStream, 
-                                                  signer.getPrefixName(),
-                                                  signer.getFirstname(),
-                                                  signer.getLastname(),
-                                                  signer.getPositionName(),
-                                                  fontRegular, yPosition, boxLabel);
+                        yPosition = drawSignerBoxWithSignatureField(document, currentPage, 
+                                                  contentStream, signer, fontRegular, yPosition,
+                                                  "Sign", i, boxLabel);
                         yPosition -= SPACING_BETWEEN_SIGNATURES;
                     }
                 }
