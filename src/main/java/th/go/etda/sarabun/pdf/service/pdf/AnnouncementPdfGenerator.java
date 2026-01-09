@@ -1,6 +1,5 @@
 package th.go.etda.sarabun.pdf.service.pdf;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Component;
@@ -46,7 +45,6 @@ public class AnnouncementPdfGenerator extends PdfGeneratorBase {
         
         // TODO: Implement ตามรูปแบบเอกสารประกาศจริง
         
-        List<PdfResult> results = new ArrayList<>();
         
         throw new UnsupportedOperationException("AnnouncementPdfGenerator not fully implemented yet");
     }

@@ -154,11 +154,7 @@ public class GeneratePdfService {
                (request.getBookSubmited() != null && !request.getBookSubmited().isEmpty()) ||
                (request.getBookLearner() != null && !request.getBookLearner().isEmpty());
     }
-    
-    // BookNameId Constants (สำหรับ backward compatibility)
-    private static final String BOOK_NAME_ID_OUTGOING_LETTER = "90F72F0E-528D-4992-907A-F2C6B37AD9A5"; // หนังสือส่งออก
-    private static final String BOOK_NAME_ID_MEMO = "4B3EB169-6203-4A71-A3BD-A442FEAAA91F"; // บันทึกข้อความ
-    
+        
     /**
      * เพิ่มลายเซ็นให้กับ PDFs
      * 
