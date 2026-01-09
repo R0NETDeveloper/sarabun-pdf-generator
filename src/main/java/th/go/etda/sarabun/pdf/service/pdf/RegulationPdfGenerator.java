@@ -243,7 +243,7 @@ public class RegulationPdfGenerator extends PdfGeneratorBase {
                         
                         yPosition = drawSignerBoxWithSignatureField(document, currentPage, 
                                                   contentStream, signer, fontRegular, yPosition,
-                                                  "Sign", i, "ช่องลงนาม");
+                                                  "Sign", i, "เรียน");
                         yPosition -= SPACING_BETWEEN_SIGNATURES;
                     }
                 }
@@ -337,20 +337,21 @@ public class RegulationPdfGenerator extends PdfGeneratorBase {
     }
     
     /**
-     * สร้างรายการผู้ลงนามจาก request
+     * สร้างรายการผู้รับ (bookLearner) สำหรับเจาะช่องลงนามในหนังสือหลัก
+     * หมายเหตุ: หนังสือหลักใช้ bookLearner, Memo ใช้ bookSigned
      */
     private List<SignerInfo> buildSigners(GeneratePdfRequest request) {
         List<SignerInfo> signers = new ArrayList<>();
-        if (request.getBookSigned() != null && !request.getBookSigned().isEmpty()) {
-            for (var signer : request.getBookSigned()) {
+        if (request.getBookLearner() != null && !request.getBookLearner().isEmpty()) {
+            for (var learner : request.getBookLearner()) {
                 signers.add(SignerInfo.builder()
-                    .prefixName(signer.getPrefixName())
-                    .firstname(signer.getFirstname())
-                    .lastname(signer.getLastname())
-                    .positionName(signer.getPositionName())
-                    .departmentName(signer.getDepartmentName())
-                    .email(signer.getEmail())
-                    .signatureBase64(signer.getSignatureBase64())
+                    .prefixName(learner.getPrefixName())
+                    .firstname(learner.getFirstname())
+                    .lastname(learner.getLastname())
+                    .positionName(learner.getPositionName())
+                    .departmentName(learner.getDepartmentName())
+                    .email(learner.getEmail())
+                    .signatureBase64(learner.getSignatureBase64())
                     .build());
             }
         }

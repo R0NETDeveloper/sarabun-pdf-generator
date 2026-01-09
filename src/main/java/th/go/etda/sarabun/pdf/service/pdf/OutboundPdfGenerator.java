@@ -60,17 +60,146 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
     public List<PdfResult> generate(GeneratePdfRequest request) throws Exception {
         log.info("=== {} generating PDF ===", getGeneratorName());
         
-        List<PdfResult> results = new ArrayList<>();
+        List<String> allPdfsToMerge = new ArrayList<>();
+        List<String> recipientDescriptions = new ArrayList<>();
         
-        // 1. สร้าง PDF หนังสือส่งออก
-        String outboundPdfBase64 = generateOutboundPdf(request);
-        results.add(createMainPdfResult(outboundPdfBase64, "หนังสือส่งออก"));
+        // 1. สร้าง PDF หนังสือส่งออก แยกตามผู้รับแต่ละหน่วยงาน
+        if (request.getBookLearner() != null && !request.getBookLearner().isEmpty()) {
+            for (int i = 0; i < request.getBookLearner().size(); i++) {
+                GeneratePdfRequest.BookRelate recipient = request.getBookLearner().get(i);
+                
+                // สร้าง PDF สำหรับผู้รับแต่ละคน
+                String outboundPdfBase64 = generateOutboundPdfForRecipient(request, recipient);
+                allPdfsToMerge.add(outboundPdfBase64);
+                
+                String recipientName = buildRecipientName(recipient);
+                recipientDescriptions.add("หนังสือส่งออก ถึง " + recipientName);
+                
+                log.info("Generated outbound PDF {} for: {}", i + 1, recipientName);
+            }
+        } else {
+            // Fallback: ถ้าไม่มี bookLearner ให้สร้าง PDF เดียว
+            String outboundPdfBase64 = generateOutboundPdf(request);
+            allPdfsToMerge.add(outboundPdfBase64);
+            recipientDescriptions.add("หนังสือส่งออก");
+        }
         
-        // 2. สร้าง PDF บันทึกข้อความ (สำเนาเก็บ)
+        // 2. สร้าง PDF บันทึกข้อความ (สำเนาเก็บ) - แค่ 1 ฉบับ
         String memoPdfBase64 = memoPdfGenerator.generateMemoPdf(request);
-        results.add(createMemoPdfResult(memoPdfBase64, "บันทึกข้อความ (สำเนาเก็บ)"));
+        allPdfsToMerge.add(memoPdfBase64);
+        recipientDescriptions.add("บันทึกข้อความ (สำเนาเก็บ)");
+        
+        log.info("Total PDFs to merge: {} ({} outbound + 1 memo)", 
+                allPdfsToMerge.size(), allPdfsToMerge.size() - 1);
+        
+        // 3. รวมทุก PDF เป็น 1 ไฟล์
+        String mergedPdfBase64 = mergePdfFiles(allPdfsToMerge);
+        
+        // สร้าง description สรุป
+        String description = String.join(" + ", recipientDescriptions);
+        
+        log.info("Merged PDF created successfully: {}", description);
+        
+        // คืน PdfResult เดียว (รวมแล้ว)
+        List<PdfResult> results = new ArrayList<>();
+        results.add(createMainPdfResult(mergedPdfBase64, description));
         
         return results;
+    }
+    
+    /**
+     * สร้างชื่อผู้รับจาก BookRelate
+     */
+    private String buildRecipientName(GeneratePdfRequest.BookRelate recipient) {
+        // ใช้ชื่อองค์กรก่อน
+        if (recipient.getOrganizeName() != null && !recipient.getOrganizeName().isEmpty()) {
+            return recipient.getOrganizeName();
+        }
+        // ถ้าไม่มี ใช้ชื่อหน่วยงาน
+        if (recipient.getDepartmentName() != null && !recipient.getDepartmentName().isEmpty()) {
+            return recipient.getDepartmentName();
+        }
+        // ถ้าไม่มี ใช้ชื่อตำแหน่ง
+        if (recipient.getPositionName() != null && !recipient.getPositionName().isEmpty()) {
+            return recipient.getPositionName();
+        }
+        // Fallback
+        return "ผู้รับ";
+    }
+    
+    /**
+     * สร้าง ID ผู้รับจาก BookRelate
+     */
+    private String buildRecipientId(GeneratePdfRequest.BookRelate recipient) {
+        // ใช้ organizeId ก่อน
+        if (recipient.getOrganizeId() != null && !recipient.getOrganizeId().isEmpty()) {
+            return recipient.getOrganizeId();
+        }
+        // ถ้าไม่มี ใช้ departmentId
+        if (recipient.getDepartmentId() != null && !recipient.getDepartmentId().isEmpty()) {
+            return recipient.getDepartmentId();
+        }
+        // ถ้าไม่มี ใช้ personalId
+        if (recipient.getPersonalId() != null && !recipient.getPersonalId().isEmpty()) {
+            return recipient.getPersonalId();
+        }
+        // ถ้าไม่มี ใช้ relatedId
+        if (recipient.getRelatedId() != null && !recipient.getRelatedId().isEmpty()) {
+            return recipient.getRelatedId();
+        }
+        return null;
+    }
+    
+    /**
+     * สร้าง PDF หนังสือส่งออกสำหรับผู้รับเฉพาะราย
+     */
+    private String generateOutboundPdfForRecipient(GeneratePdfRequest request, 
+                                                    GeneratePdfRequest.BookRelate recipient) throws Exception {
+        // รวบรวมข้อมูล
+        String bookNo = request.getBookNo();
+        String address = request.getAddress() != null ? request.getAddress() : "";
+        String date = request.getDateThai();
+        String title = request.getBookTitle() != null ? request.getBookTitle() : "";
+        
+        // ใช้ข้อมูลผู้รับจาก recipient ที่ส่งเข้ามา
+        String recipients = recipient.getPositionName() != null ? recipient.getPositionName() : "";
+        String recipientsAddress = recipient.getDepartmentName() != null ? recipient.getDepartmentName() : "";
+        
+        // ถ้ามีชื่อองค์กร ให้ใช้เป็นที่อยู่แทน
+        if (recipient.getOrganizeName() != null && !recipient.getOrganizeName().isEmpty()) {
+            recipientsAddress = recipient.getOrganizeName();
+        }
+        
+        // รวบรวมอ้างถึง
+        String referTo = buildReferTo(request);
+        
+        // รวบรวมสิ่งที่ส่งมาด้วย
+        List<String> attachments = buildAttachments(request);
+        
+        // รวบรวมเนื้อหา
+        String content = buildContent(request);
+        
+        // สร้าง SignerInfo จาก recipient ที่ส่งเข้ามา (เฉพาะคนนี้คนเดียว)
+        List<SignerInfo> signers = new ArrayList<>();
+        signers.add(SignerInfo.builder()
+            .prefixName(recipient.getPrefixName())
+            .firstname(recipient.getFirstname())
+            .lastname(recipient.getLastname())
+            .positionName(recipient.getPositionName())
+            .departmentName(recipient.getDepartmentName())
+            .email(recipient.getEmail())
+            .signatureBase64(recipient.getSignatureBase64())
+            .build());
+        
+        // ข้อมูลติดต่อ
+        ContactInfo contactInfo = buildContactInfo(request);
+        
+        log.info("Generating outbound for recipient: {} - {}", recipients, recipientsAddress);
+        
+        return generatePdfInternal(bookNo, address, date, title, recipients, recipientsAddress,
+                                  referTo, attachments, content, signers,
+                                  request.getSalutation(), request.getSalutationEnding(), 
+                                  request.getEndDoc(), contactInfo);
     }
     
     /**
@@ -159,7 +288,7 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                 drawDebugBorders(contentStream);
                 
                 // SECTION 0: Logo ETDA (ขวาบน)
-                float logoBottomY = drawLogo(contentStream, document, yPosition, true);
+                float logoBottomY = drawLogo(contentStream, document, yPosition, LogoPosition.RIGHT);
                 
                 // SECTION 1: "ที่" (ซ้าย) + ที่อยู่สำนักงาน (ขวา)
                 yPosition = logoBottomY - 15;
@@ -288,8 +417,8 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                             yPosition = PAGE_HEIGHT - MARGIN_TOP - 50;
                         }
                         
-                        // กำหนด label: signer แรกใช้ endDoc, ที่เหลือใช้ "ช่องลงนาม"
-                        String boxLabel = "ช่องลงนาม";
+                        // กำหนด label: signer แรกใช้ endDoc, ที่เหลือใช้ "เรียน"
+                        String boxLabel = "เรียน";
                         if (i == 0 && endDoc != null && !endDoc.isEmpty()) {
                             boxLabel = endDoc;
                         }
@@ -398,18 +527,22 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
         return contentBuilder.toString().trim();
     }
     
+    /**
+     * สร้างรายการผู้รับ (bookLearner) สำหรับเจาะช่องลงนามในหนังสือหลัก
+     * หมายเหตุ: หนังสือหลักใช้ bookLearner, Memo ใช้ bookSigned
+     */
     private List<SignerInfo> buildSigners(GeneratePdfRequest request) {
         List<SignerInfo> signers = new ArrayList<>();
-        if (request.getBookSigned() != null && !request.getBookSigned().isEmpty()) {
-            for (var signer : request.getBookSigned()) {
+        if (request.getBookLearner() != null && !request.getBookLearner().isEmpty()) {
+            for (var learner : request.getBookLearner()) {
                 signers.add(SignerInfo.builder()
-                    .prefixName(signer.getPrefixName())
-                    .firstname(signer.getFirstname())
-                    .lastname(signer.getLastname())
-                    .positionName(signer.getPositionName())
-                    .departmentName(signer.getDepartmentName())
-                    .email(signer.getEmail())
-                    .signatureBase64(signer.getSignatureBase64())
+                    .prefixName(learner.getPrefixName())
+                    .firstname(learner.getFirstname())
+                    .lastname(learner.getLastname())
+                    .positionName(learner.getPositionName())
+                    .departmentName(learner.getDepartmentName())
+                    .email(learner.getEmail())
+                    .signatureBase64(learner.getSignatureBase64())
                     .build());
             }
         }

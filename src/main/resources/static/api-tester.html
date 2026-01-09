@@ -407,12 +407,12 @@
                         </div>
                         
                         <div class="sample-select">
-                            <label>⚙️ ตัวเลือกเพิ่มเติมปปปป:</label>
+                            <label>⚙️ ตัวเลือกเพิ่มเติม:</label>
                             <select id="sampleOptions" onchange="applyOptions()">
                                 <option value="basic">พื้นฐาน (ไม่มีลายเซ็น)</option>
-                                <option value="withSigned">+ ลงนาม (ต่อจากเนื้อหา)</option>
+                                <option value="withSigned">+ ลงนาม (สำหรับ Memo)</option>
                                 <option value="withSubmited">+ เสนอผ่าน (ขึ้นหน้าใหม่)</option>
-                                <option value="withLearner">+ เรียน (ขึ้นหน้าใหม่)</option>
+                                <option value="withLearner">+ ผู้รับหนังสือ (3 กระทรวง = 3 PDF)</option>
                                 <option value="urgent">+ ด่วนที่สุด</option>
                                 <option value="full">+ ครบทุกตัวเลือก</option>
                             </select>
@@ -531,6 +531,11 @@
                 bookContent: [
                     { bookContentTitle: "", bookContent: "        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์จะจัดการประชุมสัมมนาในหัวข้อ \"การพัฒนาระบบสารบรรณอิเล็กทรอนิกส์\" ในวันที่ 15 มกราคม 2569 ณ ห้องประชุมใหญ่ ชั้น 5\\n\\n        จึงเรียนมาเพื่อโปรดพิจารณาส่งผู้แทนเข้าร่วมประชุมสัมมนาดังกล่าวด้วย จะขอบคุณยิ่ง", nextPageStatus: false }
                 ],
+                bookLearner: [
+                    { relatedNo: "1", prefixName: "", firstname: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", lastname: "", positionName: "ปลัดกระทรวง", departmentName: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", email: "" },
+                    { relatedNo: "2", prefixName: "", firstname: "การท่องเที่ยวแห่งประเทศไทย", lastname: "", positionName: "ผู้ว่าการ", departmentName: "การท่องเที่ยวแห่งประเทศไทย", email: "" },
+                    { relatedNo: "3", prefixName: "", firstname: "สำนักงานคณะกรรมการดิจิทัลเพื่อเศรษฐกิจและสังคมแห่งชาติ", lastname: "", positionName: "เลขาธิการ", departmentName: "สำนักงานคณะกรรมการดิจิทัลฯ", email: "" }
+                ],
                 bookSigned: [
                     { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", email: "prasit@etda.or.th", signatureBase64: "" }
                 ]
@@ -545,7 +550,6 @@
                 year: "พ.ศ. 2569",
                 formatPdf: "A4",
                 bookContent: [
-                    { bookContentTitle: "เรื่อง", bookContent: "ว่าด้วยการปฏิบัติงานระบบสารบรรณอิเล็กทรอนิกส์", nextPageStatus: false },
                     { bookContentTitle: "", bookContent: "        โดยที่เป็นการสมควรกำหนดระเบียบว่าด้วยการปฏิบัติงานระบบสารบรรณอิเล็กทรอนิกส์\n\n        อาศัยอำนาจตามความในมาตรา 8 แห่งพระราชบัญญัติว่าด้วยธุรกรรมทางอิเล็กทรอนิกส์ พ.ศ. 2544 ผู้อำนวยการสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ออกระเบียบไว้ดังต่อไปนี้\n\n        ข้อ 1 ระเบียบนี้เรียกว่า \"ระเบียบสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ว่าด้วยการปฏิบัติงานระบบสารบรรณอิเล็กทรอนิกส์ พ.ศ. 2569\"\n\n        ข้อ 2 ระเบียบนี้ให้ใช้บังคับตั้งแต่วันถัดจากวันประกาศเป็นต้นไป", nextPageStatus: false }
                 ]
             },
@@ -559,7 +563,6 @@
                 year: "พ.ศ. 2569",
                 formatPdf: "A4",
                 bookContent: [
-                    { bookContentTitle: "เรื่อง", bookContent: "รับสมัครพนักงานตำแหน่งนักพัฒนาระบบ", nextPageStatus: false },
                     { bookContentTitle: "", bookContent: "        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์มีความประสงค์จะรับสมัครบุคคลเพื่อคัดเลือกเข้าเป็นพนักงาน ตำแหน่งนักพัฒนาระบบ จำนวน 2 อัตรา\n\n        1. คุณสมบัติของผู้สมัคร\n            1.1 สำเร็จการศึกษาระดับปริญญาตรีขึ้นไป สาขาวิทยาการคอมพิวเตอร์หรือสาขาที่เกี่ยวข้อง\n            1.2 มีประสบการณ์ในการพัฒนาระบบไม่น้อยกว่า 2 ปี\n\n        2. กำหนดการรับสมัคร\n            ตั้งแต่วันที่ 8 - 31 มกราคม 2569", nextPageStatus: false }
                 ]
             },
@@ -587,7 +590,6 @@
                 year: "พ.ศ. 2569",
                 formatPdf: "A4",
                 bookContent: [
-                    { bookContentTitle: "เรื่อง", bookContent: "ว่าด้วยจรรยาบรรณพนักงาน", nextPageStatus: false },
                     { bookContentTitle: "", bookContent: "        อาศัยอำนาจตามความในมาตรา 8 แห่งพระราชบัญญัติว่าด้วยธุรกรรมทางอิเล็กทรอนิกส์ พ.ศ. 2544 ผู้อำนวยการสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ออกข้อบังคับไว้ดังต่อไปนี้\n\n        ข้อ 1 ข้อบังคับนี้เรียกว่า \"ข้อบังคับสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ว่าด้วยจรรยาบรรณพนักงาน พ.ศ. 2569\"\n\n        ข้อ 2 พนักงานต้องปฏิบัติหน้าที่ด้วยความซื่อสัตย์สุจริต\n\n        ข้อ 3 พนักงานต้องรักษาความลับของทางราชการ", nextPageStatus: false }
                 ]
             },
@@ -608,7 +610,7 @@
         
         // ตัวเลือกเพิ่มเติม
         const optionsData = {
-            // ลงนาม - ต่อจากเนื้อหา (3 คน)
+            // ลงนาม (สำหรับ Memo) - ต่อจากเนื้อหา (3 คน)
             withSigned: {
                 bookSigned: [
                     { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", email: "prasit@etda.or.th", signatureBase64: "" },
@@ -624,13 +626,13 @@
                     { relatedNo: "3", prefixName: "นางสาว", firstname: "มาลี", lastname: "รับรอง", positionName: "รองผู้อำนวยการ", departmentName: "สำนักงานผู้อำนวยการ", email: "malee@etda.or.th" }
                 ]
             },
-            // ผู้เรียน/รับทราบ - ขึ้นหน้าใหม่ (4 คน)
+            // ผู้รับหนังสือ (เรียน) - สำหรับหนังสือภายนอก
+            // หลายกระทรวง = สร้างหลาย PDF (แต่ละ PDF มีผู้รับ 1 กระทรวง)
             withLearner: {
                 bookLearner: [
-                    { relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "หัวหน้าฝ่ายพัฒนา", departmentName: "กองพัฒนาระบบบริการ", email: "somchai@etda.or.th" },
-                    { relatedNo: "2", prefixName: "นางสาว", firstname: "วิไล", lastname: "สุขสำราญ", positionName: "นักวิเคราะห์ระบบ", departmentName: "กองพัฒนาระบบบริการ", email: "wilai@etda.or.th" },
-                    { relatedNo: "3", prefixName: "นาย", firstname: "ธนากร", lastname: "พัฒนาการ", positionName: "นักพัฒนาระบบ", departmentName: "กองเทคโนโลยีสารสนเทศ", email: "thanakorn@etda.or.th" },
-                    { relatedNo: "4", prefixName: "นาง", firstname: "จินตนา", lastname: "ทรัพย์สิน", positionName: "นักบัญชี", departmentName: "กองการเงิน", email: "jintana@etda.or.th" }
+                    { relatedNo: "1", prefixName: "", firstname: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", lastname: "", positionName: "ปลัดกระทรวง", departmentName: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", email: "" },
+                    { relatedNo: "2", prefixName: "", firstname: "การท่องเที่ยวแห่งประเทศไทย", lastname: "", positionName: "ผู้ว่าการ", departmentName: "การท่องเที่ยวแห่งประเทศไทย", email: "" },
+                    { relatedNo: "3", prefixName: "", firstname: "สำนักงานคณะกรรมการดิจิทัลเพื่อเศรษฐกิจและสังคมแห่งชาติ", lastname: "", positionName: "เลขาธิการ", departmentName: "สำนักงานคณะกรรมการดิจิทัลฯ", email: "" }
                 ]
             },
             // ด่วนที่สุด
@@ -638,7 +640,11 @@
                 speedLayer: "ด่วนที่สุด",
                 speedLayerId: "3"
             },
-            // ครบทุกตัวเลือก: ลงนาม 2 + เสนอผ่าน 2 + ผู้เรียน 3 + ด่วน
+            // ครบทุกตัวเลือก:
+            // - ลงนาม 2 คน (สำหรับ Memo)
+            // - เสนอผ่าน 2 คน
+            // - ผู้รับหนังสือ 3 กระทรวง (= 3 PDF)
+            // - ด่วนที่สุด
             full: {
                 bookSigned: [
                     { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", email: "prasit@etda.or.th", signatureBase64: "" },
@@ -649,9 +655,9 @@
                     { relatedNo: "2", prefixName: "นาง", firstname: "สมศรี", lastname: "ตรวจสอบ", positionName: "ผู้จัดการฝ่าย", departmentName: "กองพัฒนาระบบบริการ", email: "somsri@etda.or.th" }
                 ],
                 bookLearner: [
-                    { relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "หัวหน้าฝ่ายพัฒนา", departmentName: "กองพัฒนาระบบบริการ", email: "somchai@etda.or.th" },
-                    { relatedNo: "2", prefixName: "นางสาว", firstname: "วิไล", lastname: "สุขสำราญ", positionName: "นักวิเคราะห์ระบบ", departmentName: "กองพัฒนาระบบบริการ", email: "wilai@etda.or.th" },
-                    { relatedNo: "3", prefixName: "นาย", firstname: "ธนากร", lastname: "พัฒนาการ", positionName: "นักพัฒนาระบบ", departmentName: "กองเทคโนโลยีสารสนเทศ", email: "thanakorn@etda.or.th" }
+                    { relatedNo: "1", prefixName: "", firstname: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", lastname: "", positionName: "ปลัดกระทรวง", departmentName: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", email: "" },
+                    { relatedNo: "2", prefixName: "", firstname: "การท่องเที่ยวแห่งประเทศไทย", lastname: "", positionName: "ผู้ว่าการ", departmentName: "การท่องเที่ยวแห่งประเทศไทย", email: "" },
+                    { relatedNo: "3", prefixName: "", firstname: "สำนักงานคณะกรรมการดิจิทัลเพื่อเศรษฐกิจและสังคมแห่งชาติ", lastname: "", positionName: "เลขาธิการ", departmentName: "สำนักงานคณะกรรมการดิจิทัลฯ", email: "" }
                 ],
                 speedLayer: "ด่วนที่สุด",
                 speedLayerId: "3"

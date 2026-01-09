@@ -128,7 +128,7 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
                 drawDebugBorders(contentStream);
                 
                 // SECTION 0: Logo ETDA (ซ้ายบน)
-                drawLogo(contentStream, document, yPosition, false);
+                drawLogo(contentStream, document, yPosition, LogoPosition.LEFT);
                 yPosition -= LOGO_SPACING;
                 
                 // SECTION 1: หัวข้อ "บันทึกข้อความ"

@@ -36,4 +36,16 @@ public class PdfResult {
      * คำอธิบายของ PDF นี้
      */
     private String description;
+    
+    /**
+     * รหัสผู้รับ (ใช้กับหนังสือส่งออกที่มีหลายผู้รับ)
+     * อาจเป็น departmentId, organizeId, personalId
+     */
+    private String recipientId;
+    
+    /**
+     * ชื่อผู้รับ/หน่วยงาน (ใช้กับหนังสือส่งออกที่มีหลายผู้รับ)
+     * เช่น "กระทรวงการต่างประเทศ", "สำนักงานรัฐมนตรี"
+     */
+    private String recipientName;
 }

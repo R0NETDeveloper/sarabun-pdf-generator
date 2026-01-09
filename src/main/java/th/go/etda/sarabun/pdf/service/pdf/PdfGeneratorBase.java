@@ -1,5 +1,6 @@
 package th.go.etda.sarabun.pdf.service.pdf;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -7,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
+import org.apache.pdfbox.io.MemoryUsageSetting;
+import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -79,6 +82,19 @@ public abstract class PdfGeneratorBase {
     protected static final float LOGO_WIDTH = 120f;
     protected static final float LOGO_HEIGHT = 40f;
     protected static final float LOGO_SPACING = 30f;
+    
+    /**
+     * ตำแหน่งโลโก้บนหน้าเอกสาร
+     * 
+     * LEFT   - ซ้ายชิดขอบ (ใช้กับ: บันทึกข้อความ)
+     * CENTER - บนสุดกลาง (ใช้กับ: ประกาศ, ระเบียบ, ข้อบังคับ, คำสั่ง)
+     * RIGHT  - ขวาบนชิดขอบ (ใช้กับ: หนังสือส่งออก, หนังสือประทับตรา)
+     */
+    public enum LogoPosition {
+        LEFT,    // ซ้ายชิดขอบ: x = MARGIN_LEFT
+        CENTER,  // บนสุดกลาง: x = (PAGE_WIDTH - LOGO_WIDTH) / 2
+        RIGHT    // ขวาบนชิดขอบ: x = PAGE_WIDTH - MARGIN_RIGHT - LOGO_WIDTH
+    }
     
     // ============================================
     // Multi-page Settings
@@ -563,7 +579,7 @@ public abstract class PdfGeneratorBase {
      */
     protected void drawPageNumber(PDPageContentStream stream, int pageNumber, PDFont font) throws IOException {
         String thaiPageNumber = convertToThaiNumber(pageNumber);
-        String pageText = "-" + thaiPageNumber;
+        String pageText = "- " + thaiPageNumber + " -";
         
         float textWidth = font.getStringWidth(pageText) / 1000 * FONT_SIZE_CONTENT;
         float x = (PAGE_WIDTH - textWidth) / 2;
@@ -596,21 +612,35 @@ public abstract class PdfGeneratorBase {
     
     /**
      * โหลดและวาดโลโก้
+     * 
+     * @param contentStream PDPageContentStream
+     * @param document PDDocument
+     * @param yPosition ตำแหน่ง Y ปัจจุบัน
+     * @param position ตำแหน่งโลโก้ (LEFT, CENTER, RIGHT)
+     * @return ตำแหน่ง Y ใหม่ (ขอบล่างของโลโก้)
+     * 
+     * การปรับตำแหน่ง:
+     * - ปรับซ้าย/ขวา: เปลี่ยน LogoPosition (LEFT, CENTER, RIGHT)
+     * - ปรับขึ้น/ลง: เปลี่ยน yPosition ที่ส่งเข้ามา หรือ MARGIN_TOP
+     * - ปรับขนาด: เปลี่ยน LOGO_WIDTH, LOGO_HEIGHT
      */
-    protected float drawLogo(PDPageContentStream contentStream, PDDocument document, float yPosition, boolean rightAlign) throws IOException {
+    protected float drawLogo(PDPageContentStream contentStream, PDDocument document, float yPosition, LogoPosition position) throws IOException {
         try {
             InputStream logoStream = getClass().getClassLoader().getResourceAsStream("images/logoETDA.png");
             if (logoStream != null) {
                 PDImageXObject logoImage = PDImageXObject.createFromByteArray(
                     document, logoStream.readAllBytes(), "logo");
                 
-                float logoX = rightAlign 
-                    ? PAGE_WIDTH - MARGIN_RIGHT - LOGO_WIDTH  // ขวา
-                    : MARGIN_LEFT;  // ซ้าย
-                float logoY = yPosition - LOGO_HEIGHT;
+                // คำนวณตำแหน่ง X ตาม LogoPosition
+                float logoX = switch (position) {
+                    case LEFT   -> MARGIN_LEFT;                                    // ซ้ายชิดขอบ
+                    case CENTER -> (PAGE_WIDTH - LOGO_WIDTH) / 2;                  // กลาง
+                    case RIGHT  -> PAGE_WIDTH - MARGIN_RIGHT - LOGO_WIDTH + 5;     // ขวาชิดขอบ (+5 ขวา)
+                };
+                float logoY = yPosition - LOGO_HEIGHT + (position == LogoPosition.RIGHT ? 5: 0);  // RIGHT สูงขึ้น 5
                 
                 contentStream.drawImage(logoImage, logoX, logoY, LOGO_WIDTH, LOGO_HEIGHT);
-                log.info("Logo drawn at ({}, {})", logoX, logoY);
+                log.info("Logo drawn at ({}, {}) position={}", logoX, logoY, position);
                 logoStream.close();
                 
                 return logoY;
@@ -653,6 +683,40 @@ public abstract class PdfGeneratorBase {
             .type("Other")
             .description(description)
             .build();
+    }
+    
+    /**
+     * รวม PDF files หลายไฟล์เป็น 1 ไฟล์
+     * 
+     * ใช้ PDFMergerUtility + MemoryUsageSetting
+     * 
+     * @param base64Pdfs List ของ PDF ในรูปแบบ Base64
+     * @return PDF ที่รวมแล้วในรูปแบบ Base64
+     */
+    protected String mergePdfFiles(List<String> base64Pdfs) throws Exception {
+        if (base64Pdfs == null || base64Pdfs.isEmpty()) {
+            throw new IllegalArgumentException("PDF list is empty");
+        }
+        
+        if (base64Pdfs.size() == 1) {
+            return base64Pdfs.get(0);
+        }
+        
+        PDFMergerUtility merger = new PDFMergerUtility();
+        
+        for (String base64Pdf : base64Pdfs) {
+            byte[] pdfBytes = Base64.getDecoder().decode(base64Pdf);
+            merger.addSource(new ByteArrayInputStream(pdfBytes));
+        }
+        
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        merger.setDestinationStream(outputStream);
+        
+        // ใช้ MemoryUsageSetting ตาม migrateToJava.txt
+        merger.mergeDocuments(MemoryUsageSetting.setupMainMemoryOnly());
+        
+        log.info("Merged {} PDFs successfully", base64Pdfs.size());
+        return Base64.getEncoder().encodeToString(outputStream.toByteArray());
     }
     
     // ============================================
