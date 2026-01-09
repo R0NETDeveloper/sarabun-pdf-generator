@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import th.go.etda.sarabun.pdf.constant.BookType;
 import th.go.etda.sarabun.pdf.model.ApiResponse;
 import th.go.etda.sarabun.pdf.model.GeneratePdfRequest;
 import th.go.etda.sarabun.pdf.service.GeneratePdfService;
@@ -22,16 +23,21 @@ import th.go.etda.sarabun.pdf.service.GeneratePdfService;
 /**
  * PDF Generation REST API Controller
  * 
- * แปลงมาจาก: ETDA.SarabunMultitenant.Api/Controllers/GeneratePdfController.cs
- * 
- * การเปลี่ยนแปลง:
- * - ใช้ Spring MVC annotations (@RestController, @RequestMapping)
- * - ส่ง ResponseEntity สำหรับ HTTP status control
- * - ใช้ @CrossOrigin สำหรับ CORS (แทน [EnableCors] ใน .NET)
+ * รองรับ 9 ประเภทเอกสาร (ใช้ Factory Pattern):
+ * - Memo (บันทึกข้อความ)
+ * - Regulation (หนังสือระเบียบ)
+ * - Announcement (หนังสือประกาศ)
+ * - Order (หนังสือคำสั่ง)
+ * - Inbound (หนังสือรับเข้า)
+ * - Outbound (หนังสือส่งออก)
+ * - Stamp (หนังสือประทับตรา)
+ * - Ministry (หนังสือภายใต้กระทรวง)
+ * - Rule (หนังสือข้อบังคับ)
  * 
  * Endpoints:
  * - POST /api/pdf/preview - สร้าง PDF preview พร้อมลายเซ็น
  * - GET /api/pdf/health - Health check
+ * - GET /api/pdf/book-types - รายการประเภทเอกสารที่รองรับ
  * 
  * @author Migrated from .NET to Java
  */
@@ -45,7 +51,7 @@ public class GeneratePdfController {
     private final GeneratePdfService generatePdfService;
     
     /**
-     * สร้าง PDF Preview
+     * สร้าง PDF Preview (V1 - เดิม)
      * 
      * แปลงมาจาก: PreviewPDF() endpoint
      * 
@@ -100,6 +106,31 @@ public class GeneratePdfController {
     @GetMapping("/health")
     public ResponseEntity<ApiResponse<String>> health() {
         return ResponseEntity.ok(ApiResponse.success("PDF Service is running", "สถานะปกติ"));
+    }
+    
+    /**
+     * ดึงรายการประเภทเอกสารที่รองรับ
+     */
+    @GetMapping("/book-types")
+    public ResponseEntity<ApiResponse<java.util.List<BookTypeInfo>>> getBookTypes() {
+        java.util.List<BookTypeInfo> types = new java.util.ArrayList<>();
+        for (BookType type : BookType.values()) {
+            if (type != BookType.UNKNOWN) {
+                types.add(new BookTypeInfo(type.getId(), type.getCode(), type.getThaiName()));
+            }
+        }
+        return ResponseEntity.ok(ApiResponse.success(types, "รายการประเภทเอกสาร"));
+    }
+    
+    /**
+     * Inner class สำหรับข้อมูลประเภทเอกสาร
+     */
+    @lombok.Data
+    @lombok.AllArgsConstructor
+    public static class BookTypeInfo {
+        private String id;
+        private String code;
+        private String thaiName;
     }
     
     /**

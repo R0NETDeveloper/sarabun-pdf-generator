@@ -8,7 +8,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -18,32 +17,32 @@ import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import th.go.etda.sarabun.pdf.constant.BookType;
 import th.go.etda.sarabun.pdf.model.ApiResponse;
 import th.go.etda.sarabun.pdf.model.GeneratePdfRequest;
 import th.go.etda.sarabun.pdf.model.PdfResult;
-import th.go.etda.sarabun.pdf.util.HtmlUtils;
+import th.go.etda.sarabun.pdf.service.pdf.PdfGeneratorBase;
+import th.go.etda.sarabun.pdf.service.pdf.PdfGeneratorFactory;
 
 /**
- * PDF Generation Service
+ * PDF Generation Service - ใช้ Factory Pattern
  * 
- * แปลงมาจาก: ETDA.SarabunMultitenant.Service/GeneratePdfService.cs
+ * รองรับประเภทเอกสาร 9 ประเภท:
+ * - Memo (บันทึกข้อความ) - BB4A2F11-722D-449A-BCC5-22208C7A4DEC
+ * - Regulation (หนังสือระเบียบ) - 50792880-F85A-4343-9672-7B61AF828A5B
+ * - Announcement (หนังสือประกาศ) - 23065068-BB18-49EA-8CE7-22945E16CB6D
+ * - Order (หนังสือคำสั่ง) - 3FEDE42B-078A-4D2C-9B21-3EAD3E418F3D
+ * - Inbound (หนังสือรับเข้า) - 03241AA7-0E85-4C5C-A2CC-688212A79B84
+ * - Outbound (หนังสือส่งออก) - 90F72F0E-528D-4992-907A-F2C6B37AD9A5
+ * - Stamp (หนังสือประทับตรา) - AF3E7697-6F7E-4AD8-B76C-E2134DB98747
+ * - Ministry (หนังสือภายใต้กระทรวง) - 4B3EB169-6203-4A71-A3BD-A442FEAAA91F
+ * - Rule (หนังสือข้อบังคับ) - 4AB1EC00-9E5E-4113-B577-D8ED46BA7728
  * 
- * การเปลี่ยนแปลงสำคัญ:
- * 1. แทนที่ iText7/iTextSharp ด้วย Apache PDFBox 2.0.31 (ฟรี 100%, Apache License 2.0)
- * 2. ใช้ PDType0Font สำหรับโหลด Thai fonts (TH Sarabun)
- * 3. รองรับทั้ง Windows และ Linux
- * 4. ใช้ stream แทนการ save file ชั่วคราว (ตาม migrateToJava.txt Notes #6)
- * 5. ใช้ try-with-resources สำหรับ auto-close resources
- * 6. ใช้ PDFMergerUtility + MemoryUsageSetting (ตาม migrateToJava.txt Section 9.5)
- * 
- * ฟีเจอร์หลัก:
- * - สร้าง PDF หลักและรอง
- * - เพิ่มลายเซ็นอิเล็กทรอนิกส์
- * - รวม PDF หลายไฟล์
- * - รองรับ Thai fonts
- * - Base64 encoding/decoding
- * 
- * หมายเหตุ: ตาม migrateToJava.txt ต้องใช้ PDFBox 2.x เท่านั้น (ไม่ใช่ 3.x)
+ * ข้อดีของ Factory Pattern:
+ * 1. แยก concern ชัดเจน - แต่ละ Generator ดูแลเอกสารประเภทเดียว
+ * 2. ง่ายต่อการ maintain - แก้ไข 1 ประเภทไม่กระทบอื่น
+ * 3. ง่ายต่อการเพิ่มประเภทใหม่ - สร้าง Generator ใหม่แล้วลงทะเบียนใน Factory
+ * 4. ทดสอบง่าย - Unit test แยกกันได้
  * 
  * @author Migrated from .NET to Java
  */
@@ -53,6 +52,7 @@ import th.go.etda.sarabun.pdf.util.HtmlUtils;
 public class GeneratePdfService {
     
     private final PdfService pdfService;
+    private final PdfGeneratorFactory generatorFactory;
     
     // Constants จากโค้ดเดิม - BookNameId ที่ต้องจัดการพิเศษ
     private static final Set<String> SPECIAL_BOOK_NAME_IDS = Set.of(
@@ -75,47 +75,57 @@ public class GeneratePdfService {
     );
     
     /**
-     * สร้าง PDF Preview
-     * 
-     * แปลงมาจาก: PreviewPDF() method
+     * สร้าง PDF Preview - ใช้ Factory Pattern
      * 
      * ขั้นตอนการทำงาน:
-     * 1. สร้าง PDF array (หลัก + รอง)
-     * 2. เพิ่มลายเซ็น (ถ้าต้องการ)
-     * 3. รวม PDF ทั้งหมด
-     * 4. ส่งกลับเป็น Base64
+     * 1. ดึง Generator ที่เหมาะสมจาก Factory
+     * 2. สร้าง PDF array (หลัก + รอง)
+     * 3. เพิ่มลายเซ็น (ถ้าต้องการ)
+     * 4. รวม PDF ทั้งหมด
+     * 5. ส่งกลับเป็น Base64
      */
     public ApiResponse<String> previewPdf(GeneratePdfRequest request) {
         try {
-            log.info("Starting PDF generation for BookNameId: {}", request.getBookNameId());
+            String bookNameId = request.getBookNameId();
+            BookType bookType = BookType.fromId(bookNameId);
             
-            // 1. สร้าง PDF array
+            log.info("Starting PDF generation for BookNameId: {} ({})", bookNameId, bookType.getThaiName());
+            
+            // 1. ดึง Generator ที่เหมาะสมจาก Factory
+            PdfGeneratorBase generator = generatorFactory.getGenerator(bookType);
+            log.info("Using generator: {}", generator.getGeneratorName());
+            
+            // 2. สร้าง PDF array
             List<PdfResult> pdfArray;
             
-            if (!isSkipMainPdfGeneration(request.getBookNameId())) {
-                pdfArray = generatePdfArray(request);
-            } else {
-                // กรณีพิเศษ: เอกสารบันทึกข้อความรองอย่างเดียว
+            if (!bookType.requiresMainPdf()) {
+                // กรณีหนังสือรับเข้า - ไม่ต้องสร้าง PDF หลัก
                 pdfArray = new ArrayList<>();
                 pdfArray.add(PdfResult.builder()
                     .pdfBase64("")
                     .type("Other")
                     .description("บันทึกข้อความรอง")
                     .build());
+            } else {
+                // ใช้ Generator สร้าง PDF
+                pdfArray = generator.generate(request);
             }
             
-            // 2. เพิ่มลายเซ็น (ถ้ามี)
+            // 3. เพิ่มลายเซ็น (ถ้ามี)
             if (hasSignatureData(request)) {
                 log.info("Adding signatures to PDF");
                 pdfArray = addSignaturesToPdfs(pdfArray, request);
             }
             
-            // 3. รวม PDF
+            // 4. รวม PDF
             String finalPdfBase64 = mergePdfArray(pdfArray, request);
             
-            log.info("PDF generation completed successfully");
-            return ApiResponse.success(finalPdfBase64, "สร้าง PDF สำเร็จ");
+            log.info("PDF generation completed successfully using {}", generator.getGeneratorName());
+            return ApiResponse.success(finalPdfBase64, "สร้าง PDF สำเร็จ (" + bookType.getThaiName() + ")");
             
+        } catch (UnsupportedOperationException e) {
+            log.error("Unsupported document type: ", e);
+            return ApiResponse.error("ยังไม่รองรับประเภทเอกสารนี้: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error generating PDF: ", e);
             return ApiResponse.error("เกิดข้อผิดพลาดในการสร้าง PDF: " + e.getMessage());
@@ -123,11 +133,17 @@ public class GeneratePdfService {
     }
     
     /**
-     * ตรวจสอบว่าควรข้าม PDF หลักหรือไม่
+     * ดึงรายการประเภทเอกสารที่รองรับ
      */
-    private boolean isSkipMainPdfGeneration(String bookNameId) {
-        return "03241AA7-0E85-4C5C-A2CC-688212A79B84".equals(bookNameId) ||
-               "0BF965C9-095B-4B73-BAB4-A0BDADA6993D".equals(bookNameId);
+    public List<BookType> getSupportedBookTypes() {
+        return generatorFactory.getSupportedBookTypes();
+    }
+    
+    /**
+     * ตรวจสอบว่า BookNameId นี้รองรับหรือไม่
+     */
+    public boolean isSupported(String bookNameId) {
+        return generatorFactory.isSupported(bookNameId);
     }
     
     /**
@@ -139,370 +155,9 @@ public class GeneratePdfService {
                (request.getBookLearner() != null && !request.getBookLearner().isEmpty());
     }
     
-    // BookNameId Constants
+    // BookNameId Constants (สำหรับ backward compatibility)
     private static final String BOOK_NAME_ID_OUTGOING_LETTER = "90F72F0E-528D-4992-907A-F2C6B37AD9A5"; // หนังสือส่งออก
     private static final String BOOK_NAME_ID_MEMO = "4B3EB169-6203-4A71-A3BD-A442FEAAA91F"; // บันทึกข้อความ
-    
-    /**
-     * ตรวจสอบว่าเป็นหนังสือส่งออกหรือไม่
-     */
-    private boolean isOutgoingLetter(String bookNameId) {
-        return BOOK_NAME_ID_OUTGOING_LETTER.equalsIgnoreCase(bookNameId);
-    }
-    
-    /**
-     * สร้าง PDF array (อาจมีหลายไฟล์)
-     * 
-     * แปลงมาจาก: GeneratePdf() method
-     */
-    private List<PdfResult> generatePdfArray(GeneratePdfRequest request) throws Exception {
-        List<PdfResult> results = new ArrayList<>();
-        
-        String bookNameId = request.getBookNameId();
-        
-        // ตรวจสอบประเภทเอกสาร
-        if (isOutgoingLetter(bookNameId)) {
-            // หนังสือส่งออก + บันทึกข้อความ
-            log.info("Generating outgoing letter + memo PDF");
-            
-            // 1. สร้างหนังสือส่งออก
-            String outgoingPdfBase64 = generateOutgoingLetterPdf(request);
-            results.add(PdfResult.builder()
-                .pdfBase64(outgoingPdfBase64)
-                .type("Main")
-                .description("หนังสือส่งออก")
-                .build());
-            
-            // 2. สร้างบันทึกข้อความ (สำเนาเก็บ)
-            String memoPdfBase64 = generateMainPdf(request);
-            results.add(PdfResult.builder()
-                .pdfBase64(memoPdfBase64)
-                .type("Memo")
-                .description("บันทึกข้อความ (สำเนาเก็บ)")
-                .build());
-        } else {
-            // บันทึกข้อความ (ปกติ)
-            String mainPdfBase64 = generateMainPdf(request);
-            results.add(PdfResult.builder()
-                .pdfBase64(mainPdfBase64)
-                .type("Main")
-                .description("หนังสือบันทึกข้อความหลัก")
-                .build());
-        }
-        
-        // สร้าง PDF รอง (ถ้ามี)
-        if (needsSecondaryPdfs(request)) {
-            List<PdfResult> secondaryPdfs = generateSecondaryPdfs(request);
-            results.addAll(secondaryPdfs);
-        }
-        
-        return results;
-    }
-    
-    /**
-     * สร้าง PDF หนังสือส่งออก
-     */
-    private String generateOutgoingLetterPdf(GeneratePdfRequest request) throws Exception {
-        log.debug("Generating outgoing letter PDF");
-        
-        // รวบรวมที่อยู่สำนักงาน
-        String address = request.getAddress() != null ? request.getAddress() : "";
-        
-        // รวบรวมรายชื่อผู้รับ (บรรทัดแรก: ชื่อหน่วยงาน)
-        String recipients = "";
-        // รวบรวมที่อยู่ผู้รับ (บรรทัดที่สอง: ที่อยู่หน่วยงาน)
-        String recipientsAddress = "";
-        
-        if (request.getRecipients() != null && !request.getRecipients().isEmpty()) {
-            recipients = request.getRecipients();
-        } else if (request.getBookLearner() != null && !request.getBookLearner().isEmpty()) {
-            // ใช้ข้อมูลจาก bookLearner
-            var firstLearner = request.getBookLearner().get(0);
-            if (firstLearner.getPositionName() != null) {
-                recipients = firstLearner.getPositionName();
-            }
-            if (firstLearner.getDepartmentName() != null) {
-                recipientsAddress = firstLearner.getDepartmentName();
-            }
-        }
-        
-        // รวบรวมอ้างถึง
-        String referTo = "";
-        if (request.getBookReferTo() != null && !request.getBookReferTo().isEmpty()) {
-            referTo = request.getBookReferTo().stream()
-                .map(ref -> {
-                    StringBuilder sb = new StringBuilder();
-                    if (ref.getBookReferToName() != null) {
-                        sb.append(ref.getBookReferToName());
-                    }
-                    if (ref.getBookReferToNo() != null && !ref.getBookReferToNo().isEmpty()) {
-                        sb.append(" ที่ ").append(ref.getBookReferToNo());
-                    }
-                    if (ref.getCreateDate() != null) {
-                        sb.append(" ลงวันที่ ").append(formatThaiDate(ref.getCreateDate()));
-                    }
-                    return sb.toString();
-                })
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.joining("\n"));
-        }
-        
-        // รวบรวมสิ่งที่ส่งมาด้วย
-        List<String> attachments = new ArrayList<>();
-        if (request.getAttachment() != null && !request.getAttachment().isEmpty()) {
-            for (var attach : request.getAttachment()) {
-                String attachName = attach.getName() != null ? attach.getName() : "";
-                String attachRemark = attach.getRemark() != null ? " (" + attach.getRemark() + ")" : "";
-                attachments.add(attachName + attachRemark);
-            }
-        }
-        
-        // รวบรวมเนื้อหา
-        StringBuilder contentBuilder = new StringBuilder();
-        if (request.getBookContent() != null && !request.getBookContent().isEmpty()) {
-            for (var item : request.getBookContent()) {
-                if (item.getBookContentTitle() != null && !item.getBookContentTitle().isEmpty()) {
-                    String title_text = HtmlUtils.isHtml(item.getBookContentTitle()) 
-                        ? HtmlUtils.htmlToPlainText(item.getBookContentTitle())
-                        : item.getBookContentTitle();
-                    contentBuilder.append(title_text).append("  ");
-                }
-                if (item.getBookContent() != null && !item.getBookContent().isEmpty()) {
-                    String content_text = HtmlUtils.isHtml(item.getBookContent())
-                        ? HtmlUtils.htmlToPlainText(item.getBookContent())
-                        : item.getBookContent();
-                    contentBuilder.append(content_text);
-                }
-                contentBuilder.append("\n\n");
-            }
-        }
-        String content = contentBuilder.toString().trim();
-        
-        // รวบรวมผู้ลงนาม
-        List<PdfService.SignerInfo> signers = new ArrayList<>();
-        if (request.getBookSigned() != null && !request.getBookSigned().isEmpty()) {
-            for (var signer : request.getBookSigned()) {
-                signers.add(PdfService.SignerInfo.builder()
-                    .prefixName(signer.getPrefixName())
-                    .firstname(signer.getFirstname())
-                    .lastname(signer.getLastname())
-                    .positionName(signer.getPositionName())
-                    .departmentName(signer.getDepartmentName())
-                    .email(signer.getEmail())
-                    .signatureBase64(signer.getSignatureBase64())
-                    .build());
-            }
-        }
-        
-        log.info("generateOutgoingLetterPdf - bookNo: {}, title: {}, content length: {}", 
-                request.getBookNo(), request.getBookTitle(), content.length());
-        log.info("generateOutgoingLetterPdf - salutation: {}, salutationEnding: {}, endDoc: {}",
-                request.getSalutation(), request.getSalutationEnding(), request.getEndDoc());
-        
-        // ดึงข้อมูลติดต่อ
-        String contactDepartment = request.getDepartment();
-        String contactPhone = null;
-        String contactFax = null;
-        String contactEmail = null;
-        
-        // แยกข้อมูลจาก contact field (ถ้ามี)
-        if (request.getContact() != null && !request.getContact().isEmpty()) {
-            String[] contactLines = request.getContact().split("\n");
-            for (String line : contactLines) {
-                line = line.trim();
-                if (line.startsWith("เลขหมาย") || line.startsWith("โทร.") || line.startsWith("โทรศัพท์")) {
-                    contactPhone = line.replaceFirst("^(เลขหมาย|โทร\\.|โทรศัพท์)\\s*", "");
-                } else if (line.startsWith("โทรสาร") || line.startsWith("แฟกซ์")) {
-                    contactFax = line.replaceFirst("^(โทรสาร|แฟกซ์)\\s*", "");
-                } else if (line.startsWith("อีเมล") || line.contains("@")) {
-                    contactEmail = line.replaceFirst("^อีเมล\\s*", "");
-                }
-            }
-        }
-        
-        return pdfService.generateOutgoingLetterPdf(
-            request.getBookNo(),
-            address,
-            request.getDateThai(),
-            request.getBookTitle() != null ? request.getBookTitle() : "",
-            recipients,
-            recipientsAddress,  // เพิ่ม parameter นี้
-            referTo,
-            attachments,
-            content,
-            request.getSpeedLayer(),
-            signers,
-            request.getSalutation(),       // คำขึ้นต้น (เช่น "ขอประทานกราบทูล")
-            request.getSalutationEnding(), // คำลงท้ายขึ้นต้น (เช่น "เรียนถึงคนนั้น")
-            request.getEndDoc(),           // ข้อความท้ายเอกสาร (เช่น "ขอแสดงความนับถือ")
-            contactDepartment,             // ชื่อหน่วยงาน
-            contactPhone,                  // เลขหมายโทรศัพท์
-            contactFax,                    // เลขหมายโทรสาร
-            contactEmail                   // อีเมล
-        );
-    }
-    
-    /**
-     * แปลง LocalDateTime เป็นวันที่ไทย
-     */
-    private String formatThaiDate(java.time.LocalDateTime dateTime) {
-        if (dateTime == null) return "";
-        int day = dateTime.getDayOfMonth();
-        int month = dateTime.getMonthValue();
-        int year = dateTime.getYear() + 543; // แปลงเป็น พ.ศ.
-        return pdfService.toThaiDate(day, month, year);
-    }
-    
-    /**
-     * ตรวจสอบว่าต้องการ PDF รองหรือไม่
-     * หมายเหตุ: หนังสือส่งออก (90F72F0E...) ไม่ต้องสร้าง secondary PDFs 
-     * เพราะบันทึกข้อความถูกสร้างใน generatePdfArray แล้ว
-     */
-    private boolean needsSecondaryPdfs(GeneratePdfRequest request) {
-        String bookNameId = request.getBookNameId();
-        
-        // หนังสือส่งออกไม่ต้องสร้าง secondary PDFs (บันทึกข้อความถูกรวมใน Main flow แล้ว)
-        if (isOutgoingLetter(bookNameId)) {
-            return false;
-        }
-        
-        return ("C2905724-04D3-46AF-81EA-BF3045A59BF2".equals(bookNameId)) &&
-               request.getSubDetail() != null &&
-               request.getSubDetail().getSubDetailLearner() != null &&
-               !request.getSubDetail().getSubDetailLearner().isEmpty();
-    }
-    
-    /**
-     * สร้าง PDF หลัก
-     */
-    private String generateMainPdf(GeneratePdfRequest request) throws Exception {
-        log.debug("Generating main PDF");
-        
-        // รวบรวมข้อมูลสำหรับสร้าง PDF
-        String govName = request.getDivisionName() != null ? request.getDivisionName() : 
-                        (request.getDepartment() != null ? request.getDepartment() : "");
-        String dateThai = request.getDateThai();
-        String title = request.getBookTitle() != null ? request.getBookTitle() : "";
-        
-        // รวบรวมรายชื่อผู้รับ
-        String recipients = "";
-        // ลื่องแรก: ใช้จาก recipients โดยตรง (ถ้ามี)
-        if (request.getRecipients() != null && !request.getRecipients().isEmpty()) {
-            recipients = request.getRecipients();
-        }
-        // ลื่องสำรอง: ดึงจาก bookLearner (เพื่อ backward compatibility)
-        else if (request.getBookLearner() != null && !request.getBookLearner().isEmpty()) {
-            recipients = request.getBookLearner().stream()
-                .map(l -> l.getPositionName())
-                .filter(Objects::nonNull)
-                .filter(name -> !name.isEmpty())
-                .collect(Collectors.joining("\n"));
-        }
-        
-        // รวบรวมเนื้อหาทั้งหมด (รวม title และ content ของแต่ละรายการ)
-        StringBuilder contentBuilder = new StringBuilder();
-        if (request.getBookContent() != null && !request.getBookContent().isEmpty()) {
-            for (var item : request.getBookContent()) {
-                // เพิ่ม title (ถ้ามี) - แปลง HTML เป็น text
-                if (item.getBookContentTitle() != null && !item.getBookContentTitle().isEmpty()) {
-                    String title_text = HtmlUtils.isHtml(item.getBookContentTitle()) 
-                        ? HtmlUtils.htmlToPlainText(item.getBookContentTitle())
-                        : item.getBookContentTitle();
-                    contentBuilder.append(title_text).append("  ");
-                }
-                // เพิ่ม content - แปลง HTML เป็น text (ถ้ามาจาก editor)
-                if (item.getBookContent() != null && !item.getBookContent().isEmpty()) {
-                    String content_text = HtmlUtils.isHtml(item.getBookContent())
-                        ? HtmlUtils.htmlToPlainText(item.getBookContent())
-                        : item.getBookContent();
-                    contentBuilder.append(content_text);
-                }
-                contentBuilder.append("\n\n");
-            }
-        }
-        String content = contentBuilder.toString().trim();
-        
-        log.info("generateMainPdf - govName: {}, title: {}, content length: {}", 
-                govName, title, content.length());
-        
-        // รวบรวมผู้ลงนาม (ถ้ามี) - แปลงเป็น SignerInfo
-        List<PdfService.SignerInfo> signers = new ArrayList<>();
-        if (request.getBookSigned() != null && !request.getBookSigned().isEmpty()) {
-            for (var signer : request.getBookSigned()) {
-                signers.add(PdfService.SignerInfo.builder()
-                    .prefixName(signer.getPrefixName())
-                    .firstname(signer.getFirstname())
-                    .lastname(signer.getLastname())
-                    .positionName(signer.getPositionName())
-                    .departmentName(signer.getDepartmentName())
-                    .email(signer.getEmail())
-                    .signatureBase64(signer.getSignatureBase64())
-                    .build());
-            }
-        }
-        
-        // เรียก PdfService สร้าง PDF
-        return pdfService.generateOfficialMemoPdf(
-            govName,
-            dateThai,
-            request.getBookNo(),  // เพิ่ม bookNo
-            title,
-            recipients,
-            content,
-            request.getSpeedLayer(),
-            request.getFormatPdf(),
-            signers,
-            null  // signatureImagePaths - ไม่มีรูปภาพในการเรียกปกติ
-        );
-    }
-    
-    /**
-     * สร้าง PDF รอง (สำหรับบันทึกข้อความรอง)
-     */
-    private List<PdfResult> generateSecondaryPdfs(GeneratePdfRequest request) throws Exception {
-        log.debug("Generating secondary PDFs");
-        
-        List<PdfResult> results = new ArrayList<>();
-        
-        if (request.getSubDetail() != null && 
-            request.getSubDetail().getSubDetailLearner() != null) {
-            
-            int index = 0;
-            for (var learner : request.getSubDetail().getSubDetailLearner()) {
-                String secondaryPdf = generateSecondaryPdf(request, learner, index);
-                results.add(PdfResult.builder()
-                    .pdfBase64(secondaryPdf)
-                    .type("Other")
-                    .description("บันทึกข้อความรอง " + (index + 1))
-                    .build());
-                index++;
-            }
-        }
-        
-        return results;
-    }
-    
-    /**
-     * สร้าง PDF รองแต่ละฉบับ
-     */
-    private String generateSecondaryPdf(GeneratePdfRequest request, 
-                                       GeneratePdfRequest.SubDetailLearner learner,
-                                       int index) throws Exception {
-        // Implementation สำหรับสร้าง PDF รอง
-        // ใช้ PdfService เหมือนกับ main PDF
-        return pdfService.generateOfficialMemoPdf(
-            request.getSubDetail() != null ? "สำนักงาน" : "",
-            request.getDateThai(),
-            "",  // bookNo สำหรับ PDF รอง
-            "บันทึกข้อความรอง",
-            learner.getDetail(),
-            "",
-            request.getSpeedLayerOther(),
-            request.getFormatPdf(),
-            new ArrayList<PdfService.SignerInfo>(),  // PDF รองไม่มีผู้ลงนาม
-            null  // signatureImagePaths - ไม่มีรูปภาพสำหรับ PDF รอง
-        );
-    }
     
     /**
      * เพิ่มลายเซ็นให้กับ PDFs
