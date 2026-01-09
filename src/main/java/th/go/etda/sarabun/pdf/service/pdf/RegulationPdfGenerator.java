@@ -2,8 +2,6 @@ package th.go.etda.sarabun.pdf.service.pdf;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -168,21 +166,21 @@ public class RegulationPdfGenerator extends PdfGeneratorBase {
                 
                 // SECTION 1: หัวข้อ "ระเบียบคณะกรรมการ..."
                 String headerText = "ระเบียบ" + (govName != null && !govName.isEmpty() ? govName : "");
-                yPosition = drawCenteredText(contentStream, headerText, fontBold, FONT_SIZE_HEADER, yPosition);
+                yPosition = drawCenteredText(contentStream, headerText, fontBold, FONT_SIZE_HEADER, yPosition-10);
                 yPosition -= 5;
                 
                 // SECTION 2: "ว่าด้วย {{เรื่อง}}"
-                String subjectText = "ว่าด้วย " + (title != null && !title.isEmpty() ? title : "{{เรื่องงง}}");
+                String subjectText = "ว่าด้วย " + (title != null && !title.isEmpty() ? title : " {{เรื่องงง}}");
                 yPosition = drawCenteredText(contentStream, subjectText, fontRegular, FONT_SIZE_FIELD_VALUE, yPosition);
                 yPosition -= 5;
                 
                 // SECTION 3: "ฉบับที่ {{ฉบับที่}}"
-                String editionText = "ฉบับที่" + (edition != null && !edition.isEmpty() ? edition : "{{ฉบับที่}}");
+                String editionText = "ฉบับที่" + (edition != null && !edition.isEmpty() ? edition : " {{ฉบับที่}}");
                 yPosition = drawCenteredText(contentStream, editionText, fontRegular, FONT_SIZE_FIELD_VALUE, yPosition);
                 yPosition -= 5;
                 
                 // SECTION 4: "พ.ศ. {{ปี}}"
-                String yearText = "พ.ศ." + (year != null && !year.isEmpty() ? " " + year : "");
+                String yearText = "พ.ศ." + (year != null && !year.isEmpty() ? " " + convertToThaiDate(year) : "");
                 yPosition = drawCenteredText(contentStream, yearText, fontRegular, FONT_SIZE_FIELD_VALUE, yPosition);
                 yPosition -= 10;
                 
