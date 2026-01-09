@@ -2,13 +2,22 @@ package th.go.etda.sarabun.pdf.service.pdf;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.springframework.stereotype.Component;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import th.go.etda.sarabun.pdf.constant.BookType;
 import th.go.etda.sarabun.pdf.model.GeneratePdfRequest;
 import th.go.etda.sarabun.pdf.model.PdfResult;
+import th.go.etda.sarabun.pdf.util.HtmlUtils;
 
 /**
  * Generator สำหรับ หนังสือระเบียบ (Regulation)
@@ -16,17 +25,24 @@ import th.go.etda.sarabun.pdf.model.PdfResult;
  * BookNameId: 50792880-F85A-4343-9672-7B61AF828A5B
  * 
  * โครงสร้างเอกสาร:
- * - โลโก้ ETDA
- * - หัวข้อ "ระเบียบ"
- * - ชื่อระเบียบ
- * - เนื้อหา (ข้อ 1, 2, 3...)
+ * - โลโก้ ETDA (ตรงกลางบน)
+ * - หัวข้อ "ระเบียบคณะกรรมการ..." (ตรงกลาง)
+ * - "ว่าด้วย {{เรื่อง}}" (ตรงกลาง)
+ * - "ฉบับที่ {{ฉบับที่}}" (ตรงกลาง)
+ * - "พ.ศ. {{ปี}}" (ตรงกลาง)
+ * - เส้นขีดใต้
+ * - เนื้อหา
+ * - "ประกาศ ณ วันที่ ..." 
  * - ลายเซ็น
  * 
- * TODO: Implement ตามรูปแบบเอกสารจริง
+ * หมายเหตุ: หนังสือระเบียบจะสร้างบันทึกข้อความ (Memo) พ่วงด้วยเสมอ
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class RegulationPdfGenerator extends PdfGeneratorBase {
+    
+    private final MemoPdfGenerator memoPdfGenerator;
     
     @Override
     public BookType getBookType() {
@@ -41,25 +57,305 @@ public class RegulationPdfGenerator extends PdfGeneratorBase {
     @Override
     public List<PdfResult> generate(GeneratePdfRequest request) throws Exception {
         log.info("=== {} generating PDF ===", getGeneratorName());
-        log.warn("RegulationPdfGenerator not fully implemented yet, using default memo format");
-        
-        // TODO: Implement ตามรูปแบบเอกสารระเบียบจริง
-        // ปัจจุบันใช้รูปแบบบันทึกข้อความก่อน
         
         List<PdfResult> results = new ArrayList<>();
         
-        // Placeholder - ใช้รูปแบบ Memo ก่อน
-        String pdfBase64 = generatePlaceholderPdf(request, "หนังสือระเบียบ");
-        results.add(createMainPdfResult(pdfBase64, "หนังสือระเบียบ"));
+        // 1. สร้าง PDF หนังสือระเบียบ
+        String regulationPdfBase64 = generateRegulationPdf(request);
+        results.add(createMainPdfResult(regulationPdfBase64, "หนังสือระเบียบ"));
+        
+        // 2. สร้าง PDF บันทึกข้อความ (สำเนาเก็บ)
+        String memoPdfBase64 = memoPdfGenerator.generateMemoPdf(request);
+        results.add(createMemoPdfResult(memoPdfBase64, "บันทึกข้อความ (สำเนาเก็บ)"));
         
         return results;
     }
     
     /**
-     * สร้าง PDF แบบ placeholder (ใช้รูปแบบ Memo ก่อน)
+     * สร้าง PDF หนังสือระเบียบ
      */
-    private String generatePlaceholderPdf(GeneratePdfRequest request, String documentType) throws Exception {
-        // TODO: Implement ตามรูปแบบเอกสารจริง
-        throw new UnsupportedOperationException("RegulationPdfGenerator not fully implemented yet. DocumentType: " + documentType);
+    public String generateRegulationPdf(GeneratePdfRequest request) throws Exception {
+        // รวบรวมข้อมูล
+        String govName = request.getDepartment() != null ? request.getDepartment() : 
+                        (request.getDivisionName() != null ? request.getDivisionName() : "");
+        String title = request.getBookTitle() != null ? request.getBookTitle() : "";
+        String bookNo = request.getBookNo();
+        String dateThai = request.getDateThai();
+        
+        // ดึง edition (ฉบับที่) และ year (พ.ศ.) จาก bookNo หรือ subDetail
+        String edition = extractEdition(request);
+        String year = extractYear(request, dateThai);
+        
+        // รวบรวมเนื้อหา
+        String content = buildContent(request);
+        
+        // รวบรวมผู้ลงนาม
+        List<SignerInfo> signers = buildSigners(request);
+        
+        log.info("Generating regulation - govName: {}, title: {}, edition: {}, year: {}, content length: {}", 
+                govName, title, edition, year, content.length());
+        
+        return generatePdfInternal(govName, title, edition, year, dateThai, content, signers, bookNo);
+    }
+    
+    /**
+     * ดึงฉบับที่ จาก request
+     */
+    private String extractEdition(GeneratePdfRequest request) {
+        // ลองดึงจาก subDetail.docNo ก่อน
+        if (request.getSubDetail() != null && request.getSubDetail().getDocNo() != null 
+            && !request.getSubDetail().getDocNo().isEmpty()) {
+            return request.getSubDetail().getDocNo();
+        }
+        // ถ้าไม่มี return placeholder
+        return "{{ฉบับที่}}";
+    }
+    
+    /**
+     * ดึงปี พ.ศ. จาก dateThai
+     */
+    private String extractYear(GeneratePdfRequest request, String dateThai) {
+        if (dateThai != null && !dateThai.isEmpty()) {
+            // หาปี พ.ศ. จากวันที่ไทย เช่น "8 มกราคม พ.ศ. 2569"
+            String[] parts = dateThai.split("\\s+");
+            if (parts.length >= 3) {
+                String lastPart = parts[parts.length - 1];
+                // ลองแปลงเป็นตัวเลข
+                try {
+                    Integer.parseInt(lastPart);
+                    return lastPart;
+                } catch (NumberFormatException e) {
+                    // ไม่ใช่ตัวเลข ลองหาจาก pattern อื่น
+                }
+            }
+        }
+        return "";
+    }
+    
+    /**
+     * สร้าง PDF ภายใน
+     */
+    private String generatePdfInternal(String govName,
+                                       String title,
+                                       String edition,
+                                       String year,
+                                       String dateThai,
+                                       String content,
+                                       List<SignerInfo> signers,
+                                       String bookNo) throws Exception {
+        log.info("=== Generating regulation PDF internal ===");
+        
+        try (PDDocument document = new PDDocument()) {
+            PDPage page = new PDPage(PDRectangle.A4);
+            document.addPage(page);
+            
+            PDFont fontRegular = loadRegularFont(document);
+            PDFont fontBold = loadBoldFont(document);
+            
+            PDPageContentStream contentStream = new PDPageContentStream(document, page);
+            try {
+                float yPosition = PAGE_HEIGHT - MARGIN_TOP;
+                
+                // วาดเลขที่หนังสือ (ขอบล่างซ้าย)
+                drawBookNumber(contentStream, bookNo, fontRegular);
+                
+                // วาด debug borders
+                drawDebugBorders(contentStream);
+                
+                // SECTION 0: Logo ETDA (ตรงกลางบน)
+                float logoBottomY = drawLogoCentered(contentStream, document, yPosition);
+                yPosition = logoBottomY - 15;
+                
+                // SECTION 1: หัวข้อ "ระเบียบคณะกรรมการ..."
+                String headerText = "ระเบียบ" + (govName != null && !govName.isEmpty() ? govName : "");
+                yPosition = drawCenteredText(contentStream, headerText, fontBold, FONT_SIZE_HEADER, yPosition);
+                yPosition -= 5;
+                
+                // SECTION 2: "ว่าด้วย {{เรื่อง}}"
+                String subjectText = "ว่าด้วย " + (title != null && !title.isEmpty() ? title : "{{เรื่องงง}}");
+                yPosition = drawCenteredText(contentStream, subjectText, fontRegular, FONT_SIZE_FIELD_VALUE, yPosition);
+                yPosition -= 5;
+                
+                // SECTION 3: "ฉบับที่ {{ฉบับที่}}"
+                String editionText = "ฉบับที่" + (edition != null && !edition.isEmpty() ? edition : "{{ฉบับที่}}");
+                yPosition = drawCenteredText(contentStream, editionText, fontRegular, FONT_SIZE_FIELD_VALUE, yPosition);
+                yPosition -= 5;
+                
+                // SECTION 4: "พ.ศ. {{ปี}}"
+                String yearText = "พ.ศ." + (year != null && !year.isEmpty() ? " " + year : "");
+                yPosition = drawCenteredText(contentStream, yearText, fontRegular, FONT_SIZE_FIELD_VALUE, yPosition);
+                yPosition -= 10;
+                
+                // SECTION 5: เส้นขีดใต้ (ตรงกลาง)
+                float lineWidth = 150;
+                float lineStartX = (PAGE_WIDTH - lineWidth) / 2;
+                contentStream.setLineWidth(0.5f);
+                contentStream.moveTo(lineStartX, yPosition);
+                contentStream.lineTo(lineStartX + lineWidth, yPosition);
+                contentStream.stroke();
+                yPosition -= 20;
+                
+                // SECTION 6: เนื้อหา
+                if (content != null && !content.isEmpty()) {
+                    yPosition -= SPACING_BEFORE_CONTENT;
+                    
+                    String[] lines = content.split("\n");
+                    
+                    for (String line : lines) {
+                        if (yPosition < MIN_Y_POSITION) {
+                            contentStream.close();
+                            
+                            PDPage newPage = createNewPage(document, fontRegular, bookNo);
+                            contentStream = new PDPageContentStream(document, newPage, 
+                                    PDPageContentStream.AppendMode.APPEND, true);
+                            yPosition = PAGE_HEIGHT - MARGIN_TOP - 50;
+                        }
+                        
+                        yPosition = drawMultilineText(contentStream, line, 
+                                                    fontRegular, FONT_SIZE_CONTENT, 
+                                                    MARGIN_LEFT, yPosition, 
+                                                    PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT);
+                    }
+                }
+                
+                // SECTION 7: "ประกาศ ณ วันที่ ..."
+                if (dateThai != null && !dateThai.isEmpty()) {
+                    yPosition -= 20;
+                    String announcementDate = "ประกาศ ณ วันที่ " + convertToThaiDate(dateThai);
+                    yPosition = drawCenteredText(contentStream, announcementDate, fontRegular, FONT_SIZE_FIELD_VALUE, yPosition);
+                }
+                
+                // SECTION 8: ช่องลงนาม
+                if (signers != null && !signers.isEmpty()) {
+                    yPosition -= SPACING_BEFORE_SIGNATURES;
+                    
+                    for (SignerInfo signer : signers) {
+                        float requiredHeight = 120f;
+                        if (yPosition < MIN_Y_POSITION + requiredHeight) {
+                            contentStream.close();
+                            
+                            PDPage newPage = createNewPage(document, fontRegular, bookNo);
+                            contentStream = new PDPageContentStream(document, newPage, 
+                                    PDPageContentStream.AppendMode.APPEND, true);
+                            yPosition = PAGE_HEIGHT - MARGIN_TOP - 50;
+                        }
+                        
+                        yPosition = drawSignerBox(contentStream, 
+                                                  signer.getPrefixName(),
+                                                  signer.getFirstname(),
+                                                  signer.getLastname(),
+                                                  signer.getPositionName(),
+                                                  fontRegular, yPosition);
+                        yPosition -= SPACING_BETWEEN_SIGNATURES;
+                    }
+                }
+                
+            } finally {
+                if (contentStream != null) {
+                    contentStream.close();
+                }
+            }
+            
+            return convertToBase64(document);
+            
+        } catch (Exception e) {
+            log.error("Error generating regulation PDF: ", e);
+            throw new Exception("ไม่สามารถสร้าง PDF หนังสือระเบียบได้: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * แปลงวันที่เป็นรูปแบบไทย (ตัวเลขไทย)
+     * เช่น "8 มกราคม พ.ศ. 2569" -> "๘ มกราคม ๒๕๖๙"
+     */
+    private String convertToThaiDate(String dateThai) {
+        if (dateThai == null || dateThai.isEmpty()) {
+            return "";
+        }
+        
+        StringBuilder result = new StringBuilder();
+        for (char c : dateThai.toCharArray()) {
+            if (Character.isDigit(c)) {
+                // แปลงตัวเลขอารบิกเป็นตัวเลขไทย
+                result.append((char) ('๐' + (c - '0')));
+            } else {
+                result.append(c);
+            }
+        }
+        
+        // ลบ "พ.ศ." ออก (ถ้ามี) เพราะจะใช้ "ประกาศ ณ วันที่" แทน
+        String text = result.toString().replace("พ.ศ. ", "").replace("พ.ศ.", "");
+        return text.trim();
+    }
+    
+    /**
+     * วาดโลโก้ตรงกลาง
+     */
+    private float drawLogoCentered(PDPageContentStream contentStream, PDDocument document, float yPosition) throws Exception {
+        try {
+            java.io.InputStream logoStream = getClass().getClassLoader().getResourceAsStream("images/logoETDA.png");
+            if (logoStream != null) {
+                org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject logoImage = 
+                    org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject.createFromByteArray(
+                        document, logoStream.readAllBytes(), "logo");
+                
+                float logoX = (PAGE_WIDTH - LOGO_WIDTH) / 2;
+                float logoY = yPosition - LOGO_HEIGHT;
+                
+                contentStream.drawImage(logoImage, logoX, logoY, LOGO_WIDTH, LOGO_HEIGHT);
+                log.info("Logo drawn centered at ({}, {})", logoX, logoY);
+                logoStream.close();
+                return logoY;
+            }
+        } catch (Exception e) {
+            log.warn("Failed to load logo: {}", e.getMessage());
+        }
+        return yPosition - LOGO_HEIGHT;
+    }
+    
+    /**
+     * สร้างเนื้อหาจาก request
+     */
+    private String buildContent(GeneratePdfRequest request) {
+        StringBuilder contentBuilder = new StringBuilder();
+        if (request.getBookContent() != null && !request.getBookContent().isEmpty()) {
+            for (var item : request.getBookContent()) {
+                if (item.getBookContentTitle() != null && !item.getBookContentTitle().isEmpty()) {
+                    String titleText = HtmlUtils.isHtml(item.getBookContentTitle()) 
+                        ? HtmlUtils.htmlToPlainText(item.getBookContentTitle())
+                        : item.getBookContentTitle();
+                    contentBuilder.append(titleText).append("  ");
+                }
+                if (item.getBookContent() != null && !item.getBookContent().isEmpty()) {
+                    String contentText = HtmlUtils.isHtml(item.getBookContent())
+                        ? HtmlUtils.htmlToPlainText(item.getBookContent())
+                        : item.getBookContent();
+                    contentBuilder.append(contentText);
+                }
+                contentBuilder.append("\n\n");
+            }
+        }
+        return contentBuilder.toString().trim();
+    }
+    
+    /**
+     * สร้างรายการผู้ลงนามจาก request
+     */
+    private List<SignerInfo> buildSigners(GeneratePdfRequest request) {
+        List<SignerInfo> signers = new ArrayList<>();
+        if (request.getBookSigned() != null && !request.getBookSigned().isEmpty()) {
+            for (var signer : request.getBookSigned()) {
+                signers.add(SignerInfo.builder()
+                    .prefixName(signer.getPrefixName())
+                    .firstname(signer.getFirstname())
+                    .lastname(signer.getLastname())
+                    .positionName(signer.getPositionName())
+                    .departmentName(signer.getDepartmentName())
+                    .email(signer.getEmail())
+                    .signatureBase64(signer.getSignatureBase64())
+                    .build());
+            }
+        }
+        return signers;
     }
 }

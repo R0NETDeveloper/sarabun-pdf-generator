@@ -331,20 +331,6 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
         }
     }
 
-    private String buildFullName(SignerInfo signer) {
-        StringBuilder fullName = new StringBuilder();
-        if (signer.getPrefixName() != null) {
-            fullName.append(signer.getPrefixName());
-        }
-        if (signer.getFirstname() != null) {
-            fullName.append(signer.getFirstname());
-        }
-        if (signer.getLastname() != null) {
-            fullName.append(" ").append(signer.getLastname());
-        }
-        return fullName.toString().trim();
-    }
-    
     // ============================================
     // Helper methods
     // ============================================
@@ -451,40 +437,5 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
         int month = dateTime.getMonthValue();
         int year = dateTime.getYear() + 543;
         return toThaiDate(day, month, year);
-    }
-    
-    // ============================================
-    // Inner classes
-    // ============================================
-    
-    @lombok.Data
-    @lombok.Builder
-    @lombok.NoArgsConstructor
-    @lombok.AllArgsConstructor
-    public static class SignerInfo {
-        private String prefixName;
-        private String firstname;
-        private String lastname;
-        private String positionName;
-        private String departmentName;
-        private String email;
-        private String signatureBase64;
-    }
-    
-    @lombok.Data
-    @lombok.NoArgsConstructor
-    @lombok.AllArgsConstructor
-    public static class ContactInfo {
-        private String department;
-        private String phone;
-        private String fax;
-        private String email;
-        
-        public boolean hasAnyInfo() {
-            return (department != null && !department.isEmpty()) ||
-                   (phone != null && !phone.isEmpty()) ||
-                   (fax != null && !fax.isEmpty()) ||
-                   (email != null && !email.isEmpty());
-        }
     }
 }

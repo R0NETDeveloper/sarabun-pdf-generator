@@ -771,4 +771,46 @@ public abstract class PdfGeneratorBase {
         }
         return fullName.toString().trim();
     }
+    
+    // ============================================
+    // Inner Classes (ใช้ร่วมกันทุก Generator)
+    // ============================================
+    
+    /**
+     * ข้อมูลผู้ลงนาม - ใช้ร่วมกันทุก PDF Generator
+     */
+    @lombok.Data
+    @lombok.Builder
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class SignerInfo {
+        private String prefixName;
+        private String firstname;
+        private String lastname;
+        private String positionName;
+        private String departmentName;
+        private String email;
+        private String signatureBase64;
+    }
+    
+    /**
+     * ข้อมูลผู้ติดต่อ - ใช้ร่วมกันทุก PDF Generator
+     */
+    @lombok.Data
+    @lombok.Builder
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class ContactInfo {
+        private String department;
+        private String phone;
+        private String fax;
+        private String email;
+        
+        public boolean hasAnyInfo() {
+            return (department != null && !department.isEmpty()) ||
+                   (phone != null && !phone.isEmpty()) ||
+                   (fax != null && !fax.isEmpty()) ||
+                   (email != null && !email.isEmpty());
+        }
+    }
 }

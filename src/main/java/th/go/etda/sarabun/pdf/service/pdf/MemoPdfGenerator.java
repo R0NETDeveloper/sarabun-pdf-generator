@@ -288,21 +288,4 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
         }
         return signers;
     }
-    
-    /**
-     * Inner class สำหรับข้อมูลผู้ลงนาม
-     */
-    @lombok.Data
-    @lombok.Builder
-    @lombok.NoArgsConstructor
-    @lombok.AllArgsConstructor
-    public static class SignerInfo {
-        private String prefixName;
-        private String firstname;
-        private String lastname;
-        private String positionName;
-        private String departmentName;
-        private String email;
-        private String signatureBase64;
-    }
 }
