@@ -386,7 +386,7 @@ public class GeneratePdfService {
                     .build())
                 .collect(Collectors.toList());
             
-            mergedBase64 = pdfService.addSubmitPages(mergedBase64, submiters);
+            mergedBase64 = pdfService.addSubmitPages(mergedBase64, submiters, request.getBookNo());
         }
         
         // ===== เพิ่มหน้า "ผู้เรียน/รับทราบ" (ขึ้นหน้าใหม่) =====
@@ -418,7 +418,7 @@ public class GeneratePdfService {
                     .collect(Collectors.toList());
             }
             
-            mergedBase64 = pdfService.addLearnerPages(mergedBase64, learners, signersForDisplay);
+            mergedBase64 = pdfService.addLearnerPages(mergedBase64, learners, signersForDisplay, request.getBookNo());
         }
         
         return mergedBase64;

@@ -73,24 +73,21 @@ public class PdfService {
     // ⚙️ Logo Settings - ขนาดและตำแหน่งโลโก้ (ปรับได้)
     private static final float LOGO_WIDTH = 120f;      // ความกว้างโลโก้ (เพิ่ม = โลโก้ใหญ่ขึ้น)
     private static final float LOGO_HEIGHT = 40f;     // ความสูงโลโก้
-    private static final float LOGO_SPACING = 30f;    // ระยะห่างหลังโลโก้ (เพิ่ม = เนื้อหาเลื่อนลงมากขึ้น)
+
     
     // ⚙️ Font Sizes - ขนาดฟอนต์ (ปรับได้)
-    private static final float FONT_SIZE_HEADER = 24f;        // หัวข้อ "บันทึกข้อความ"
+
     private static final float FONT_SIZE_FIELD = 18f;         // ฟิลด์ label (ส่วนราชการ, ที่, วันที่, เรื่อง)
     private static final float FONT_SIZE_FIELD_VALUE = 16f;   // ฟิลด์ value (ข้อความ model)
     private static final float FONT_SIZE_CONTENT = 16f;       // เนื้อหา
 
     
     // ⚙️ Vertical Spacing - ระยะห่างระหว่างแต่ละบรรทัด (ปรับได้)
-    private static final float SPACING_AFTER_HEADER = 30f;  // หลัง "บันทึกข้อความ"
+
     private static final float SPACING_BETWEEN_FIELDS = 5f; // ระหว่างฟิลด์ต่างๆ (ลดจาก 25f)
     private static final float SPACING_BEFORE_CONTENT = 14f; // ก่อนเนื้อหา (แยกจากฟิลด์)
-    private static final float SPACING_BEFORE_SIGNATURES = 40f; // ก่อนลายเซ็น
-    private static final float SPACING_BETWEEN_SIGNATURES = 20f; // ระหว่างลายเซ็น
-    
-    // ⚙️ Field Positions - ตำแหน่งแนวนอนของฟิลด์ต่างๆ (ปรับได้)
-    private static final float DATE_X_POSITION = PAGE_WIDTH - 320; // ตำแหน่ง "วันที่" (ขวามือ)
+
+
     
     // ⚙️ Multi-page Settings - การจัดการหลายหน้า (ปรับได้)
     private static final float MIN_Y_POSITION = MARGIN_BOTTOM + 100; // พื้นที่ขั้นต่ำก่อนขึ้นหน้าใหม่ (เพิ่ม = ขึ้นหน้าเร็วขึ้น)
@@ -169,7 +166,7 @@ public class PdfService {
      */
     private void drawPageNumber(PDPageContentStream stream, int pageNumber, PDFont font) throws IOException {
         String thaiPageNumber = convertToThaiNumber(pageNumber);
-        String pageText = "-" + thaiPageNumber;
+        String pageText = "- " + thaiPageNumber + " -";
         
         // คำนวณตำแหน่งกลาง
         float textWidth = font.getStringWidth(pageText) / 1000 * FONT_SIZE_CONTENT;
@@ -1100,10 +1097,12 @@ public class PdfService {
      * 
      * @param existingPdfBase64 PDF เดิมในรูปแบบ Base64 (จะต่อหน้าจากนี้)
      * @param submiters รายการผู้เสนอผ่าน
+     * @param bookNo เลขที่หนังสือ (แสดงที่ขอบล่างซ้ายทุกหน้า)
      * @return PDF ที่มีหน้าเสนอผ่านต่อท้าย ในรูปแบบ Base64
      */
     public String addSubmitPages(String existingPdfBase64, 
-                                  List<SignerInfo> submiters) throws Exception {
+                                  List<SignerInfo> submiters,
+                                  String bookNo) throws Exception {
         if (submiters == null || submiters.isEmpty()) {
             return existingPdfBase64;
         }
@@ -1139,6 +1138,9 @@ public class PdfService {
             try {
                 float yPosition = PAGE_HEIGHT - MARGIN_TOP;
                 
+                // วาดเลขที่หนังสือ (ขอบล่างซ้าย)
+                drawBookNumber(contentStream, bookNo, fontRegular);
+                
                 // วาดเลขหน้า (ต่อจากหน้าเดิม)
                 String pageNumThai = "- " + convertToThaiNumber(currentPageNumber) + " -";
                 drawCenteredText(contentStream, pageNumThai, fontRegular, 16, yPosition);
@@ -1163,6 +1165,9 @@ public class PdfService {
                         
                         contentStream = new PDPageContentStream(document, nextPage);
                         yPosition = PAGE_HEIGHT - MARGIN_TOP;
+                        
+                        // วาดเลขที่หนังสือ (ขอบล่างซ้าย)
+                        drawBookNumber(contentStream, bookNo, fontRegular);
                         
                         // วาดเลขหน้า
                         String nextPageNum = "- " + convertToThaiNumber(currentPageNumber) + " -";
@@ -1194,11 +1199,13 @@ public class PdfService {
      * @param existingPdfBase64 PDF เดิมในรูปแบบ Base64 (จะต่อหน้าจากนี้)
      * @param learners รายการผู้เรียน/รับทราบ
      * @param signers รายการผู้ลงนาม (สำหรับแสดง "เรียน" ที่ด้านบน)
+     * @param bookNo เลขที่หนังสือ (แสดงที่ขอบล่างซ้ายทุกหน้า)
      * @return PDF ที่มีหน้าผู้เรียนต่อท้าย ในรูปแบบ Base64
      */
     public String addLearnerPages(String existingPdfBase64, 
                                    List<SignerInfo> learners,
-                                   List<SignerInfo> signers) throws Exception {
+                                   List<SignerInfo> signers,
+                                   String bookNo) throws Exception {
         if (learners == null || learners.isEmpty()) {
             return existingPdfBase64;
         }
@@ -1214,7 +1221,6 @@ public class PdfService {
         
         try (PDDocument document = PDDocument.load(new ByteArrayInputStream(pdfBytes))) {
             PDFont fontRegular = loadThaiFont(document, FONT_PATH);
-            PDFont fontBold = loadThaiFont(document, FONT_BOLD_PATH);
             
             // คำนวณเลขหน้าที่จะต่อ
             int currentPageNumber = document.getNumberOfPages() + 1;
@@ -1233,6 +1239,9 @@ public class PdfService {
             PDPageContentStream contentStream = new PDPageContentStream(document, newPage);
             try {
                 float yPosition = PAGE_HEIGHT - MARGIN_TOP;
+                
+                // วาดเลขที่หนังสือ (ขอบล่างซ้าย)
+                drawBookNumber(contentStream, bookNo, fontRegular);
                 
                 // วาดเลขหน้า
                 String pageNumThai = "- " + convertToThaiNumber(currentPageNumber) + " -";
@@ -1275,6 +1284,9 @@ public class PdfService {
                         
                         contentStream = new PDPageContentStream(document, nextPage);
                         yPosition = PAGE_HEIGHT - MARGIN_TOP;
+                        
+                        // วาดเลขที่หนังสือ (ขอบล่างซ้าย)
+                        drawBookNumber(contentStream, bookNo, fontRegular);
                         
                         // วาดเลขหน้า
                         String nextPageNum = "- " + convertToThaiNumber(currentPageNumber) + " -";
