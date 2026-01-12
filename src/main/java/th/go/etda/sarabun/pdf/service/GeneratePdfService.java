@@ -2,13 +2,9 @@ package th.go.etda.sarabun.pdf.service;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.pdfbox.io.MemoryUsageSetting;
@@ -21,6 +17,7 @@ import th.go.etda.sarabun.pdf.constant.BookType;
 import th.go.etda.sarabun.pdf.model.ApiResponse;
 import th.go.etda.sarabun.pdf.model.GeneratePdfRequest;
 import th.go.etda.sarabun.pdf.model.PdfResult;
+import th.go.etda.sarabun.pdf.service.pdf.MemoPdfGenerator;
 import th.go.etda.sarabun.pdf.service.pdf.PdfGeneratorBase;
 import th.go.etda.sarabun.pdf.service.pdf.PdfGeneratorFactory;
 
@@ -51,28 +48,8 @@ import th.go.etda.sarabun.pdf.service.pdf.PdfGeneratorFactory;
 @RequiredArgsConstructor
 public class GeneratePdfService {
     
-    private final PdfService pdfService;
     private final PdfGeneratorFactory generatorFactory;
-    
-    // Constants จากโค้ดเดิม - BookNameId ที่ต้องจัดการพิเศษ
-    private static final Set<String> SPECIAL_BOOK_NAME_IDS = Set.of(
-        "90F72F0E-528D-4992-907A-F2C6B37AD9A5",
-        "50792880-F85A-4343-9672-7B61AF828A5B",
-        "23065068-BB18-49EA-8CE7-22945E16CB6D",
-        "3FEDE42B-078A-4D2C-9B21-3EAD3E418F3D",
-        "4AB1EC00-9E5E-4113-B577-D8ED46BA7728",
-        "4B3EB169-6203-4A71-A3BD-A442FEAAA91F",
-        "AF3E7697-6F7E-4AD8-B76C-E2134DB98747",
-        "03241AA7-0E85-4C5C-A2CC-688212A79B84",
-        "C2905724-04D3-46AF-81EA-BF3045A59BF2",
-        "11B56C3B-1C8E-4574-8B5D-72659BE74E6A",
-        "8F6A1804-C340-49B4-9BFB-FE523E640AA1",
-        "63E72391-0261-4C71-A8DE-F23CBB3033A9",
-        "DD65959E-06BD-40C9-9793-211DB2084A65",
-        "1AD2CD13-D938-4DD9-9407-9E922BA4652E",
-        "969D9478-5A0E-42CF-8BBE-6B188C71588B",
-        "0BF965C9-095B-4B73-BAB4-A0BDADA6993D"
-    );
+    private final MemoPdfGenerator memoPdfGenerator;
     
     /**
      * สร้าง PDF Preview - ใช้ Factory Pattern
@@ -158,163 +135,15 @@ public class GeneratePdfService {
     /**
      * เพิ่มลายเซ็นให้กับ PDFs
      * 
-     * แปลงมาจาก: AddSignatureFieldsToPdf() method
+     * หมายเหตุ: ปัจจุบันช่องลายเซ็นถูกวาดใน Generator โดยตรงแล้ว
+     * method นี้คงไว้เพื่อ backward compatibility แต่ไม่ทำ transformation
      */
+    @SuppressWarnings("unused")
     private List<PdfResult> addSignaturesToPdfs(List<PdfResult> pdfArray, 
                                                 GeneratePdfRequest request) {
-        log.debug("Adding signatures to PDFs");
-        
-        List<PdfResult> results = new ArrayList<>();
-        
-        for (int i = 0; i < pdfArray.size(); i++) {
-            PdfResult pdf = pdfArray.get(i);
-            
-            try {
-                String signedPdf = addSignatureFieldsToPdf(
-                    pdf.getPdfBase64(),
-                    request,
-                    pdf.getType(),
-                    i
-                );
-                
-                results.add(PdfResult.builder()
-                    .pdfBase64(signedPdf)
-                    .type(pdf.getType())
-                    .description(pdf.getDescription())
-                    .build());
-                    
-            } catch (Exception e) {
-                log.warn("Failed to add signature to PDF {}: {}", i, e.getMessage());
-                // ถ้าเพิ่มลายเซ็นไม่ได้ ให้ใช้ PDF เดิม
-                results.add(pdf);
-            }
-        }
-        
-        return results;
-    }
-    
-    /**
-     * เพิ่มลายเซ็นให้กับ PDF
-     */
-    private String addSignatureFieldsToPdf(String pdfBase64, 
-                                          GeneratePdfRequest request,
-                                          String type,
-                                          int index) throws Exception {
-        // แปลง Base64 เป็น bytes
-        byte[] pdfBytes = decodeBase64Pdf(pdfBase64);
-        
-        // สร้างไฟล์ชั่วคราว
-        Path tempDir = Files.createTempDirectory("sarabun_pdf");
-        Path inputFile = tempDir.resolve("input.pdf");
-        Path outputFile = tempDir.resolve("output.pdf");
-        
-        try {
-            // เขียนไฟล์
-            Files.write(inputFile, pdfBytes);
-            
-            // เรียก PdfService เพื่อเพิ่มลายเซ็น
-            pdfService.addSignatureFields(
-                inputFile.toFile(),
-                outputFile.toFile(),
-                buildSignatureFields(request, type)
-            );
-            
-            // อ่านผลลัพธ์
-            byte[] resultBytes = Files.readAllBytes(outputFile);
-            return  Base64.getEncoder().encodeToString(resultBytes);
-            
-        } finally {
-            // ลบไฟล์ชั่วคราว
-            deleteQuietly(inputFile);
-            deleteQuietly(outputFile);
-            deleteQuietly(tempDir);
-        }
-    }
-    
-    /**
-     * สร้างรายการฟิลด์ลายเซ็น
-     */
-    private List<SignatureFieldInfo> buildSignatureFields(GeneratePdfRequest request, String type) {
-        List<SignatureFieldInfo> fields = new ArrayList<>();
-        
-        boolean isSpecialCase = SPECIAL_BOOK_NAME_IDS.contains(request.getBookNameId()) && 
-                               "Other".equals(type);
-        
-        if (isSpecialCase) {
-            // กรณีพิเศษ: เพิ่มเฉพาะ Learner
-            if (request.getBookLearner() != null) {
-                for (var learner : request.getBookLearner()) {
-                    fields.add(SignatureFieldInfo.builder()
-                        .fieldName("Learner_" + learner.getEmail())
-                        .type("เรียน")
-                        .name(String.format("%s%s %s", 
-                            learner.getPrefixName() != null ? learner.getPrefixName() : "",
-                            learner.getFirstname(),
-                            learner.getLastname()))
-                        .email(learner.getEmail())
-                        .position(learner.getPositionName())
-                        .build());
-                }
-            }
-        } else {
-            // กรณีปกติ: เพิ่มทุก type
-            addSignedFields(fields, request);
-            addSubmitedFields(fields, request);
-            addLearnerFields(fields, request);
-        }
-        
-        return fields;
-    }
-    
-    private void addSignedFields(List<SignatureFieldInfo> fields, GeneratePdfRequest request) {
-        if (request.getBookSigned() != null) {
-            for (var signed : request.getBookSigned()) {
-                fields.add(SignatureFieldInfo.builder()
-                    .fieldName("Sign_" + signed.getEmail())
-                    .type("ลงนาม")
-                    .name(String.format("%s%s %s", 
-                        signed.getPrefixName() != null ? signed.getPrefixName() : "",
-                        signed.getFirstname(),
-                        signed.getLastname()))
-                    .email(signed.getEmail())
-                    .position(signed.getPositionName())
-                    .build());
-            }
-        }
-    }
-    
-    private void addSubmitedFields(List<SignatureFieldInfo> fields, GeneratePdfRequest request) {
-        if (request.getBookSubmited() != null) {
-            for (var submited : request.getBookSubmited()) {
-                fields.add(SignatureFieldInfo.builder()
-                    .fieldName("Submit_" + submited.getEmail())
-                    .type("เสนอผ่าน")
-                    .name(String.format("%s%s %s", 
-                        submited.getPrefixName() != null ? submited.getPrefixName() : "",
-                        submited.getFirstname(),
-                        submited.getLastname()))
-                    .email(submited.getEmail())
-                    .position(submited.getPositionName())
-                    .build());
-            }
-        }
-    }
-    
-    private void addLearnerFields(List<SignatureFieldInfo> fields, GeneratePdfRequest request) {
-        if (request.getBookLearner() != null) {
-            for (var learner : request.getBookLearner()) {
-                fields.add(SignatureFieldInfo.builder()
-                    .fieldName("Learner_" + learner.getEmail())
-                    .type("เรียน")
-                    .name(String.format("%s%s %s", 
-                        learner.getPrefixName() != null ? learner.getPrefixName() : "",
-                        learner.getFirstname(),
-                        learner.getLastname()))
-                    .email(learner.getEmail())
-                    .position(learner.getPositionName())
-                    .build());
-            }
-        }
+        log.debug("Adding signatures to PDFs (passthrough - signatures are drawn in generators)");
+        // ไม่ต้อง transform เพราะช่องลายเซ็นถูกวาดใน Generator โดยตรงแล้ว
+        return pdfArray;
     }
     
     /**
@@ -374,8 +203,8 @@ public class GeneratePdfService {
         if (request.getBookSubmited() != null && !request.getBookSubmited().isEmpty()) {
             log.info("Adding Submit pages for {} submiters", request.getBookSubmited().size());
             
-            List<PdfService.SignerInfo> submiters = request.getBookSubmited().stream()
-                .map(s -> PdfService.SignerInfo.builder()
+            List<PdfGeneratorBase.SignerInfo> submiters = request.getBookSubmited().stream()
+                .map(s -> PdfGeneratorBase.SignerInfo.builder()
                     .prefixName(s.getPrefixName())
                     .firstname(s.getFirstname())
                     .lastname(s.getLastname())
@@ -386,15 +215,15 @@ public class GeneratePdfService {
                     .build())
                 .collect(Collectors.toList());
             
-            mergedBase64 = pdfService.addSubmitPages(mergedBase64, submiters, request.getBookNo());
+            mergedBase64 = memoPdfGenerator.addSubmitPages(mergedBase64, submiters, request.getBookNo());
         }
         
         // ===== เพิ่มหน้า "ผู้เรียน/รับทราบ" (ขึ้นหน้าใหม่) =====
         if (request.getBookLearner() != null && !request.getBookLearner().isEmpty()) {
             log.info("Adding Learner pages for {} learners", request.getBookLearner().size());
             
-            List<PdfService.SignerInfo> learners = request.getBookLearner().stream()
-                .map(l -> PdfService.SignerInfo.builder()
+            List<PdfGeneratorBase.SignerInfo> learners = request.getBookLearner().stream()
+                .map(l -> PdfGeneratorBase.SignerInfo.builder()
                     .prefixName(l.getPrefixName())
                     .firstname(l.getFirstname())
                     .lastname(l.getLastname())
@@ -406,10 +235,10 @@ public class GeneratePdfService {
                 .collect(Collectors.toList());
             
             // สร้าง signers สำหรับแสดง "เรียน ชื่อผู้ลงนาม" ที่ด้านบน
-            List<PdfService.SignerInfo> signersForDisplay = null;
+            List<PdfGeneratorBase.SignerInfo> signersForDisplay = null;
             if (request.getBookSigned() != null && !request.getBookSigned().isEmpty()) {
                 signersForDisplay = request.getBookSigned().stream()
-                    .map(s -> PdfService.SignerInfo.builder()
+                    .map(s -> PdfGeneratorBase.SignerInfo.builder()
                         .prefixName(s.getPrefixName())
                         .firstname(s.getFirstname())
                         .lastname(s.getLastname())
@@ -418,7 +247,7 @@ public class GeneratePdfService {
                     .collect(Collectors.toList());
             }
             
-            mergedBase64 = pdfService.addLearnerPages(mergedBase64, learners, signersForDisplay, request.getBookNo());
+            mergedBase64 = memoPdfGenerator.addLearnerPages(mergedBase64, learners, signersForDisplay, request.getBookNo());
         }
         
         return mergedBase64;
@@ -457,38 +286,10 @@ public class GeneratePdfService {
     
     // Utility methods
     
-    private byte[] decodeBase64Pdf(String base64) {
-        String cleanBase64 = cleanBase64Prefix(base64);
-        return Base64.getDecoder().decode(cleanBase64);
-    }
-    
     private String cleanBase64Prefix(String base64) {
         if (base64.startsWith("data:application/pdf;base64,")) {
             return base64.substring("data:application/pdf;base64,".length());
         }
         return base64;
-    }
-    
-    private void deleteQuietly(Path path) {
-        try {
-            if (Files.exists(path)) {
-                Files.delete(path);
-            }
-        } catch (IOException e) {
-            log.warn("Failed to delete file: {}", path, e);
-        }
-    }
-    
-    /**
-     * Inner class สำหรับเก็บข้อมูลฟิลด์ลายเซ็น
-     */
-    @lombok.Data
-    @lombok.Builder
-    public static class SignatureFieldInfo {
-        private String fieldName;
-        private String type;
-        private String name;
-        private String email;
-        private String position;
     }
 }
