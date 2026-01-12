@@ -191,7 +191,7 @@ public class AnnouncementPdfGenerator extends PdfGeneratorBase {
                         
                         yPosition = drawSignerBoxWithSignatureField(document, currentPage, 
                                                   contentStream, signer, fontRegular, yPosition,
-                                                  "Sign", i, "เรียน");
+                                                  "Sign", i, "เรียน", false);
                         yPosition -= SPACING_BETWEEN_SIGNATURES;
                     }
                 }

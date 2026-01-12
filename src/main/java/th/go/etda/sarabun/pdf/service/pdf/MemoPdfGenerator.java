@@ -224,7 +224,7 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
                         
                         yPosition = drawSignerBoxWithSignatureField(document, currentPage, 
                                                   contentStream, signer, fontRegular, yPosition,
-                                                  "Sign", i, "ช่องลงนาม");
+                                                  "Sign", i, "ช่องลงนาม", false);
                         yPosition -= SPACING_BETWEEN_SIGNATURES;
                     }
                 }

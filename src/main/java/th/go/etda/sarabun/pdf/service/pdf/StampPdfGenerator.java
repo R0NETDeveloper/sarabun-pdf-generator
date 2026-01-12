@@ -325,7 +325,7 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                         // ใช้ label "เรียน" สำหรับหนังสือประทับตรา
                         yPosition = drawSignerBoxWithSignatureField(document, currentPage, 
                                                   contentStream, signer, fontRegular, yPosition,
-                                                  "Sign", i, "เรียน");
+                                                  "Sign", i, "เรียน", false);
                         yPosition -= SPACING_BETWEEN_SIGNATURES;
                     }
                 }

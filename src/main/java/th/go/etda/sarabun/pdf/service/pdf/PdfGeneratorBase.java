@@ -876,7 +876,8 @@ public abstract class PdfGeneratorBase {
      * @param yPosition ตำแหน่ง Y ปัจจุบัน
      * @param fieldPrefix prefix สำหรับชื่อ field (เช่น "Sign", "Submit")
      * @param index ลำดับผู้ลงนาม
-     * @param labelText ข้อความ label (เช่น "ช่องลงนาม", "เสนอผ่าน")
+     * @param labelText ข้อความ label (เช่น "ช่องลงนาม", "เสนอผ่าน", "ขอแสดงความนับถือ")
+     * @param forceAboveBox true = แสดง label เหนือกรอบเสมอ (ใช้สำหรับ endDoc/คำลงท้าย)
      * @return ตำแหน่ง Y ใหม่หลังวาดเสร็จ
      */
     protected float drawSignerBoxWithSignatureField(PDDocument document,
@@ -887,7 +888,8 @@ public abstract class PdfGeneratorBase {
                                                     float yPosition,
                                                     String fieldPrefix,
                                                     int index,
-                                                    String labelText) throws Exception {
+                                                    String labelText,
+                                                    boolean forceAboveBox) throws Exception {
         // กำหนดขนาดและตำแหน่งกรอบ (ตรงกลาง-ขวา)
         float boxWidth = 180f;
         float boxHeight = 50f;
@@ -895,12 +897,15 @@ public abstract class PdfGeneratorBase {
         
         // ตรวจสอบความยาว label
         float labelWidth = font.getStringWidth(labelText) / 1000 * 14f;
+        
+        // แสดง label เหนือกรอบถ้า: 1) forceAboveBox=true (endDoc/คำลงท้าย) หรือ 2) label ยาวเกินกรอบ
         boolean isLongLabel = labelWidth > boxWidth - 20;
+        boolean showAboveBox = forceAboveBox || isLongLabel;
         
         float currentY = yPosition;
         
-        // ถ้า label ยาว → วางไว้บนหัวกรอบ
-        if (isLongLabel) {
+        // ถ้า forceAboveBox หรือ label ยาว → วางไว้บนหัวกรอบ
+        if (showAboveBox) {
             float boxCenterX = boxX + (boxWidth / 2);
             float longLabelX = boxCenterX - (labelWidth / 2);
             drawText(contentStream, labelText, font, 14f, longLabelX, currentY);
@@ -920,8 +925,8 @@ public abstract class PdfGeneratorBase {
         contentStream.setLineDashPattern(new float[]{}, 0);
         contentStream.setStrokingColor(0, 0, 0);
         
-        // ถ้า label สั้น → วางในกรอบ
-        if (!isLongLabel) {
+        // ถ้า label สั้น และไม่ต้องแสดงเหนือกรอบ → วางในกรอบ
+        if (!showAboveBox) {
             float textX = boxX + (boxWidth - labelWidth) / 2;
             float textY = boxY + (boxHeight / 2) - 5;
             drawText(contentStream, labelText, font, 14f, textX, textY);
@@ -1073,7 +1078,7 @@ public abstract class PdfGeneratorBase {
                     yPosition = drawSignerBoxWithSignatureField(document, 
                                                    document.getPage(document.getNumberOfPages() - 1),
                                                    contentStream, submiter, fontRegular, 
-                                                   yPosition, "Submit", i, "เสนอผ่าน");
+                                                   yPosition, "Submit", i, "เสนอผ่าน", false);
                     
                     // วาดเส้นแบ่ง (ถ้าไม่ใช่คนสุดท้าย)
                     if (i < submiters.size() - 1) {
@@ -1190,7 +1195,7 @@ public abstract class PdfGeneratorBase {
                     yPosition = drawSignerBoxWithSignatureField(document,
                                                    document.getPage(document.getNumberOfPages() - 1),
                                                    contentStream, learner, fontRegular,
-                                                   yPosition, "Learner", i, "รับทราบ");
+                                                   yPosition, "Learner", i, "รับทราบ", false);
                     
                     // วาดเส้นแบ่ง (ถ้าไม่ใช่คนสุดท้าย)
                     if (i < learners.size() - 1) {

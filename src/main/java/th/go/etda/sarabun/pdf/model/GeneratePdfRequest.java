@@ -50,7 +50,8 @@ public class GeneratePdfRequest {
     private List<DocumentAttachment> attachment;   // ไฟล์แนบ
     private List<BookReferTo> bookReferTo;          // อ้างถึง
     private BookSettingRelate settingRelate;        // การตั้งค่าความสัมพันธ์
-    private List<BookRelate> bookLearner;           // ผู้รับ (เรียน)
+    private List<BookRelate> bookLearner;           // ผู้รับภายใน (เรียน) - ใช้กับบันทึกข้อความ
+    private List<BookRecipient> bookRecipients;     // ผู้รับภายนอก (หน่วยงาน) - ใช้กับหนังสือส่งออก
     private List<BookRelate> bookSubmited;          // ผู้เสนอผ่าน
     private List<BookRelate> bookReview;            // ผู้ตรวจสอบ
     private List<BookRelate> bookSigned;            // ผู้ลงนาม
@@ -256,6 +257,39 @@ public class GeneratePdfRequest {
         private LocalDateTime createDate;   // วันที่
     }
     
+    /**
+     * BookRecipient Model - ผู้รับหนังสือภายนอก (สำหรับ Outbound)
+     * ใช้สำหรับหนังสือส่งออกที่ส่งไปยังหน่วยงานภายนอก
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class BookRecipient {
+        @JsonProperty("GuId")
+        private String guid;                // GuId
+        private String recipientNo;         // ลำดับผู้รับ
+        private String ministryId;          // รหัสกระทรวง
+        private String ministryName;        // ชื่อกระทรวง
+        private String departmentId;        // รหัสกรม
+        private String departmentName;      // ชื่อกรม
+        private String divisionId;          // รหัสหน่วยงาน
+        private String divisionName;        // ชื่อหน่วยงาน
+        private String organizeName;        // ชื่อองค์กร (สำหรับแสดงใน "เรียน") ⭐
+        private String address;             // ที่อยู่
+        private String postalCode;          // รหัสไปรษณีย์
+        private String contactName;         // ชื่อผู้ติดต่อ
+        private String contactPhone;        // เบอร์โทรศัพท์
+        private String contactEmail;        // อีเมล
+        private String deliveryMethod;      // วิธีการจัดส่ง
+        private String remark;              // หมายเหตุ
+        
+        // === คำขึ้นต้น/คำลงท้าย (เฉพาะผู้รับรายนี้) ===
+        private String salutation;          // คำขึ้นต้น เช่น "เรียน", "กราบเรียน" ⭐
+        private String salutationContent;   // เนื้อหาต่อจากคำขึ้นต้น ⭐
+        private String endDoc;              // คำลงท้าย เช่น "ขอแสดงความนับถือ" ⭐
+    }
+
     /**
      * BookSettingRelate Model
      * แปลงมาจาก: BookModel.BookSettingRelateModel
