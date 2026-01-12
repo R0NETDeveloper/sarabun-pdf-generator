@@ -531,7 +531,7 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
     
     /**
      * สร้างรายการผู้รับ (bookLearner) สำหรับเจาะช่องลงนามในหนังสือหลัก
-     * หมายเหตุ: หนังสือหลักใช้ bookLearner, Memo ใช้ bookSigned
+     * โดย signBoxType = "เรียน"
      */
     private List<SignerInfo> buildSigners(GeneratePdfRequest request) {
         List<SignerInfo> signers = new ArrayList<>();
@@ -545,6 +545,7 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                     .departmentName(learner.getDepartmentName())
                     .email(learner.getEmail())
                     .signatureBase64(learner.getSignatureBase64())
+                    .signBoxType("เรียน")
                     .build());
             }
         }

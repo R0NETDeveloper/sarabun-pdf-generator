@@ -61,12 +61,12 @@ public class StampPdfGenerator extends PdfGeneratorBase {
         List<String> allPdfsToMerge = new ArrayList<>();
         List<String> recipientDescriptions = new ArrayList<>();
         
-        // 1. สร้าง PDF หนังสือประทับตรา แยกตามผู้รับแต่ละหน่วยงาน
-        if (request.getBookLearner() != null && !request.getBookLearner().isEmpty()) {
-            for (int i = 0; i < request.getBookLearner().size(); i++) {
-                GeneratePdfRequest.BookRelate recipient = request.getBookLearner().get(i);
+        // 1. สร้าง PDF หนังสือประทับตรา แยกตามผู้รับแต่ละหน่วยงาน (ใช้ bookRecipients)
+        if (request.getBookRecipients() != null && !request.getBookRecipients().isEmpty()) {
+            for (int i = 0; i < request.getBookRecipients().size(); i++) {
+                GeneratePdfRequest.BookRecipient recipient = request.getBookRecipients().get(i);
                 
-                // สร้าง PDF สำหรับผู้รับแต่ละคน
+                // สร้าง PDF สำหรับผู้รับแต่ละหน่วยงาน
                 String stampPdfBase64 = generateStampPdfForRecipient(request, recipient);
                 allPdfsToMerge.add(stampPdfBase64);
                 
@@ -76,7 +76,7 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                 log.info("Generated stamp PDF {} for: {}", i + 1, recipientName);
             }
         } else {
-            // Fallback: ถ้าไม่มี bookLearner ให้สร้าง PDF เดียว
+            // Fallback: ถ้าไม่มี bookRecipients ให้สร้าง PDF เดียว
             String stampPdfBase64 = generateStampPdf(request);
             allPdfsToMerge.add(stampPdfBase64);
             recipientDescriptions.add("หนังสือประทับตรา");
@@ -106,60 +106,45 @@ public class StampPdfGenerator extends PdfGeneratorBase {
     }
     
     /**
-     * สร้างชื่อผู้รับจาก BookRelate
+     * สร้างชื่อผู้รับจาก BookRecipient
      */
-    private String buildRecipientName(GeneratePdfRequest.BookRelate recipient) {
-        // ใช้ชื่อองค์กรก่อน
+    private String buildRecipientName(GeneratePdfRequest.BookRecipient recipient) {
+        // ใช้ชื่อองค์กรก่อน (สำหรับแสดงใน "ถึง")
         if (recipient.getOrganizeName() != null && !recipient.getOrganizeName().isEmpty()) {
             return recipient.getOrganizeName();
         }
         // ถ้าไม่มี ใช้ชื่อหน่วยงาน
+        if (recipient.getDivisionName() != null && !recipient.getDivisionName().isEmpty()) {
+            return recipient.getDivisionName();
+        }
+        // ถ้าไม่มี ใช้ชื่อกรม
         if (recipient.getDepartmentName() != null && !recipient.getDepartmentName().isEmpty()) {
             return recipient.getDepartmentName();
         }
-        // ถ้าไม่มี ใช้ชื่อตำแหน่ง
-        if (recipient.getPositionName() != null && !recipient.getPositionName().isEmpty()) {
-            return recipient.getPositionName();
+        // ถ้าไม่มี ใช้ชื่อกระทรวง
+        if (recipient.getMinistryName() != null && !recipient.getMinistryName().isEmpty()) {
+            return recipient.getMinistryName();
         }
         // Fallback
         return "ผู้รับ";
     }
     
     /**
-     * สร้าง PDF หนังสือประทับตราสำหรับผู้รับเฉพาะราย
+     * สร้าง PDF หนังสือประทับตราสำหรับผู้รับเฉพาะราย (หน่วยงานภายนอก)
      */
     private String generateStampPdfForRecipient(GeneratePdfRequest request, 
-                                                 GeneratePdfRequest.BookRelate recipient) throws Exception {
+                                                 GeneratePdfRequest.BookRecipient recipient) throws Exception {
         // รวบรวมข้อมูล
         String bookNo = request.getBookNo();
         
-        // ใช้ข้อมูลผู้รับจาก recipient ที่ส่งเข้ามา
-        String recipients = "";
-        if (recipient.getPositionName() != null) {
-            recipients = recipient.getPositionName();
-        }
-        if (recipient.getDepartmentName() != null && !recipient.getDepartmentName().isEmpty()) {
-            recipients += (recipients.isEmpty() ? "" : " ") + recipient.getDepartmentName();
-        }
-        // ถ้ามีชื่อองค์กร ให้ใช้แทน
-        if (recipient.getOrganizeName() != null && !recipient.getOrganizeName().isEmpty()) {
-            recipients = recipient.getOrganizeName();
-        }
+        // ใช้ organizeName สำหรับ "ถึง"
+        String recipients = recipient.getOrganizeName() != null ? recipient.getOrganizeName() : "";
         
         // รวบรวมเนื้อหา
         String content = buildContent(request);
         
-        // สร้าง SignerInfo จาก recipient (สำหรับช่องลงนาม "เรียน")
-        List<SignerInfo> signers = new ArrayList<>();
-        signers.add(SignerInfo.builder()
-            .prefixName(recipient.getPrefixName())
-            .firstname(recipient.getFirstname())
-            .lastname(recipient.getLastname())
-            .positionName(recipient.getPositionName())
-            .departmentName(recipient.getDepartmentName())
-            .email(recipient.getEmail())
-            .signatureBase64(recipient.getSignatureBase64())
-            .build());
+        // สร้าง SignerInfo จาก bookSigned (ผู้ลงนาม) - ไม่ใช่จาก recipient
+        List<SignerInfo> signers = buildSigners(request);
         
         // ชื่อหน่วยงาน
         String departmentName = request.getDepartment() != null ? request.getDepartment() : 
@@ -168,9 +153,14 @@ public class StampPdfGenerator extends PdfGeneratorBase {
         // ข้อมูลติดต่อ
         ContactInfo contactInfo = buildContactInfo(request);
         
-        log.info("Generating stamp for recipient: {}", recipients);
+        // ใช้ endDoc จาก recipient (ถ้ามี) หรือ fallback เป็น request
+        String endDoc = (recipient.getEndDoc() != null && !recipient.getEndDoc().isEmpty()) 
+                            ? recipient.getEndDoc() 
+                            : request.getEndDoc();
         
-        return generatePdfInternal(bookNo, recipients, content, signers, departmentName, contactInfo);
+        log.info("Generating stamp for recipient: {}, endDoc: {}", recipients, endDoc);
+        
+        return generatePdfInternal(bookNo, recipients, content, signers, departmentName, contactInfo, endDoc);
     }
     
     /**
@@ -208,10 +198,13 @@ public class StampPdfGenerator extends PdfGeneratorBase {
         // ข้อมูลติดต่อ
         ContactInfo contactInfo = buildContactInfo(request);
         
+        // คำลงท้าย
+        String endDoc = request.getEndDoc() != null ? request.getEndDoc() : "ขอแสดงความนับถือ";
+        
         log.info("Generating stamp - bookNo: {}, recipients: {}, content length: {}", 
                 bookNo, recipients, content.length());
         
-        return generatePdfInternal(bookNo, recipients, content, signers, departmentName, contactInfo);
+        return generatePdfInternal(bookNo, recipients, content, signers, departmentName, contactInfo, endDoc);
     }
     
     /**
@@ -222,7 +215,8 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                                        String content,
                                        List<SignerInfo> signers,
                                        String departmentName,
-                                       ContactInfo contactInfo) throws Exception {
+                                       ContactInfo contactInfo,
+                                       String endDoc) throws Exception {
         log.info("=== Generating stamp PDF internal ===");
         
         try (PDDocument document = new PDDocument()) {
@@ -322,10 +316,11 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                         // วาด Watermark ลายน้ำ ETDA สีแดง (ก่อนวาด signer box)
                         drawRedWatermark(contentStream, document, yPosition);
                         
-                        // ใช้ label "เรียน" สำหรับหนังสือประทับตรา
+                        // ใช้ endDoc เป็น label สำหรับหนังสือประทับตรา (เช่น "ขอแสดงความนับถือ")
+                        String boxLabel = (endDoc != null && !endDoc.isEmpty()) ? endDoc : "ขอแสดงความนับถือ";
                         yPosition = drawSignerBoxWithSignatureField(document, currentPage, 
                                                   contentStream, signer, fontRegular, yPosition,
-                                                  "Sign", i, "เรียน", false);
+                                                  "Sign", i, boxLabel, true);
                         yPosition -= SPACING_BETWEEN_SIGNATURES;
                     }
                 }

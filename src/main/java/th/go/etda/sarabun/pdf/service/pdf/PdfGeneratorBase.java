@@ -877,7 +877,7 @@ public abstract class PdfGeneratorBase {
      * @param fieldPrefix prefix สำหรับชื่อ field (เช่น "Sign", "Submit")
      * @param index ลำดับผู้ลงนาม
      * @param labelText ข้อความ label (เช่น "ช่องลงนาม", "เสนอผ่าน", "ขอแสดงความนับถือ")
-     * @param forceAboveBox true = แสดง label เหนือกรอบเสมอ (ใช้สำหรับ endDoc/คำลงท้าย)
+     * @param forceAboveBox true = แสดง labelText เหนือกรอบเสมอ (ใช้สำหรับ endDoc/คำลงท้าย)
      * @return ตำแหน่ง Y ใหม่หลังวาดเสร็จ
      */
     protected float drawSignerBoxWithSignatureField(PDDocument document,
@@ -895,17 +895,11 @@ public abstract class PdfGeneratorBase {
         float boxHeight = 50f;
         float boxX = PAGE_WIDTH / 2 + 20;
         
-        // ตรวจสอบความยาว label
-        float labelWidth = font.getStringWidth(labelText) / 1000 * 14f;
-        
-        // แสดง label เหนือกรอบถ้า: 1) forceAboveBox=true (endDoc/คำลงท้าย) หรือ 2) label ยาวเกินกรอบ
-        boolean isLongLabel = labelWidth > boxWidth - 20;
-        boolean showAboveBox = forceAboveBox || isLongLabel;
-        
         float currentY = yPosition;
         
-        // ถ้า forceAboveBox หรือ label ยาว → วางไว้บนหัวกรอบ
-        if (showAboveBox) {
+        // ถ้า forceAboveBox → วาง labelText (endDoc) ไว้บนหัวกรอบ
+        if (forceAboveBox && labelText != null && !labelText.isEmpty()) {
+            float labelWidth = font.getStringWidth(labelText) / 1000 * 14f;
             float boxCenterX = boxX + (boxWidth / 2);
             float longLabelX = boxCenterX - (labelWidth / 2);
             drawText(contentStream, labelText, font, 14f, longLabelX, currentY);
@@ -925,11 +919,19 @@ public abstract class PdfGeneratorBase {
         contentStream.setLineDashPattern(new float[]{}, 0);
         contentStream.setStrokingColor(0, 0, 0);
         
-        // ถ้า label สั้น และไม่ต้องแสดงเหนือกรอบ → วางในกรอบ
-        if (!showAboveBox) {
-            float textX = boxX + (boxWidth - labelWidth) / 2;
+        // วาง signBoxType ในกรอบ (ถ้ามี) หรือ labelText (ถ้าไม่ใช่ forceAboveBox)
+        String boxLabel = null;
+        if (signer.getSignBoxType() != null && !signer.getSignBoxType().isEmpty()) {
+            boxLabel = signer.getSignBoxType();
+        } else if (!forceAboveBox && labelText != null && !labelText.isEmpty()) {
+            boxLabel = labelText;
+        }
+        
+        if (boxLabel != null) {
+            float boxLabelWidth = font.getStringWidth(boxLabel) / 1000 * 14f;
+            float textX = boxX + (boxWidth - boxLabelWidth) / 2;
             float textY = boxY + (boxHeight / 2) - 5;
-            drawText(contentStream, labelText, font, 14f, textX, textY);
+            drawText(contentStream, boxLabel, font, 14f, textX, textY);
         }
         
         // ===== สร้าง AcroForm Signature Field จริง =====
@@ -1250,6 +1252,7 @@ public abstract class PdfGeneratorBase {
         private String departmentName;
         private String email;
         private String signatureBase64;
+        private String signBoxType;    // ประเภทกรอบลายเซ็น: "เรียน", "ลงนาม", "เสนอผ่าน", "ตรวจสอบ"
     }
     
     /**
