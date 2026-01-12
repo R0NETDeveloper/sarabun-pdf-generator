@@ -2,14 +2,23 @@ package th.go.etda.sarabun.pdf.service.pdf;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import th.go.etda.sarabun.pdf.constant.BookType;
+import th.go.etda.sarabun.pdf.constant.SignBoxType;
 import th.go.etda.sarabun.pdf.model.GeneratePdfRequest;
 import th.go.etda.sarabun.pdf.model.PdfResult;
+import th.go.etda.sarabun.pdf.util.HtmlUtils;
 
 /**
  * Generator สำหรับ หนังสือภายใต้กระทรวง (Ministry)
@@ -117,12 +126,252 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
     
     /**
      * สร้าง PDF หนังสือภายใต้กระทรวงสำหรับผู้รับเฉพาะราย (หน่วยงานภายนอก)
+     * โครงสร้างคล้าย Memo แต่หัวเปลี่ยนเป็น "หนังสือภายใต้กระทรวง"
      */
     private String generateMinistryPdfForRecipient(GeneratePdfRequest request, 
                                                     GeneratePdfRequest.BookRecipient recipient) throws Exception {
-        // ใช้ MemoPdfGenerator แต่ override ค่าบางอย่าง
-        // สำหรับตอนนี้ใช้ generateMemoPdf ก่อน (ในอนาคตอาจเพิ่ม generateMemoPdfWithOverride)
         log.info("Generating ministry for recipient: {}", recipient.getOrganizeName());
-        return memoPdfGenerator.generateMemoPdf(request);
+        
+        // รวบรวมข้อมูล
+        String govName = request.getDivisionName() != null ? request.getDivisionName() : 
+                        (request.getDepartment() != null ? request.getDepartment() : "");
+        String dateThai = request.getDateThai();
+        String title = request.getBookTitle() != null ? request.getBookTitle() : "";
+        String bookNo = request.getBookNo();
+        
+        // ใช้ salutation + salutationContent จาก recipient (ถ้ามี)
+        String recipients = "";
+        if (recipient.getSalutation() != null && !recipient.getSalutation().isEmpty()) {
+            recipients = recipient.getSalutation();
+            if (recipient.getSalutationContent() != null && !recipient.getSalutationContent().isEmpty()) {
+                recipients += " " + recipient.getSalutationContent();
+            }
+        } else if (recipient.getOrganizeName() != null && !recipient.getOrganizeName().isEmpty()) {
+            recipients = recipient.getOrganizeName();
+        } else if (request.getRecipients() != null && !request.getRecipients().isEmpty()) {
+            recipients = request.getRecipients();
+        } else if (request.getBookLearner() != null && !request.getBookLearner().isEmpty()) {
+            recipients = request.getBookLearner().stream()
+                .map(l -> l.getPositionName())
+                .filter(Objects::nonNull)
+                .filter(name -> !name.isEmpty())
+                .collect(Collectors.joining("\n"));
+        }
+        
+        // รวบรวมเนื้อหา
+        String content = buildContent(request);
+        
+        // รวบรวมผู้ลงนาม
+        List<SignerInfo> signers = buildSigners(request);
+        
+        // ใช้ endDoc จาก recipient (ถ้ามี) มิเช่นนั้นใช้จาก request
+        String endDoc = (recipient.getEndDoc() != null && !recipient.getEndDoc().isEmpty()) 
+                        ? recipient.getEndDoc() 
+                        : request.getEndDoc();
+        
+        log.info("Generating ministry - govName: {}, recipients: {}, endDoc: {}", 
+                govName, recipients, endDoc);
+        
+        return generateMinistryPdfInternal(govName, dateThai, bookNo, title, recipients, content, 
+                                          request.getSpeedLayer(), signers, endDoc);
+    }
+    
+    /**
+     * สร้าง PDF หนังสือภายใต้กระทรวง (internal)
+     * โครงสร้างคล้าย Memo แต่หัวเปลี่ยนเป็น "หนังสือภายใต้กระทรวง"
+     */
+    private String generateMinistryPdfInternal(String govName,
+                                               String date,
+                                               String bookNo,
+                                               String title,
+                                               String recipients,
+                                               String content,
+                                               String speedLayer,
+                                               List<SignerInfo> signers,
+                                               String endDoc) throws Exception {
+        log.info("=== Generating ministry PDF internal ===");
+        
+        try (PDDocument document = new PDDocument()) {
+            PDPage page = new PDPage(PDRectangle.A4);
+            document.addPage(page);
+            
+            // โหลด fonts
+            PDFont fontRegular = loadRegularFont(document);
+            PDFont fontBold = loadBoldFont(document);
+            
+            PDPageContentStream contentStream = new PDPageContentStream(document, page);
+            try {
+                float yPosition = PAGE_HEIGHT - MARGIN_TOP;
+                
+                // วาดเลขที่หนังสือ (ขอบล่างซ้าย)
+                drawBookNumber(contentStream, bookNo, fontRegular);
+                
+                // วาด debug borders
+                drawDebugBorders(contentStream);
+                
+                // SECTION 0: Logo ETDA (ซ้ายบน)
+                drawLogo(contentStream, document, yPosition, LogoPosition.LEFT);
+                yPosition -= LOGO_SPACING;
+                
+                // SECTION 1: หัวข้อ "หนังสือภายใต้กระทรวง" (แทน "บันทึกข้อความ")
+                yPosition = drawCenteredText(contentStream, "หนังสือภายใต้กระทรวง", 
+                                            fontBold, FONT_SIZE_HEADER, yPosition);
+                yPosition -= SPACING_AFTER_HEADER;
+                
+                // SECTION 2: ส่วนราชการ
+                if (govName != null && !govName.isEmpty()) {
+                    yPosition = drawFieldWithUnderline(contentStream, "ส่วนราชการ", govName, 
+                                                 fontBold, fontRegular, FONT_SIZE_FIELD, FONT_SIZE_FIELD_VALUE, 
+                                                 MARGIN_LEFT, yPosition);
+                    yPosition -= SPACING_BETWEEN_FIELDS;
+                }
+                
+                // SECTION 3: ที่ และ วันที่ (ในบรรทัดเดียวกัน)
+                float fieldStartY = yPosition;
+                
+                // "ที่" ทางซ้าย
+                float maxUnderlineForRef = DATE_X_POSITION - 20;
+                yPosition = drawFieldWithUnderlineCustomWidth(contentStream, "ที่", bookNo != null ? bookNo : "", 
+                                   fontBold, fontRegular, FONT_SIZE_FIELD, FONT_SIZE_FIELD_VALUE, 
+                                   MARGIN_LEFT, yPosition, maxUnderlineForRef);
+                
+                // "วันที่" ทางขวา
+                if (date != null && !date.isEmpty()) {
+                    float maxUnderlineForDate = PAGE_WIDTH - MARGIN_RIGHT;
+                    drawFieldWithUnderlineCustomWidth(contentStream, "วันที่", date, 
+                            fontBold, fontRegular, FONT_SIZE_FIELD, FONT_SIZE_FIELD_VALUE, 
+                            DATE_X_POSITION, fieldStartY, maxUnderlineForDate);
+                }
+                yPosition -= SPACING_BETWEEN_FIELDS;
+                
+                // SECTION 4: เรื่อง
+                if (title != null && !title.isEmpty()) {
+                    yPosition = drawFieldWithUnderline(contentStream, "เรื่อง", title, 
+                                                 fontBold, fontRegular, FONT_SIZE_FIELD, FONT_SIZE_FIELD_VALUE, 
+                                                 MARGIN_LEFT, yPosition);
+                    yPosition -= SPACING_BETWEEN_FIELDS;
+                }
+                
+                // SECTION 5: เรียน
+                if (recipients != null && !recipients.isEmpty()) {
+                    String recipientsText = "เรียน  " + recipients;
+                    yPosition = drawMultilineTextWithIndent(contentStream, recipientsText, 
+                                        fontRegular, FONT_SIZE_FIELD_VALUE, 
+                                        MARGIN_LEFT, yPosition,
+                                        PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT,
+                                        "เรียน  ");
+                    yPosition -= SPACING_BETWEEN_FIELDS;
+                }
+                
+                // SECTION 6: เนื้อหา
+                if (content != null && !content.isEmpty()) {
+                    yPosition -= SPACING_BEFORE_CONTENT;
+                    
+                    String[] lines = content.split("\n");
+                    
+                    for (String line : lines) {
+                        if (yPosition < MIN_Y_POSITION) {
+                            contentStream.close();
+                            
+                            PDPage newPage = createNewPage(document, fontRegular, bookNo);
+                            contentStream = new PDPageContentStream(document, newPage, 
+                                    PDPageContentStream.AppendMode.APPEND, true);
+                            yPosition = PAGE_HEIGHT - MARGIN_TOP - 50;
+                        }
+                        
+                        yPosition = drawMultilineText(contentStream, line, 
+                                                    fontRegular, FONT_SIZE_CONTENT, 
+                                                    MARGIN_LEFT, yPosition, 
+                                                    PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT);
+                    }
+                }
+                
+                // SECTION 7: ช่องลงนาม
+                if (signers != null && !signers.isEmpty()) {
+                    yPosition -= SPACING_BEFORE_SIGNATURES;
+                    
+                    PDPage currentPage = page;
+                    
+                    for (int i = 0; i < signers.size(); i++) {
+                        SignerInfo signer = signers.get(i);
+                        float requiredHeight = 120f;
+                        if (yPosition < MIN_Y_POSITION + requiredHeight) {
+                            contentStream.close();
+                            
+                            currentPage = createNewPage(document, fontRegular, bookNo);
+                            contentStream = new PDPageContentStream(document, currentPage, 
+                                    PDPageContentStream.AppendMode.APPEND, true);
+                            yPosition = PAGE_HEIGHT - MARGIN_TOP - 50;
+                        }
+                        
+                        // ใช้ endDoc เป็น label (ถ้ามี)
+                        String boxLabel = (endDoc != null && !endDoc.isEmpty()) ? endDoc : "";
+                        yPosition = drawSignerBoxWithSignatureField(document, currentPage, 
+                                                  contentStream, signer, fontRegular, yPosition,
+                                                  "Sign", i, boxLabel, false);
+                        yPosition -= SPACING_BETWEEN_SIGNATURES;
+                    }
+                }
+                
+            } finally {
+                if (contentStream != null) {
+                    contentStream.close();
+                }
+            }
+            
+            return convertToBase64(document);
+            
+        } catch (Exception e) {
+            log.error("Error generating ministry PDF: ", e);
+            throw new Exception("ไม่สามารถสร้าง PDF หนังสือภายใต้กระทรวงได้: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * สร้างเนื้อหาจาก request
+     */
+    private String buildContent(GeneratePdfRequest request) {
+        StringBuilder contentBuilder = new StringBuilder();
+        if (request.getBookContent() != null && !request.getBookContent().isEmpty()) {
+            for (var item : request.getBookContent()) {
+                if (item.getBookContentTitle() != null && !item.getBookContentTitle().isEmpty()) {
+                    String titleText = HtmlUtils.isHtml(item.getBookContentTitle()) 
+                        ? HtmlUtils.htmlToPlainText(item.getBookContentTitle())
+                        : item.getBookContentTitle();
+                    contentBuilder.append(titleText).append("  ");
+                }
+                if (item.getBookContent() != null && !item.getBookContent().isEmpty()) {
+                    String contentText = HtmlUtils.isHtml(item.getBookContent())
+                        ? HtmlUtils.htmlToPlainText(item.getBookContent())
+                        : item.getBookContent();
+                    contentBuilder.append(contentText);
+                }
+                contentBuilder.append("\n\n");
+            }
+        }
+        return contentBuilder.toString().trim();
+    }
+    
+    /**
+     * สร้างรายการผู้รับ (bookLearner) สำหรับเจาะช่องลงนามในหนังสือหลัก
+     * signBoxType = "เรียน" (สำหรับหนังสือภายใต้กระทรวง - เหมือน StampPdfGenerator)
+     */
+    private List<SignerInfo> buildSigners(GeneratePdfRequest request) {
+        List<SignerInfo> signers = new ArrayList<>();
+        if (request.getBookLearner() != null && !request.getBookLearner().isEmpty()) {
+            for (var learner : request.getBookLearner()) {
+                signers.add(SignerInfo.builder()
+                    .prefixName(learner.getPrefixName())
+                    .firstname(learner.getFirstname())
+                    .lastname(learner.getLastname())
+                    .positionName(learner.getPositionName())
+                    .departmentName(learner.getDepartmentName())
+                    .email(learner.getEmail())
+                    .signatureBase64(learner.getSignatureBase64())
+                    .signBoxType(SignBoxType.LEARNER)
+                    .build());
+            }
+        }
+        return signers;
     }
 }

@@ -63,15 +63,6 @@ public class GeneratePdfController {
      */
     @PostMapping("/preview")
     public ResponseEntity<ApiResponse<String>> previewPdf(@RequestBody GeneratePdfRequest request) {
-        log.info("============ RECEIVED REQUEST ============");
-        log.info("Raw Request Object: {}", request);
-        log.info("bookNameId: {}", request.getBookNameId());
-        log.info("bookTitle: {}", request.getBookTitle());
-        log.info("bookNo: {}", request.getBookNo());
-        log.info("dateThai: {}", request.getDateThai());
-        log.info("department: {}", request.getDepartment());
-        log.info("divisionName: {}", request.getDivisionName());
-        log.info("bookContent size: {}", request.getBookContent() != null ? request.getBookContent().size() : 0);
         if (request.getBookContent() != null && !request.getBookContent().isEmpty()) {
             for (int i = 0; i < request.getBookContent().size(); i++) {
                 var content = request.getBookContent().get(i);

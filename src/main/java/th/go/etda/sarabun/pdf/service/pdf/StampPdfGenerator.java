@@ -154,10 +154,12 @@ public class StampPdfGenerator extends PdfGeneratorBase {
         // ข้อมูลติดต่อ
         ContactInfo contactInfo = buildContactInfo(request);
         
-        // หนังสือประทับตราไม่มี endDoc (ไม่มีคำลงท้าย)
-        String endDoc = null;
+        // ใช้ endDoc จาก recipient ก่อน ถ้าไม่มีใช้จาก request
+        String endDoc = (recipient.getEndDoc() != null && !recipient.getEndDoc().isEmpty()) 
+                        ? recipient.getEndDoc() 
+                        : request.getEndDoc();
         
-        log.info("Generating stamp for recipient: {}", recipients);
+        log.info("Generating stamp for recipient: {}, endDoc: {}", recipients, endDoc);
         
         return generatePdfInternal(bookNo, recipients, content, signers, departmentName, contactInfo, endDoc);
     }
@@ -301,6 +303,9 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                             yPosition = PAGE_HEIGHT - MARGIN_TOP - 50;
                         }
                         
+                        // วาด Watermark ลายน้ำ ETDA สีแดง เป็นพื้นหลัง (วาดก่อนทุกอย่าง)
+                        drawRedWatermark(contentStream, document, yPosition);
+                        
                         // วาดชื่อหน่วยงาน (อยู่บนหัวของช่องลงนาม - ตรงกลางขวา)
                         if (departmentName != null && !departmentName.isEmpty()) {
                             float deptTextWidth = fontRegular.getStringWidth(departmentName) / 1000 * FONT_SIZE_FIELD_VALUE;
@@ -312,11 +317,8 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                             yPosition -= 5; // ห่างจากช่องลงนามนิดเดียว
                         }
                         
-                        // วาด Watermark ลายน้ำ ETDA สีแดง (ก่อนวาด signer box)
-                        drawRedWatermark(contentStream, document, yPosition);
-                        
                         // ใช้ endDoc เป็น label สำหรับหนังสือประทับตรา (เช่น "ขอแสดงความนับถือ")
-                        String boxLabel = (endDoc != null && !endDoc.isEmpty()) ? endDoc : "ขอแสดงความนับถือ";
+                        String boxLabel = (endDoc != null && !endDoc.isEmpty()) ? endDoc : "";
                         yPosition = drawSignerBoxWithSignatureField(document, currentPage, 
                                                   contentStream, signer, fontRegular, yPosition,
                                                   "Sign", i, boxLabel, true);
@@ -391,13 +393,13 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                 
                 // ตั้งค่าความโปร่งใส (จางๆ)
                 PDExtendedGraphicsState graphicsState = new PDExtendedGraphicsState();
-                graphicsState.setNonStrokingAlphaConstant(0.15f); // 15% opacity
-                graphicsState.setStrokingAlphaConstant(0.15f);
+                graphicsState.setNonStrokingAlphaConstant(0.20f); // 5% opacity (จางมาก)
+                graphicsState.setStrokingAlphaConstant(0.05f);
                 contentStream.setGraphicsStateParameters(graphicsState);
                 
-                // ขนาดลายน้ำ
-                float watermarkWidth = 80f;
-                float watermarkHeight = 28f;
+                // ขนาดลายน้ำ (กว้าง x สูง)
+                float watermarkWidth = 120f;   // กว้าง
+                float watermarkHeight = 60f;   // สูงขึ้น (เดิม 42f)
                 
                 // ตำแหน่ง: ตรงกลาง signer box (ขวาของหน้า)
                 // Signer box อยู่ที่ประมาณ X = PAGE_WIDTH/2 ถึง PAGE_WIDTH - MARGIN_RIGHT
@@ -405,9 +407,8 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                 float signerBoxCenterX = (PAGE_WIDTH / 2 + PAGE_WIDTH - MARGIN_RIGHT) / 2;
                 float watermarkX = signerBoxCenterX - (watermarkWidth / 2);
                 
-                // Y: อยู่ตรงกลาง signer box (ใต้ label "เรียน" และเหนือชื่อผู้ลงนาม)
-                // signer box height = 80, ดังนั้นกลาง box ≈ yPosition - 35
-                float watermarkY = yPosition - 35;
+                // Y: ขยับสูงขึ้น 1 นิ้ว (72 points) จากเดิม -50 เป็น +22
+                float watermarkY = yPosition -20;
                 
                 contentStream.drawImage(stampImage, watermarkX, watermarkY, watermarkWidth, watermarkHeight);
                 

@@ -306,7 +306,9 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                 float addressY = fieldY;
                 
                 if (address != null && !address.isEmpty()) {
-                    String[] addressLines = address.split("\n");
+                    // แปลง literal \n จาก JSON เป็น newline จริง
+                    String cleanAddress = address.replace("\\n", "\n");
+                    String[] addressLines = cleanAddress.split("\n");
                     for (String line : addressLines) {
                         addressY = drawText(contentStream, line.trim(), fontRegular, FONT_SIZE_FIELD_VALUE, 
                                            addressX, addressY);
