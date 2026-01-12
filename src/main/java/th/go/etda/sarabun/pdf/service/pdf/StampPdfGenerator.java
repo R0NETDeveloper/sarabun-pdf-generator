@@ -67,8 +67,8 @@ public class StampPdfGenerator extends PdfGeneratorBase {
             for (int i = 0; i < request.getBookRecipients().size(); i++) {
                 GeneratePdfRequest.BookRecipient recipient = request.getBookRecipients().get(i);
                 
-                // สร้าง PDF สำหรับผู้รับแต่ละหน่วยงาน
-                String stampPdfBase64 = generateStampPdfForRecipient(request, recipient);
+                // สร้าง PDF สำหรับผู้รับแต่ละหน่วยงาน (documentIndex = i+1)
+                String stampPdfBase64 = generateStampPdfForRecipient(request, recipient, i + 1);
                 allPdfsToMerge.add(stampPdfBase64);
                 
                 String recipientName = buildRecipientName(recipient);
@@ -77,8 +77,8 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                 log.info("Generated stamp PDF {} for: {}", i + 1, recipientName);
             }
         } else {
-            // Fallback: ถ้าไม่มี bookRecipients ให้สร้าง PDF เดียว
-            String stampPdfBase64 = generateStampPdf(request);
+            // Fallback: ถ้าไม่มี bookRecipients ให้สร้าง PDF เดียว (documentIndex = 1)
+            String stampPdfBase64 = generateStampPdf(request, 1);
             allPdfsToMerge.add(stampPdfBase64);
             recipientDescriptions.add("หนังสือประทับตรา");
         }
@@ -132,9 +132,11 @@ public class StampPdfGenerator extends PdfGeneratorBase {
     
     /**
      * สร้าง PDF หนังสือประทับตราสำหรับผู้รับเฉพาะราย (หน่วยงานภายนอก)
+     * @param documentIndex ลำดับเอกสาร (1, 2, 3...) สำหรับสร้าง unique field name
      */
     private String generateStampPdfForRecipient(GeneratePdfRequest request, 
-                                                 GeneratePdfRequest.BookRecipient recipient) throws Exception {
+                                                 GeneratePdfRequest.BookRecipient recipient,
+                                                 int documentIndex) throws Exception {
         // รวบรวมข้อมูล
         String bookNo = request.getBookNo();
         
@@ -159,15 +161,16 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                         ? recipient.getEndDoc() 
                         : request.getEndDoc();
         
-        log.info("Generating stamp for recipient: {}, endDoc: {}", recipients, endDoc);
+        log.info("Generating stamp for recipient: {}, endDoc: {}, docIndex: {}", recipients, endDoc, documentIndex);
         
-        return generatePdfInternal(bookNo, recipients, content, signers, departmentName, contactInfo, endDoc);
+        return generatePdfInternal(bookNo, recipients, content, signers, departmentName, contactInfo, endDoc, documentIndex);
     }
     
     /**
      * สร้าง PDF หนังสือประทับตรา
+     * @param documentIndex ลำดับเอกสาร (1, 2, 3...) สำหรับสร้าง unique field name
      */
-    private String generateStampPdf(GeneratePdfRequest request) throws Exception {
+    private String generateStampPdf(GeneratePdfRequest request, int documentIndex) throws Exception {
         // รวบรวมข้อมูล
         String bookNo = request.getBookNo();
         
@@ -202,14 +205,15 @@ public class StampPdfGenerator extends PdfGeneratorBase {
         // หนังสือประทับตราไม่มี endDoc (ไม่มีคำลงท้าย)
         String endDoc = null;
         
-        log.info("Generating stamp - bookNo: {}, recipients: {}, content length: {}", 
-                bookNo, recipients, content.length());
+        log.info("Generating stamp - bookNo: {}, recipients: {}, content length: {}, docIndex: {}", 
+                bookNo, recipients, content.length(), documentIndex);
         
-        return generatePdfInternal(bookNo, recipients, content, signers, departmentName, contactInfo, endDoc);
+        return generatePdfInternal(bookNo, recipients, content, signers, departmentName, contactInfo, endDoc, documentIndex);
     }
     
     /**
      * สร้าง PDF ภายใน
+     * @param documentIndex ลำดับเอกสาร (1, 2, 3...) สำหรับสร้าง unique field name
      */
     private String generatePdfInternal(String bookNo,
                                        String recipients,
@@ -217,7 +221,8 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                                        List<SignerInfo> signers,
                                        String departmentName,
                                        ContactInfo contactInfo,
-                                       String endDoc) throws Exception {
+                                       String endDoc,
+                                       int documentIndex) throws Exception {
         log.info("=== Generating stamp PDF internal ===");
         
         try (PDDocument document = new PDDocument()) {
@@ -321,7 +326,7 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                         String boxLabel = (endDoc != null && !endDoc.isEmpty()) ? endDoc : "";
                         yPosition = drawSignerBoxWithSignatureField(document, currentPage, 
                                                   contentStream, signer, fontRegular, yPosition,
-                                                  "Sign", i, boxLabel, true);
+                                                  "Learner", documentIndex, i, boxLabel, true);
                         yPosition -= SPACING_BETWEEN_SIGNATURES;
                     }
                 }

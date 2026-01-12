@@ -221,7 +221,7 @@ public class OrderPdfGenerator extends PdfGeneratorBase {
                         
                         yPosition = drawSignerBoxWithSignatureField(document, currentPage, 
                                                   contentStream, signer, fontRegular, yPosition,
-                                                  "Sign", i, "เรียน", false);
+                                                  "Sign", 1, i, "เรียน", false);
                         yPosition -= SPACING_BETWEEN_SIGNATURES;
                     }
                 }

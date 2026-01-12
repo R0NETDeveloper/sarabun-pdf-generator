@@ -875,8 +875,9 @@ public abstract class PdfGeneratorBase {
      * @param signer ข้อมูลผู้ลงนาม
      * @param font ฟอนต์
      * @param yPosition ตำแหน่ง Y ปัจจุบัน
-     * @param fieldPrefix prefix สำหรับชื่อ field (เช่น "Sign", "Submit")
-     * @param index ลำดับผู้ลงนาม
+     * @param fieldPrefix prefix สำหรับชื่อ field (เช่น "Sign", "Submit", "Learner")
+     * @param documentIndex ลำดับเอกสาร (D1, D2, D3...) เพื่อให้ field name ไม่ซ้ำ
+     * @param signerIndex ลำดับผู้ลงนามในเอกสาร
      * @param labelText ข้อความ label (เช่น "ช่องลงนาม", "เสนอผ่าน", "ขอแสดงความนับถือ")
      * @param forceAboveBox true = แสดง labelText เหนือกรอบเสมอ (ใช้สำหรับ endDoc/คำลงท้าย)
      * @return ตำแหน่ง Y ใหม่หลังวาดเสร็จ
@@ -888,7 +889,8 @@ public abstract class PdfGeneratorBase {
                                                     PDFont font, 
                                                     float yPosition,
                                                     String fieldPrefix,
-                                                    int index,
+                                                    int documentIndex,
+                                                    int signerIndex,
                                                     String labelText,
                                                     boolean forceAboveBox) throws Exception {
         // กำหนดขนาดและตำแหน่งกรอบ (ตรงกลาง-ขวา)
@@ -943,9 +945,14 @@ public abstract class PdfGeneratorBase {
                 document.getDocumentCatalog().setAcroForm(acroForm);
             }
             
-            String email = signer.getEmail() != null ? signer.getEmail() : "user" + index;
-            String fieldName = fieldPrefix + "_" + index + "_" + 
-                              email.replace("@", "_").replace(".", "_");
+            // Field Name Format: {Prefix}_D{DocIndex}_{SignerIndex}_{Email_sanitized}
+            // เช่น Sign_D1_0_somchai_mdes_go_th (ผู้ลงนามคนที่ 0 ในเอกสารที่ 1)
+            String email = signer.getEmail() != null ? signer.getEmail() : "user" + signerIndex;
+            String fieldName = String.format("%s_D%d_%d_%s", 
+                fieldPrefix,
+                documentIndex,
+                signerIndex,
+                email.replace("@", "_").replace(".", "_"));
             
             PDSignatureField signatureField = new PDSignatureField(acroForm);
             signatureField.setPartialName(fieldName);
@@ -1081,7 +1088,7 @@ public abstract class PdfGeneratorBase {
                     yPosition = drawSignerBoxWithSignatureField(document, 
                                                    document.getPage(document.getNumberOfPages() - 1),
                                                    contentStream, submiter, fontRegular, 
-                                                   yPosition, "Submit", i, SignBoxType.SUBMIT, false);
+                                                   yPosition, "Submit", currentPageNumber, i, SignBoxType.SUBMIT, false);
                     
                     // วาดเส้นแบ่ง (ถ้าไม่ใช่คนสุดท้าย)
                     if (i < submiters.size() - 1) {
@@ -1198,7 +1205,7 @@ public abstract class PdfGeneratorBase {
                     yPosition = drawSignerBoxWithSignatureField(document,
                                                    document.getPage(document.getNumberOfPages() - 1),
                                                    contentStream, learner, fontRegular,
-                                                   yPosition, "Learner", i, SignBoxType.LEARNER, false);
+                                                   yPosition, "Learner", currentPageNumber, i, SignBoxType.LEARNER, false);
                     
                     // วาดเส้นแบ่ง (ถ้าไม่ใช่คนสุดท้าย)
                     if (i < learners.size() - 1) {

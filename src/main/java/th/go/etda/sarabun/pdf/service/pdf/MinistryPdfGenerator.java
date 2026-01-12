@@ -66,8 +66,8 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
             for (int i = 0; i < request.getBookRecipients().size(); i++) {
                 GeneratePdfRequest.BookRecipient recipient = request.getBookRecipients().get(i);
                 
-                // สร้าง PDF สำหรับผู้รับแต่ละหน่วยงาน
-                String ministryPdfBase64 = generateMinistryPdfForRecipient(request, recipient);
+                // สร้าง PDF สำหรับผู้รับแต่ละหน่วยงาน (documentIndex = i+1)
+                String ministryPdfBase64 = generateMinistryPdfForRecipient(request, recipient, i + 1);
                 allPdfsToMerge.add(ministryPdfBase64);
                 
                 String recipientName = buildRecipientName(recipient);
@@ -127,10 +127,12 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
     /**
      * สร้าง PDF หนังสือภายใต้กระทรวงสำหรับผู้รับเฉพาะราย (หน่วยงานภายนอก)
      * โครงสร้างคล้าย Memo แต่หัวเปลี่ยนเป็น "หนังสือภายใต้กระทรวง"
+     * @param documentIndex ลำดับเอกสาร (1, 2, 3...) สำหรับสร้าง unique field name
      */
     private String generateMinistryPdfForRecipient(GeneratePdfRequest request, 
-                                                    GeneratePdfRequest.BookRecipient recipient) throws Exception {
-        log.info("Generating ministry for recipient: {}", recipient.getOrganizeName());
+                                                    GeneratePdfRequest.BookRecipient recipient,
+                                                    int documentIndex) throws Exception {
+        log.info("Generating ministry for recipient: {}, docIndex: {}", recipient.getOrganizeName(), documentIndex);
         
         // รวบรวมข้อมูล
         String govName = request.getDivisionName() != null ? request.getDivisionName() : 
@@ -169,16 +171,17 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
                         ? recipient.getEndDoc() 
                         : request.getEndDoc();
         
-        log.info("Generating ministry - govName: {}, recipients: {}, endDoc: {}", 
-                govName, recipients, endDoc);
+        log.info("Generating ministry - govName: {}, recipients: {}, endDoc: {}, docIndex: {}", 
+                govName, recipients, endDoc, documentIndex);
         
         return generateMinistryPdfInternal(govName, dateThai, bookNo, title, recipients, content, 
-                                          request.getSpeedLayer(), signers, endDoc);
+                                          request.getSpeedLayer(), signers, endDoc, documentIndex);
     }
     
     /**
      * สร้าง PDF หนังสือภายใต้กระทรวง (internal)
      * โครงสร้างคล้าย Memo แต่หัวเปลี่ยนเป็น "หนังสือภายใต้กระทรวง"
+     * @param documentIndex ลำดับเอกสาร (1, 2, 3...) สำหรับสร้าง unique field name
      */
     private String generateMinistryPdfInternal(String govName,
                                                String date,
@@ -188,7 +191,8 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
                                                String content,
                                                String speedLayer,
                                                List<SignerInfo> signers,
-                                               String endDoc) throws Exception {
+                                               String endDoc,
+                                               int documentIndex) throws Exception {
         log.info("=== Generating ministry PDF internal ===");
         
         try (PDDocument document = new PDDocument()) {
@@ -308,7 +312,7 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
                         String boxLabel = (endDoc != null && !endDoc.isEmpty()) ? endDoc : "";
                         yPosition = drawSignerBoxWithSignatureField(document, currentPage, 
                                                   contentStream, signer, fontRegular, yPosition,
-                                                  "Sign", i, boxLabel, false);
+                                                  "Learner", documentIndex, i, boxLabel, false);
                         yPosition -= SPACING_BETWEEN_SIGNATURES;
                     }
                 }

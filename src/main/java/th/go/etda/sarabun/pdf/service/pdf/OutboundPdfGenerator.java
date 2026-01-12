@@ -70,8 +70,8 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
             for (int i = 0; i < request.getBookRecipients().size(); i++) {
                 GeneratePdfRequest.BookRecipient recipient = request.getBookRecipients().get(i);
                 
-                // สร้าง PDF สำหรับผู้รับแต่ละหน่วยงาน
-                String outboundPdfBase64 = generateOutboundPdfForRecipient(request, recipient);
+                // สร้าง PDF สำหรับผู้รับแต่ละหน่วยงาน (documentIndex = i+1)
+                String outboundPdfBase64 = generateOutboundPdfForRecipient(request, recipient, i + 1);
                 allPdfsToMerge.add(outboundPdfBase64);
                 
                 String recipientName = buildRecipientName(recipient);
@@ -80,8 +80,8 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                 log.info("Generated outbound PDF {} for: {}", i + 1, recipientName);
             }
         } else {
-            // Fallback: ถ้าไม่มี bookRecipients ให้สร้าง PDF เดียว
-            String outboundPdfBase64 = generateOutboundPdf(request);
+            // Fallback: ถ้าไม่มี bookRecipients ให้สร้าง PDF เดียว (documentIndex = 1)
+            String outboundPdfBase64 = generateOutboundPdf(request, 1);
             allPdfsToMerge.add(outboundPdfBase64);
             recipientDescriptions.add("หนังสือส่งออก");
         }
@@ -158,9 +158,11 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
     
     /**
      * สร้าง PDF หนังสือส่งออกสำหรับผู้รับเฉพาะราย (หน่วยงานภายนอก)
+     * @param documentIndex ลำดับเอกสาร (1, 2, 3...) สำหรับสร้าง unique field name
      */
     private String generateOutboundPdfForRecipient(GeneratePdfRequest request, 
-                                                    GeneratePdfRequest.BookRecipient recipient) throws Exception {
+                                                    GeneratePdfRequest.BookRecipient recipient,
+                                                    int documentIndex) throws Exception {
         // รวบรวมข้อมูล
         String bookNo = request.getBookNo();
         String address = request.getAddress() != null ? request.getAddress() : "";
@@ -199,18 +201,19 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                             ? recipient.getEndDoc() 
                             : request.getEndDoc();
         
-        log.info("Generating outbound for recipient: {}, salutation: {}, endDoc: {}", recipients, salutation, endDoc);
+        log.info("Generating outbound for recipient: {}, salutation: {}, endDoc: {}, docIndex: {}", recipients, salutation, endDoc, documentIndex);
         
         return generatePdfInternal(bookNo, address, date, title, recipients, recipientsAddress,
                                   referTo, attachments, content, signers,
                                   salutation, salutationContent, 
-                                  endDoc, contactInfo);
+                                  endDoc, contactInfo, documentIndex);
     }
     
     /**
      * สร้าง PDF หนังสือส่งออก (fallback เมื่อไม่มี bookRecipients)
+     * @param documentIndex ลำดับเอกสาร (1, 2, 3...) สำหรับสร้าง unique field name
      */
-    private String generateOutboundPdf(GeneratePdfRequest request) throws Exception {
+    private String generateOutboundPdf(GeneratePdfRequest request, int documentIndex) throws Exception {
         // รวบรวมข้อมูล
         String bookNo = request.getBookNo();
         String address = request.getAddress() != null ? request.getAddress() : "";
@@ -248,17 +251,18 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
         // ข้อมูลติดต่อ
         ContactInfo contactInfo = buildContactInfo(request);
         
-        log.info("Generating outbound - bookNo: {}, title: {}, content length: {}", 
-                bookNo, title, content.length());
+        log.info("Generating outbound - bookNo: {}, title: {}, content length: {}, docIndex: {}", 
+                bookNo, title, content.length(), documentIndex);
         
         return generatePdfInternal(bookNo, address, date, title, recipients, recipientsAddress,
                                   referTo, attachments, content, signers,
                                   request.getSalutation(), request.getSalutationEnding(), 
-                                  request.getEndDoc(), contactInfo);
+                                  request.getEndDoc(), contactInfo, documentIndex);
     }
     
     /**
      * สร้าง PDF ภายใน
+     * @param documentIndex ลำดับเอกสาร (1, 2, 3...) สำหรับสร้าง unique field name
      */
     private String generatePdfInternal(String bookNo,
                                        String address,
@@ -273,7 +277,8 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                                        String salutation,
                                        String salutationEnding,
                                        String endDoc,
-                                       ContactInfo contactInfo) throws Exception {
+                                       ContactInfo contactInfo,
+                                       int documentIndex) throws Exception {
         log.info("=== Generating outbound PDF internal ===");
         
         try (PDDocument document = new PDDocument()) {
@@ -430,7 +435,7 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                         
                         yPosition = drawSignerBoxWithSignatureField(document, currentPage, 
                                                   contentStream, signer, fontRegular, yPosition,
-                                                  "Sign", i, boxLabel, isEndDocLabel);
+                                                  "Learner", documentIndex, i, boxLabel, isEndDocLabel);
                         yPosition -= SPACING_BETWEEN_SIGNATURES;
                     }
                 }

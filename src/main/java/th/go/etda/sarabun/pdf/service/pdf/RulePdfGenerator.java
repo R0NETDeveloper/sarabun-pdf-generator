@@ -245,7 +245,7 @@ public class RulePdfGenerator extends PdfGeneratorBase {
                         // ใช้ label SignBoxType.LEARNER สำหรับหนังสือข้อบังคับ
                         yPosition = drawSignerBoxWithSignatureField(document, currentPage, 
                                                   contentStream, signer, fontRegular, yPosition,
-                                                  "Sign", i, SignBoxType.LEARNER, false);
+                                                  "Sign", 1, i, SignBoxType.LEARNER, false);
                         yPosition -= SPACING_BETWEEN_SIGNATURES;
                     }
                 }

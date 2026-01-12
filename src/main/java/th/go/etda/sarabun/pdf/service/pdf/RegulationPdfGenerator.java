@@ -244,7 +244,7 @@ public class RegulationPdfGenerator extends PdfGeneratorBase {
                         
                         yPosition = drawSignerBoxWithSignatureField(document, currentPage, 
                                                   contentStream, signer, fontRegular, yPosition,
-                                                  "Sign", i, SignBoxType.LEARNER, false);
+                                                  "Sign", 1, i, SignBoxType.LEARNER, false);
                         yPosition -= SPACING_BETWEEN_SIGNATURES;
                     }
                 }
