@@ -24,6 +24,7 @@ import org.springframework.core.io.ClassPathResource;
 
 import lombok.extern.slf4j.Slf4j;
 import th.go.etda.sarabun.pdf.constant.BookType;
+import th.go.etda.sarabun.pdf.constant.SignBoxType;
 import th.go.etda.sarabun.pdf.model.GeneratePdfRequest;
 import th.go.etda.sarabun.pdf.model.PdfResult;
 
@@ -1048,7 +1049,7 @@ public abstract class PdfGeneratorBase {
                 yPosition -= 50;
                 
                 // วาดหัวข้อ "เสนอผ่าน"
-                drawCenteredText(contentStream, "เสนอผ่าน", fontBold, 28, yPosition);
+                drawCenteredText(contentStream, SignBoxType.SUBMIT, fontBold, 28, yPosition);
                 yPosition -= 80;
                 
                 // วาดลายเซ็นแต่ละคน
@@ -1080,7 +1081,7 @@ public abstract class PdfGeneratorBase {
                     yPosition = drawSignerBoxWithSignatureField(document, 
                                                    document.getPage(document.getNumberOfPages() - 1),
                                                    contentStream, submiter, fontRegular, 
-                                                   yPosition, "Submit", i, "เสนอผ่าน", false);
+                                                   yPosition, "Submit", i, SignBoxType.SUBMIT, false);
                     
                     // วาดเส้นแบ่ง (ถ้าไม่ใช่คนสุดท้าย)
                     if (i < submiters.size() - 1) {
@@ -1197,7 +1198,7 @@ public abstract class PdfGeneratorBase {
                     yPosition = drawSignerBoxWithSignatureField(document,
                                                    document.getPage(document.getNumberOfPages() - 1),
                                                    contentStream, learner, fontRegular,
-                                                   yPosition, "Learner", i, "รับทราบ", false);
+                                                   yPosition, "Learner", i, SignBoxType.LEARNER, false);
                     
                     // วาดเส้นแบ่ง (ถ้าไม่ใช่คนสุดท้าย)
                     if (i < learners.size() - 1) {

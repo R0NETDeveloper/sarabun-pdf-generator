@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 import th.go.etda.sarabun.pdf.constant.BookType;
+import th.go.etda.sarabun.pdf.constant.SignBoxType;
 import th.go.etda.sarabun.pdf.model.GeneratePdfRequest;
 import th.go.etda.sarabun.pdf.model.PdfResult;
 import th.go.etda.sarabun.pdf.util.HtmlUtils;
@@ -270,6 +271,7 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
     
     /**
      * สร้างรายการผู้ลงนามจาก request
+     * signBoxType = "ลงนาม" (สำหรับบันทึกข้อความ)
      */
     private List<SignerInfo> buildSigners(GeneratePdfRequest request) {
         List<SignerInfo> signers = new ArrayList<>();
@@ -283,6 +285,7 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
                     .departmentName(signer.getDepartmentName())
                     .email(signer.getEmail())
                     .signatureBase64(signer.getSignatureBase64())
+                    .signBoxType(SignBoxType.SIGN)
                     .build());
             }
         }

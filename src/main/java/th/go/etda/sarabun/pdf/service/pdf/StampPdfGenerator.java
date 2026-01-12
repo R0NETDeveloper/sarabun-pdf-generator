@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import th.go.etda.sarabun.pdf.constant.BookType;
+import th.go.etda.sarabun.pdf.constant.SignBoxType;
 import th.go.etda.sarabun.pdf.model.GeneratePdfRequest;
 import th.go.etda.sarabun.pdf.model.PdfResult;
 import th.go.etda.sarabun.pdf.util.HtmlUtils;
@@ -153,12 +154,10 @@ public class StampPdfGenerator extends PdfGeneratorBase {
         // ข้อมูลติดต่อ
         ContactInfo contactInfo = buildContactInfo(request);
         
-        // ใช้ endDoc จาก recipient (ถ้ามี) หรือ fallback เป็น request
-        String endDoc = (recipient.getEndDoc() != null && !recipient.getEndDoc().isEmpty()) 
-                            ? recipient.getEndDoc() 
-                            : request.getEndDoc();
+        // หนังสือประทับตราไม่มี endDoc (ไม่มีคำลงท้าย)
+        String endDoc = null;
         
-        log.info("Generating stamp for recipient: {}, endDoc: {}", recipients, endDoc);
+        log.info("Generating stamp for recipient: {}", recipients);
         
         return generatePdfInternal(bookNo, recipients, content, signers, departmentName, contactInfo, endDoc);
     }
@@ -198,8 +197,8 @@ public class StampPdfGenerator extends PdfGeneratorBase {
         // ข้อมูลติดต่อ
         ContactInfo contactInfo = buildContactInfo(request);
         
-        // คำลงท้าย
-        String endDoc = request.getEndDoc() != null ? request.getEndDoc() : "ขอแสดงความนับถือ";
+        // หนังสือประทับตราไม่มี endDoc (ไม่มีคำลงท้าย)
+        String endDoc = null;
         
         log.info("Generating stamp - bookNo: {}, recipients: {}, content length: {}", 
                 bookNo, recipients, content.length());
@@ -453,7 +452,7 @@ public class StampPdfGenerator extends PdfGeneratorBase {
     
     /**
      * สร้างรายการผู้รับ (bookLearner) สำหรับเจาะช่องลงนามในหนังสือหลัก
-     * หมายเหตุ: หนังสือหลักใช้ bookLearner, Memo ใช้ bookSigned
+     * signBoxType = "เรียน"
      */
     private List<SignerInfo> buildSigners(GeneratePdfRequest request) {
         List<SignerInfo> signers = new ArrayList<>();
@@ -467,6 +466,7 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                     .departmentName(learner.getDepartmentName())
                     .email(learner.getEmail())
                     .signatureBase64(learner.getSignatureBase64())
+                    .signBoxType(SignBoxType.LEARNER)
                     .build());
             }
         }

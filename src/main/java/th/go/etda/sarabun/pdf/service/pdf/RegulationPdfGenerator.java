@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import th.go.etda.sarabun.pdf.constant.BookType;
+import th.go.etda.sarabun.pdf.constant.SignBoxType;
 import th.go.etda.sarabun.pdf.model.GeneratePdfRequest;
 import th.go.etda.sarabun.pdf.model.PdfResult;
 import th.go.etda.sarabun.pdf.util.HtmlUtils;
@@ -243,7 +244,7 @@ public class RegulationPdfGenerator extends PdfGeneratorBase {
                         
                         yPosition = drawSignerBoxWithSignatureField(document, currentPage, 
                                                   contentStream, signer, fontRegular, yPosition,
-                                                  "Sign", i, "เรียน", false);
+                                                  "Sign", i, SignBoxType.LEARNER, false);
                         yPosition -= SPACING_BETWEEN_SIGNATURES;
                     }
                 }
@@ -352,6 +353,7 @@ public class RegulationPdfGenerator extends PdfGeneratorBase {
                     .departmentName(learner.getDepartmentName())
                     .email(learner.getEmail())
                     .signatureBase64(learner.getSignatureBase64())
+                    .signBoxType(SignBoxType.SIGN)
                     .build());
             }
         }

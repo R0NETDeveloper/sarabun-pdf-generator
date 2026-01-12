@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import th.go.etda.sarabun.pdf.constant.BookType;
+import th.go.etda.sarabun.pdf.constant.SignBoxType;
 import th.go.etda.sarabun.pdf.model.GeneratePdfRequest;
 import th.go.etda.sarabun.pdf.model.PdfResult;
 import th.go.etda.sarabun.pdf.util.HtmlUtils;
@@ -417,8 +418,8 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                             yPosition = PAGE_HEIGHT - MARGIN_TOP - 50;
                         }
                         
-                        // กำหนด label: signer แรกใช้ endDoc (คำลงท้าย), ที่เหลือใช้ "เรียน"
-                        String boxLabel = "เรียน";
+                        // กำหนด label: signer แรกใช้ endDoc (คำลงท้าย), ที่เหลือใช้ SignBoxType.LEARNER
+                        String boxLabel = SignBoxType.LEARNER;
                         boolean isEndDocLabel = false;
                         if (i == 0 && endDoc != null && !endDoc.isEmpty()) {
                             boxLabel = endDoc;
@@ -545,7 +546,7 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                     .departmentName(learner.getDepartmentName())
                     .email(learner.getEmail())
                     .signatureBase64(learner.getSignatureBase64())
-                    .signBoxType("เรียน")
+                    .signBoxType(SignBoxType.LEARNER)
                     .build());
             }
         }

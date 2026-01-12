@@ -218,7 +218,7 @@ public class GeneratePdfService {
             mergedBase64 = memoPdfGenerator.addSubmitPages(mergedBase64, submiters, request.getBookNo());
         }
         
-        // ===== เพิ่มหน้า "ผู้เรียน/รับทราบ" (ขึ้นหน้าใหม่) =====
+        // ===== เพิ่มหน้า "ผู้เรียน" (ขึ้นหน้าใหม่) =====
         if (request.getBookLearner() != null && !request.getBookLearner().isEmpty()) {
             log.info("Adding Learner pages for {} learners", request.getBookLearner().size());
             
