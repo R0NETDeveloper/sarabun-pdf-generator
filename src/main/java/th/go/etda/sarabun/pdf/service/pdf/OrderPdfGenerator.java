@@ -93,7 +93,7 @@ public class OrderPdfGenerator extends PdfGeneratorBase {
         log.info("Generating order - govName: {}, title: {}, edition: {}, content length: {}", 
                 govName, title, edition, content.length());
         
-        return generatePdfInternal(govName, title, edition, dateThai, content, signers, bookNo);
+        return generatePdfInternal(govName, title, edition, dateThai, content, signers, bookNo, request.getSpeedLayer());
     }
     
     /**
@@ -118,7 +118,8 @@ public class OrderPdfGenerator extends PdfGeneratorBase {
                                        String dateThai,
                                        String content,
                                        List<SignerInfo> signers,
-                                       String bookNo) throws Exception {
+                                       String bookNo,
+                                       String speedLayer) throws Exception {
         log.info("=== Generating order PDF internal ===");
         
         try (PDDocument document = new PDDocument()) {
@@ -140,6 +141,10 @@ public class OrderPdfGenerator extends PdfGeneratorBase {
                 
                 // SECTION 0: Logo ETDA (ตรงกลางบน)
                 float logoBottomY = drawLogoCentered(contentStream, document, yPosition);
+                
+                // วาด Speed Layer (ถ้ามี)
+                drawSpeedLayer(contentStream, speedLayer, fontBold, yPosition, LogoPosition.CENTER);
+                
                 yPosition = logoBottomY - 15;
                 
                 // SECTION 1: หัวข้อ "คำสั่ง..."

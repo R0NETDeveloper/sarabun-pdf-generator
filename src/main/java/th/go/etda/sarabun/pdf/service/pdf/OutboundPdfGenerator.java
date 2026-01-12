@@ -206,7 +206,7 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
         return generatePdfInternal(bookNo, address, date, title, recipients, recipientsAddress,
                                   referTo, attachments, content, signers,
                                   salutation, salutationContent, 
-                                  endDoc, contactInfo, documentIndex);
+                                  endDoc, contactInfo, request.getSpeedLayer(), documentIndex);
     }
     
     /**
@@ -257,7 +257,7 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
         return generatePdfInternal(bookNo, address, date, title, recipients, recipientsAddress,
                                   referTo, attachments, content, signers,
                                   request.getSalutation(), request.getSalutationEnding(), 
-                                  request.getEndDoc(), contactInfo, documentIndex);
+                                  request.getEndDoc(), contactInfo, request.getSpeedLayer(), documentIndex);
     }
     
     /**
@@ -278,6 +278,7 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                                        String salutationEnding,
                                        String endDoc,
                                        ContactInfo contactInfo,
+                                       String speedLayer,
                                        int documentIndex) throws Exception {
         log.info("=== Generating outbound PDF internal ===");
         
@@ -300,6 +301,9 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                 
                 // SECTION 0: Logo ETDA (ขวาบน)
                 float logoBottomY = drawLogo(contentStream, document, yPosition, LogoPosition.RIGHT);
+                
+                // วาด Speed Layer (ถ้ามี)
+                drawSpeedLayer(contentStream, speedLayer, fontBold, yPosition, LogoPosition.RIGHT);
                 
                 // SECTION 1: "ที่" (ซ้าย) + ที่อยู่สำนักงาน (ขวา)
                 yPosition = logoBottomY - 15;

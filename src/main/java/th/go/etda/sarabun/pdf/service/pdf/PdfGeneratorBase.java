@@ -659,6 +659,68 @@ public abstract class PdfGeneratorBase {
     }
     
     /**
+     * วาด Speed Layer (ด่วนที่สุด, ด่วนมาก, ลับ ฯลฯ) - ตัวอักษรสีแดง 22pt
+     * ตำแหน่ง: มุมขวาบน (ข้าง Logo)
+     * 
+     * @param contentStream PDPageContentStream
+     * @param speedLayer ข้อความ เช่น "ด่วนที่สุด", "ด่วนมาก", "ลับ" (ถ้า null หรือ "" จะไม่แสดง)
+     * @param font ฟอนต์ที่ใช้
+     * @param yPosition ตำแหน่ง Y เริ่มต้น (ใต้ Logo)
+     * @param logoPosition ตำแหน่ง Logo (RIGHT/CENTER) - ถ้า RIGHT จะเลื่อน speedLayer ไปซ้ายเพื่อไม่ทับ Logo
+     */
+    protected void drawSpeedLayer(PDPageContentStream contentStream, 
+                                   String speedLayer, 
+                                   PDFont font, 
+                                   float yPosition,
+                                   LogoPosition logoPosition) throws IOException {
+        // ถ้าไม่มีค่า ไม่ต้องแสดง
+        if (speedLayer == null || speedLayer.trim().isEmpty()) {
+            return;
+        }
+        
+        float fontSize = 22f;
+        
+        try {
+            // คำนวณความกว้างของข้อความ
+            float textWidth = font.getStringWidth(speedLayer) / 1000 * fontSize;
+            
+            // ตำแหน่ง X: ขึ้นอยู่กับตำแหน่ง Logo
+            float textX;
+            if (logoPosition == LogoPosition.RIGHT) {
+                // Logo อยู่ขวา → เลื่อน speedLayer ไปซ้ายเพื่อไม่ให้ทับ Logo
+                float logoOffset = LOGO_WIDTH + 10; // ห่างจาก Logo ประมาณ 10pt
+                textX = PAGE_WIDTH - MARGIN_RIGHT - textWidth - logoOffset;
+            } else {
+                // Logo อยู่กลาง → speedLayer ชิดขวาปกติ
+                textX = PAGE_WIDTH - MARGIN_RIGHT - textWidth;
+            }
+            
+            // ตำแหน่ง Y: ใต้ Logo เล็กน้อย
+            float textY = yPosition - 5;
+            
+            // ตั้งค่าสีแดง
+            contentStream.setNonStrokingColor(255, 0, 0);  // สีแดง
+            
+            // วาดข้อความ
+            contentStream.beginText();
+            contentStream.setFont(font, fontSize);
+            contentStream.newLineAtOffset(textX, textY);
+            contentStream.showText(speedLayer);
+            contentStream.endText();
+            
+            // รีเซ็ตสีกลับเป็นดำ
+            contentStream.setNonStrokingColor(0, 0, 0);
+            
+            log.info("Speed layer '{}' drawn at ({}, {}) size {}pt", speedLayer, textX, textY, fontSize);
+            
+        } catch (Exception e) {
+            log.warn("Could not draw speed layer: {}", e.getMessage());
+            // รีเซ็ตสีกลับเป็นดำ (กรณี error)
+            contentStream.setNonStrokingColor(0, 0, 0);
+        }
+    }
+    
+    /**
      * สร้าง PdfResult สำหรับ PDF หลัก
      */
     protected PdfResult createMainPdfResult(String pdfBase64, String description) {

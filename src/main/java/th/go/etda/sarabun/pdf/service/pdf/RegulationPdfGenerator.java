@@ -94,7 +94,7 @@ public class RegulationPdfGenerator extends PdfGeneratorBase {
         log.info("Generating regulation - govName: {}, title: {}, edition: {}, year: {}, content length: {}", 
                 govName, title, edition, year, content.length());
         
-        return generatePdfInternal(govName, title, edition, year, dateThai, content, signers, bookNo);
+        return generatePdfInternal(govName, title, edition, year, dateThai, content, signers, bookNo, request.getSpeedLayer());
     }
     
     /**
@@ -141,7 +141,8 @@ public class RegulationPdfGenerator extends PdfGeneratorBase {
                                        String dateThai,
                                        String content,
                                        List<SignerInfo> signers,
-                                       String bookNo) throws Exception {
+                                       String bookNo,
+                                       String speedLayer) throws Exception {
         log.info("=== Generating regulation PDF internal ===");
         
         try (PDDocument document = new PDDocument()) {
@@ -163,6 +164,10 @@ public class RegulationPdfGenerator extends PdfGeneratorBase {
                 
                 // SECTION 0: Logo ETDA (ตรงกลางบน)
                 float logoBottomY = drawLogoCentered(contentStream, document, yPosition);
+                
+                // วาด Speed Layer (ถ้ามี)
+                drawSpeedLayer(contentStream, speedLayer, fontBold, yPosition, LogoPosition.CENTER);
+                
                 yPosition = logoBottomY - 15;
                 
                 // SECTION 1: หัวข้อ "ระเบียบคณะกรรมการ..."

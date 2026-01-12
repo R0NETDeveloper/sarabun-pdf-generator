@@ -215,6 +215,10 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
                 
                 // SECTION 0: Logo ETDA (ซ้ายบน)
                 drawLogo(contentStream, document, yPosition, LogoPosition.LEFT);
+                
+                // SECTION 0.5: Speed Layer (ด่วนที่สุด) - มุมขวาบน สีแดง
+                drawSpeedLayer(contentStream, speedLayer, fontBold, yPosition, LogoPosition.RIGHT);
+                
                 yPosition -= LOGO_SPACING;
                 
                 // SECTION 1: หัวข้อ "หนังสือภายใต้กระทรวง" (แทน "บันทึกข้อความ")

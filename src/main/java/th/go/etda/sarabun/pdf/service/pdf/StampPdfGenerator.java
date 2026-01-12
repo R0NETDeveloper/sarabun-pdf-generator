@@ -163,7 +163,7 @@ public class StampPdfGenerator extends PdfGeneratorBase {
         
         log.info("Generating stamp for recipient: {}, endDoc: {}, docIndex: {}", recipients, endDoc, documentIndex);
         
-        return generatePdfInternal(bookNo, recipients, content, signers, departmentName, contactInfo, endDoc, documentIndex);
+        return generatePdfInternal(bookNo, recipients, content, signers, departmentName, contactInfo, endDoc, request.getSpeedLayer(), documentIndex);
     }
     
     /**
@@ -208,7 +208,7 @@ public class StampPdfGenerator extends PdfGeneratorBase {
         log.info("Generating stamp - bookNo: {}, recipients: {}, content length: {}, docIndex: {}", 
                 bookNo, recipients, content.length(), documentIndex);
         
-        return generatePdfInternal(bookNo, recipients, content, signers, departmentName, contactInfo, endDoc, documentIndex);
+        return generatePdfInternal(bookNo, recipients, content, signers, departmentName, contactInfo, endDoc, request.getSpeedLayer(), documentIndex);
     }
     
     /**
@@ -222,6 +222,7 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                                        String departmentName,
                                        ContactInfo contactInfo,
                                        String endDoc,
+                                       String speedLayer,
                                        int documentIndex) throws Exception {
         log.info("=== Generating stamp PDF internal ===");
         
@@ -244,6 +245,10 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                 
                 // SECTION 0: Logo ETDA (ขวาบน)
                 drawLogo(contentStream, document, yPosition, LogoPosition.RIGHT);
+                
+                // วาด Speed Layer (ถ้ามี)
+                drawSpeedLayer(contentStream, speedLayer, fontBold, yPosition, LogoPosition.RIGHT);
+                
                 yPosition -= LOGO_SPACING + LOGO_HEIGHT - 30;
                 
                 // SECTION 1: "ที่" (ซ้าย)
