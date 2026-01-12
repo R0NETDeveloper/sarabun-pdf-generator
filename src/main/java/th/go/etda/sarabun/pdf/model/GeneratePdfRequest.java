@@ -57,7 +57,8 @@ public class GeneratePdfRequest {
     private List<BookRelate> bookSigned;            // ผู้ลงนาม
     
     private String address;                 // ที่อยู่
-    private String contact;                 // ข้อมูลติดต่อ
+    private String contact;                 // ข้อมูลติดต่อ (string/HTML) - backward compatible
+    private ContactInfo contactInfo;        // ข้อมูลติดต่อ (object) - ใหม่ ⭐
     private Boolean isShowSpeed;            // แสดงชั้นความเร็ว
     private String formatPdf;               // รูปแบบ PDF (A4, etc.)
     
@@ -97,7 +98,7 @@ public class GeneratePdfRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class BookContent {
-        @JsonProperty("GUId")
+        @JsonProperty("guid")
         private String guid;                // GUID
         private String bookDetailId;        // รหัสรายละเอียด
         private String bookNameId;          // รหัสชื่อหนังสือ
@@ -155,7 +156,7 @@ public class GeneratePdfRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class BookSubDetail {
-        @JsonProperty("GUId")
+        @JsonProperty("guid")
         private String guid;                // GUID
         private String bookNo;              // เลขที่หนังสือ
         private String bookTypeId;          // รหัสประเภท
@@ -200,7 +201,7 @@ public class GeneratePdfRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SubDetailLearner {
-        @JsonProperty("GUId")
+        @JsonProperty("guid")
         private String guid;                // GUID
         private String bookSubDetailId;     // รหัสเอกสารรอง
         private String relatedNo;           // ลำดับ
@@ -249,7 +250,7 @@ public class GeneratePdfRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class BookReferTo {
-        @JsonProperty("GUId")
+        @JsonProperty("guid")
         private String guid;                // GUID
         private String bookDetailId;        // รหัสรายละเอียด
         private String bookReferToNo;       // เลขที่อ้างถึง
@@ -266,7 +267,7 @@ public class GeneratePdfRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class BookRecipient {
-        @JsonProperty("GuId")
+        @JsonProperty("guid")
         private String guid;                // GuId
         private String recipientNo;         // ลำดับผู้รับ
         private String ministryId;          // รหัสกระทรวง
@@ -291,6 +292,34 @@ public class GeneratePdfRequest {
     }
 
     /**
+     * ContactInfo Model - ข้อมูลติดต่อ
+     * 
+     * รองรับ 2 แบบ:
+     * 1. ส่งเป็น object โดยตรง (contactInfo)
+     * 2. ส่งเป็น string/HTML (contact) แล้ว parse
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ContactInfo {
+        private String department;      // ชื่อหน่วยงาน
+        private String phone;           // เบอร์โทรศัพท์
+        private String fax;             // โทรสาร
+        private String email;           // อีเมล
+        
+        /**
+         * ตรวจสอบว่ามีข้อมูลติดต่ออย่างน้อย 1 อย่างหรือไม่
+         */
+        public boolean hasAnyInfo() {
+            return (department != null && !department.isEmpty()) ||
+                   (phone != null && !phone.isEmpty()) ||
+                   (fax != null && !fax.isEmpty()) ||
+                   (email != null && !email.isEmpty());
+        }
+    }
+
+    /**
      * BookSettingRelate Model
      * แปลงมาจาก: BookModel.BookSettingRelateModel
      */
@@ -299,7 +328,7 @@ public class GeneratePdfRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class BookSettingRelate {
-        @JsonProperty("GUId")
+        @JsonProperty("guid")
         private String guid;                // GUID
         private String name;                // ชื่อ
         private String creatorId;           // ผู้สร้าง

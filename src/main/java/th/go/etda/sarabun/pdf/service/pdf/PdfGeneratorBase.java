@@ -1268,12 +1268,24 @@ public abstract class PdfGeneratorBase {
         private String phone;
         private String fax;
         private String email;
+        private String rawContact;  // contact string ดั้งเดิม (สำหรับแสดงตาม \n)
         
         public boolean hasAnyInfo() {
             return (department != null && !department.isEmpty()) ||
                    (phone != null && !phone.isEmpty()) ||
                    (fax != null && !fax.isEmpty()) ||
-                   (email != null && !email.isEmpty());
+                   (email != null && !email.isEmpty()) ||
+                   (rawContact != null && !rawContact.isEmpty());
+        }
+        
+        /**
+         * ตรวจสอบว่าใช้แบบ raw string หรือไม่
+         */
+        public boolean useRawContact() {
+            return rawContact != null && !rawContact.isEmpty() &&
+                   (phone == null || phone.isEmpty()) &&
+                   (fax == null || fax.isEmpty()) &&
+                   (email == null || email.isEmpty());
         }
     }
 }

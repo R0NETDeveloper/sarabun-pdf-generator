@@ -328,21 +328,40 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                 if (contactInfo != null && contactInfo.hasAnyInfo()) {
                     yPosition -= 20;
                     
+                    // แสดงชื่อหน่วยงานก่อน
                     if (contactInfo.getDepartment() != null && !contactInfo.getDepartment().isEmpty()) {
                         yPosition = drawText(contentStream, contactInfo.getDepartment(), 
                                            fontRegular, FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
                     }
-                    if (contactInfo.getPhone() != null && !contactInfo.getPhone().isEmpty()) {
-                        yPosition = drawText(contentStream, "เลขหมาย " + convertToThaiNumber(contactInfo.getPhone()), 
-                                           fontRegular, FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
-                    }
-                    if (contactInfo.getFax() != null && !contactInfo.getFax().isEmpty()) {
-                        yPosition = drawText(contentStream, "โทรสาร " + convertToThaiNumber(contactInfo.getFax()), 
-                                           fontRegular, FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
-                    }
-                    if (contactInfo.getEmail() != null && !contactInfo.getEmail().isEmpty()) {
-                        yPosition = drawText(contentStream, "อีเมล " + contactInfo.getEmail(), 
-                                           fontRegular, FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
+                    
+                    // ถ้าใช้ rawContact แสดงตาม line, ถ้าไม่ใช้ แสดงแบบ parsed fields
+                    if (contactInfo.useRawContact()) {
+                        // แสดงตาม format ที่ส่งมา
+                        // รองรับทั้ง newline จริง (\n) และ literal "\n" จาก JSON
+                        String rawText = contactInfo.getRawContact()
+                            .replace("\\n", "\n");  // แปลง literal \n เป็น newline จริง
+                        String[] lines = rawText.split("\n");
+                        for (String line : lines) {
+                            line = line.trim();
+                            if (!line.isEmpty()) {
+                                yPosition = drawText(contentStream, line, 
+                                               fontRegular, FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
+                            }
+                        }
+                    } else {
+                        // แสดงแบบแยก field (เมื่อใช้ contactInfo object)
+                        if (contactInfo.getPhone() != null && !contactInfo.getPhone().isEmpty()) {
+                            yPosition = drawText(contentStream, "เลขหมาย " + convertToThaiNumber(contactInfo.getPhone()), 
+                                               fontRegular, FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
+                        }
+                        if (contactInfo.getFax() != null && !contactInfo.getFax().isEmpty()) {
+                            yPosition = drawText(contentStream, "โทรสาร " + convertToThaiNumber(contactInfo.getFax()), 
+                                               fontRegular, FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
+                        }
+                        if (contactInfo.getEmail() != null && !contactInfo.getEmail().isEmpty()) {
+                            yPosition = drawText(contentStream, "อีเมล " + contactInfo.getEmail(), 
+                                               fontRegular, FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
+                        }
                     }
                 }
                 
@@ -474,21 +493,30 @@ public class StampPdfGenerator extends PdfGeneratorBase {
     }
     
     private ContactInfo buildContactInfo(GeneratePdfRequest request) {
+        // ถ้ามี contactInfo object ให้ใช้เลย (แบบ parsed fields)
+        if (request.getContactInfo() != null && request.getContactInfo().hasAnyInfo()) {
+            GeneratePdfRequest.ContactInfo reqContact = request.getContactInfo();
+            return ContactInfo.builder()
+                .department(reqContact.getDepartment() != null ? reqContact.getDepartment() : request.getDepartment())
+                .phone(reqContact.getPhone())
+                .fax(reqContact.getFax())
+                .email(reqContact.getEmail())
+                .build();
+        }
+        
+        // Fallback: ใช้ contact string โดยตรง (แสดงตาม format ที่ส่งมา)
         ContactInfo info = new ContactInfo();
         info.setDepartment(request.getDepartment());
         
         if (request.getContact() != null && !request.getContact().isEmpty()) {
-            String[] contactLines = request.getContact().split("\n");
-            for (String line : contactLines) {
-                line = line.trim();
-                if (line.startsWith("เลขหมาย") || line.startsWith("โทร.") || line.startsWith("โทรศัพท์")) {
-                    info.setPhone(line.replaceFirst("^(เลขหมาย|โทร\\.|โทรศัพท์)\\s*", ""));
-                } else if (line.startsWith("โทรสาร") || line.startsWith("แฟกซ์")) {
-                    info.setFax(line.replaceFirst("^(โทรสาร|แฟกซ์)\\s*", ""));
-                } else if (line.startsWith("อีเมล") || line.contains("@")) {
-                    info.setEmail(line.replaceFirst("^อีเมล\\s*", ""));
-                }
+            // แปลง HTML เป็น plain text ก่อน (ถ้าเป็น HTML)
+            String contactText = request.getContact();
+            if (HtmlUtils.isHtml(contactText)) {
+                contactText = HtmlUtils.htmlToPlainText(contactText);
             }
+            
+            // เก็บเป็น rawContact เพื่อแสดงตาม format ที่ส่งมา
+            info.setRawContact(contactText);
         }
         
         return info;
