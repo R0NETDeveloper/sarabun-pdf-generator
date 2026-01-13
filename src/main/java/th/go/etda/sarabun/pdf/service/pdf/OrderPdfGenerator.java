@@ -295,31 +295,6 @@ public class OrderPdfGenerator extends PdfGeneratorBase {
     }
     
     /**
-     * สร้างเนื้อหาจาก request
-     */
-    private String buildContent(GeneratePdfRequest request) {
-        StringBuilder contentBuilder = new StringBuilder();
-        if (request.getBookContent() != null && !request.getBookContent().isEmpty()) {
-            for (var item : request.getBookContent()) {
-                if (item.getBookContentTitle() != null && !item.getBookContentTitle().isEmpty()) {
-                    String titleText = HtmlUtils.isHtml(item.getBookContentTitle()) 
-                        ? HtmlUtils.htmlToPlainText(item.getBookContentTitle())
-                        : item.getBookContentTitle();
-                    contentBuilder.append(titleText).append("  ");
-                }
-                if (item.getBookContent() != null && !item.getBookContent().isEmpty()) {
-                    String contentText = HtmlUtils.isHtml(item.getBookContent())
-                        ? HtmlUtils.htmlToPlainText(item.getBookContent())
-                        : item.getBookContent();
-                    contentBuilder.append(contentText);
-                }
-                contentBuilder.append("\n\n");
-            }
-        }
-        return contentBuilder.toString().trim();
-    }
-    
-    /**
      * สร้างรายการผู้รับ (bookLearner) สำหรับเจาะช่องลงนามในหนังสือหลัก
      * หมายเหตุ: หนังสือหลักใช้ bookLearner, Memo ใช้ bookSigned
      */

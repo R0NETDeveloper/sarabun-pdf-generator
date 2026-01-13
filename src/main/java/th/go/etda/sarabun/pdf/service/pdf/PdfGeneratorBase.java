@@ -27,6 +27,7 @@ import th.go.etda.sarabun.pdf.constant.BookType;
 import th.go.etda.sarabun.pdf.constant.SignBoxType;
 import th.go.etda.sarabun.pdf.model.GeneratePdfRequest;
 import th.go.etda.sarabun.pdf.model.PdfResult;
+import th.go.etda.sarabun.pdf.util.HtmlUtils;
 
 /**
  * Base class สำหรับ PDF Generator ทุกประเภท
@@ -1356,5 +1357,43 @@ public abstract class PdfGeneratorBase {
                    (fax == null || fax.isEmpty()) &&
                    (email == null || email.isEmpty());
         }
+    }
+
+    // ============================================
+    // Common Content Processing Methods
+    // ============================================
+    
+    /**
+     * สร้างเนื้อหาจาก bookContent โดยแปลง HTML เป็น plain text
+     * 
+     * Method นี้ใช้ร่วมกันในทุก PDF Generator เนื่องจาก logic เหมือนกันทุกประการ:
+     * 1. วนลูปทุก item ใน bookContent
+     * 2. แปลง bookContentTitle จาก HTML -> plain text (ถ้ามี)
+     * 3. แปลง bookContent จาก HTML -> plain text (ถ้ามี)
+     * 4. รวมเป็น String เดียวโดยคั่นด้วย \n\n
+     * 
+     * @param request GeneratePdfRequest ที่มี bookContent
+     * @return String เนื้อหาที่พร้อมใช้ใน PDF
+     */
+    protected String buildContent(GeneratePdfRequest request) {
+        StringBuilder contentBuilder = new StringBuilder();
+        if (request.getBookContent() != null && !request.getBookContent().isEmpty()) {
+            for (var item : request.getBookContent()) {
+                if (item.getBookContentTitle() != null && !item.getBookContentTitle().isEmpty()) {
+                    String titleText = HtmlUtils.isHtml(item.getBookContentTitle()) 
+                        ? HtmlUtils.htmlToPlainText(item.getBookContentTitle())
+                        : item.getBookContentTitle();
+                    contentBuilder.append(titleText).append("  ");
+                }
+                if (item.getBookContent() != null && !item.getBookContent().isEmpty()) {
+                    String contentText = HtmlUtils.isHtml(item.getBookContent())
+                        ? HtmlUtils.htmlToPlainText(item.getBookContent())
+                        : item.getBookContent();
+                    contentBuilder.append(contentText);
+                }
+                contentBuilder.append("\n\n");
+            }
+        }
+        return contentBuilder.toString().trim();
     }
 }
