@@ -633,7 +633,7 @@ public abstract class PdfGeneratorBase {
      */
     protected float drawLogo(PDPageContentStream contentStream, PDDocument document, float yPosition, LogoPosition position) throws IOException {
         try {
-            InputStream logoStream = getClass().getClassLoader().getResourceAsStream("images/logoETDA.png");
+            InputStream logoStream = getClass().getClassLoader().getResourceAsStream("images/logo_Download_etda_Color.png");
             if (logoStream != null) {
                 PDImageXObject logoImage = PDImageXObject.createFromByteArray(
                     document, logoStream.readAllBytes(), "logo");

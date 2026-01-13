@@ -162,8 +162,8 @@ public class RegulationPdfGenerator extends PdfGeneratorBase {
                 // วาด debug borders
                 drawDebugBorders(contentStream);
                 
-                // SECTION 0: Logo ETDA (ตรงกลางบน)
-                float logoBottomY = drawLogoCentered(contentStream, document, yPosition);
+                // SECTION 0: Logo ETDA (ตรงกลางบน) - ใช้ function กลางจาก PdfGeneratorBase
+                float logoBottomY = drawLogo(contentStream, document, yPosition, LogoPosition.CENTER);
                 
                 // วาด Speed Layer (ถ้ามี)
                 drawSpeedLayer(contentStream, speedLayer, fontBold, yPosition, LogoPosition.CENTER);
@@ -290,31 +290,6 @@ public class RegulationPdfGenerator extends PdfGeneratorBase {
         // ลบ "พ.ศ." ออก (ถ้ามี) เพราะจะใช้ "ประกาศ ณ วันที่" แทน
         String text = result.toString().replace("พ.ศ. ", "").replace("พ.ศ.", "");
         return text.trim();
-    }
-    
-    /**
-     * วาดโลโก้ตรงกลาง
-     */
-    private float drawLogoCentered(PDPageContentStream contentStream, PDDocument document, float yPosition) throws Exception {
-        try {
-            java.io.InputStream logoStream = getClass().getClassLoader().getResourceAsStream("images/logoETDA.png");
-            if (logoStream != null) {
-                org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject logoImage = 
-                    org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject.createFromByteArray(
-                        document, logoStream.readAllBytes(), "logo");
-                
-                float logoX = (PAGE_WIDTH - LOGO_WIDTH) / 2;
-                float logoY = yPosition - LOGO_HEIGHT;
-                
-                contentStream.drawImage(logoImage, logoX, logoY, LOGO_WIDTH, LOGO_HEIGHT);
-                log.info("Logo drawn centered at ({}, {})", logoX, logoY);
-                logoStream.close();
-                return logoY;
-            }
-        } catch (Exception e) {
-            log.warn("Failed to load logo: {}", e.getMessage());
-        }
-        return yPosition - LOGO_HEIGHT;
     }
     
     /**
