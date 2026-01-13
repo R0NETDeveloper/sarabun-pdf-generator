@@ -462,7 +462,7 @@
 
                             <div class="endpoint-info">
                                 <span class="method-badge" id="methodBadge">POST</span>
-                                <span id="fullEndpoint">http://localhost:8888/api/pdf/preview</span>
+                                <span id="fullEndpoint">Loading...</span>
                             </div>
 
                             <div class="sample-select">
@@ -900,12 +900,17 @@
                 }
             }
 
+            // Get base URL from current location (supports any port)
+            function getBaseUrl() {
+                return window.location.origin;
+            }
+
             // Update endpoint display
             document.getElementById("endpoint").addEventListener("change", function () {
                 const endpoint = this.value;
                 const isGet = endpoint.includes("health");
                 document.getElementById("methodBadge").textContent = isGet ? "GET" : "POST";
-                document.getElementById("fullEndpoint").textContent = "http://localhost:8888" + endpoint;
+                document.getElementById("fullEndpoint").textContent = getBaseUrl() + endpoint;
                 document.getElementById("requestBody").disabled = isGet;
             });
 
@@ -967,7 +972,7 @@
                         options.body = body;
                     }
 
-                    const response = await fetch("http://localhost:8888" + endpoint, options);
+                    const response = await fetch(getBaseUrl() + endpoint, options);
                     const elapsed = Date.now() - startTime;
 
                     const data = await response.json();
@@ -1043,7 +1048,7 @@
                     document.getElementById("jsonResponse").value = JSON.stringify({ error: error.message }, null, 2);
                     document.getElementById("responseTime").textContent = "";
 
-                    noPdf.innerHTML = '<div class="no-pdf-icon">🔌</div><div>ไม่สามารถเชื่อมต่อ Server ได้<br><small>ตรวจสอบว่า Server ทำงานอยู่ที่ port 8888</small></div>';
+                    noPdf.innerHTML = '<div class="no-pdf-icon">🔌</div><div>ไม่สามารถเชื่อมต่อ Server ได้<br><small>ตรวจสอบว่า Server ทำงานอยู่ที่ ' + getBaseUrl() + "</small></div>";
                     noPdf.style.display = "flex";
                 }
             }
@@ -1110,6 +1115,9 @@
 
             // Initialize on page load
             document.addEventListener("DOMContentLoaded", function () {
+                // Update endpoint display with current URL
+                const endpoint = document.getElementById("endpoint").value;
+                document.getElementById("fullEndpoint").textContent = getBaseUrl() + endpoint;
                 updateJsonPreview();
             });
         </script>

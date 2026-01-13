@@ -1,0 +1,59 @@
+# ============================================
+# Sarabun PDF API - Docker Compose
+# ============================================
+# Usage:
+#   docker-compose up -d          # Start in background
+#   docker-compose logs -f        # View logs
+#   docker-compose down           # Stop and remove
+#
+# Configuration: แก้ไขไฟล์ .env เพื่อเปลี่ยน port และ settings
+
+services:
+    sarabun-pdf-api:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        image: ${IMAGE_NAME:-sarabun-pdf-api}:${IMAGE_TAG:-1.0.0}
+        container_name: ${CONTAINER_NAME:-sarabun-pdf-api}
+        ports:
+            - "${HOST_PORT:-8889}:${CONTAINER_PORT:-8888}"
+        environment:
+            # Server settings
+            - SERVER_PORT=${CONTAINER_PORT:-8888}
+            - SPRING_PROFILES_ACTIVE=${SPRING_PROFILE:-docker}
+
+            # JVM settings
+            - JAVA_OPTS=${JAVA_OPTS:--Xms256m -Xmx512m -XX:+UseContainerSupport}
+
+            # Logging
+            - LOGGING_LEVEL_ROOT=${LOG_LEVEL_ROOT:-INFO}
+            - LOGGING_LEVEL_TH_GO_ETDA_SARABUN_PDF=${LOG_LEVEL_APP:-DEBUG}
+
+        volumes:
+            # Mount output directory for generated PDFs (optional)
+            - ./output:/app/output
+
+        healthcheck:
+            test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${CONTAINER_PORT:-8888}/actuator/health"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 60s
+
+        restart: unless-stopped
+
+        # Resource limits
+        deploy:
+            resources:
+                limits:
+                    cpus: "1.0"
+                    memory: 768M
+                reservations:
+                    cpus: "0.25"
+                    memory: 256M
+
+# Optional: Network configuration
+networks:
+    default:
+        name: sarabun-network
+        driver: bridge

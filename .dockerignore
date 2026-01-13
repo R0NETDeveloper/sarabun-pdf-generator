@@ -1,0 +1,44 @@
+# ============================================
+# Docker Ignore - Sarabun PDF API
+# ============================================
+
+# Build outputs
+target/
+*.jar
+*.war
+*.class
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# Test files
+test-*.json
+TestHtmlUtils.java
+
+# Output files
+output/
+*.pdf
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
