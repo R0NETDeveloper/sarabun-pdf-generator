@@ -355,10 +355,28 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                                     FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
                 yPosition -= SPACING_BETWEEN_FIELDS;
                 
-                // SECTION 5: อ้างถึง
-                String referToValue = (referTo != null && !referTo.isEmpty()) ? referTo : "";
-                yPosition = drawText(contentStream, "อ้างถึง  " + referToValue, fontRegular, 
-                                    FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
+                // SECTION 5: อ้างถึง (รองรับหลายรายการ - ขึ้นบรรทัดใหม่พร้อม indent)
+                if (referTo != null && !referTo.isEmpty()) {
+                    String[] referToLines = referTo.split("\n");
+                    if (referToLines.length == 1) {
+                        // มี 1 รายการ - แสดงต่อท้าย "อ้างถึง"
+                        yPosition = drawText(contentStream, "อ้างถึง  " + referToLines[0], fontRegular, 
+                                           FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
+                    } else {
+                        // มีหลายรายการ - แสดง "อ้างถึง" แล้วขึ้นบรรทัดใหม่พร้อม indent
+                        yPosition = drawText(contentStream, "อ้างถึง", fontRegular, 
+                                           FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
+                        float indentX = MARGIN_LEFT + fontRegular.getStringWidth("อ้างถึง  ") / 1000 * FONT_SIZE_FIELD_VALUE;
+                        for (int i = 0; i < referToLines.length; i++) {
+                            String referItem = convertToThaiNumber(i + 1) + ". " + referToLines[i];
+                            yPosition = drawText(contentStream, referItem, fontRegular, 
+                                               FONT_SIZE_FIELD_VALUE, indentX, yPosition);
+                        }
+                    }
+                } else {
+                    yPosition = drawText(contentStream, "อ้างถึง  ", fontRegular, 
+                                        FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
+                }
                 yPosition -= SPACING_BETWEEN_FIELDS;
                 
                 // SECTION 6: สิ่งที่ส่งมาด้วย
