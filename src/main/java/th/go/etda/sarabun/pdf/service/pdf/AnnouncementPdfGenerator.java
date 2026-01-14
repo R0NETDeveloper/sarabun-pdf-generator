@@ -40,6 +40,7 @@ import th.go.etda.sarabun.pdf.util.HtmlUtils;
 public class AnnouncementPdfGenerator extends PdfGeneratorBase {
     
     private final MemoPdfGenerator memoPdfGenerator;
+    private final HtmlContentRenderer htmlContentRenderer;
     
     @Override
     public BookType getBookType() {
@@ -82,13 +83,19 @@ public class AnnouncementPdfGenerator extends PdfGeneratorBase {
         // รวบรวมเนื้อหา
         String content = buildContent(request);
         
+        // ตรวจสอบและรวบรวม HTML content
+        String htmlContent = null;
+        if (request.getDocumentMain() != null && hasHtmlContent(request.getDocumentMain().getBookContent())) {
+            htmlContent = buildHtmlContent(request.getDocumentMain().getBookContent());
+        }
+        
         // รวบรวมผู้ลงนาม
         List<SignerInfo> signers = buildSigners(request);
         
-        log.info("Generating announcement - govName: {}, title: {}, content length: {}", 
-                govName, title, content.length());
+        log.info("Generating announcement - govName: {}, title: {}, content length: {}, hasHtml: {}", 
+                govName, title, content.length(), htmlContent != null);
         
-        return generatePdfInternal(govName, title, dateThai, content, signers, bookNo, request.getSpeedLayer());
+        return generatePdfInternal(govName, title, dateThai, content, htmlContent, signers, bookNo, request.getSpeedLayer());
     }
     
     /**
@@ -98,10 +105,11 @@ public class AnnouncementPdfGenerator extends PdfGeneratorBase {
                                        String title,
                                        String dateThai,
                                        String content,
+                                       String htmlContent,
                                        List<SignerInfo> signers,
                                        String bookNo,
                                        String speedLayer) throws Exception {
-        log.info("=== Generating announcement PDF internal ===");
+        log.info("=== Generating announcement PDF internal, hasHtml: {} ===", htmlContent != null && !htmlContent.isEmpty());
         
         try (PDDocument document = new PDDocument()) {
             PDPage page = new PDPage(PDRectangle.A4);
@@ -147,7 +155,9 @@ public class AnnouncementPdfGenerator extends PdfGeneratorBase {
                 contentStream.stroke();
                 yPosition -= 20;
                 
-                // SECTION 4: เนื้อหา
+                // SECTION 4: เนื้อหา (รองรับทั้ง plain text และ HTML table inline)
+                PDPage currentPage = page;
+                
                 if (content != null && !content.isEmpty()) {
                     yPosition -= SPACING_BEFORE_CONTENT;
                     
@@ -157,8 +167,8 @@ public class AnnouncementPdfGenerator extends PdfGeneratorBase {
                         if (yPosition < MIN_Y_POSITION) {
                             contentStream.close();
                             
-                            PDPage newPage = createNewPage(document, fontRegular, bookNo);
-                            contentStream = new PDPageContentStream(document, newPage, 
+                            currentPage = createNewPage(document, fontRegular, bookNo);
+                            contentStream = new PDPageContentStream(document, currentPage, 
                                     PDPageContentStream.AppendMode.APPEND, true);
                             yPosition = PAGE_HEIGHT - MARGIN_TOP - 50;
                         }
@@ -168,6 +178,21 @@ public class AnnouncementPdfGenerator extends PdfGeneratorBase {
                                                     MARGIN_LEFT, yPosition, 
                                                     PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT);
                     }
+                }
+                
+                // SECTION 4.5: วาด HTML content (ทั้งข้อความและตารางผสมกัน)
+                if (htmlContent != null && !htmlContent.isEmpty()) {
+                    yPosition -= 10;
+                    
+                    ContentContext ctx = drawMixedHtmlContent(document, currentPage, contentStream,
+                            htmlContent, fontRegular, fontBold, MARGIN_LEFT, yPosition,
+                            PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT, bookNo);
+                    
+                    contentStream = ctx.getContentStream();
+                    currentPage = ctx.getCurrentPage();
+                    yPosition = ctx.getYPosition();
+                    
+                    log.info("Mixed HTML content drawn in announcement PDF, new yPosition: {}", yPosition);
                 }
                 
                 // SECTION 5: "ประกาศ ณ วันที่ ..."
@@ -180,8 +205,6 @@ public class AnnouncementPdfGenerator extends PdfGeneratorBase {
                 // SECTION 6: ช่องลงนาม (เจาะ Signature Field จริง)
                 if (signers != null && !signers.isEmpty()) {
                     yPosition -= SPACING_BEFORE_SIGNATURES;
-                    
-                    PDPage currentPage = page; // track หน้าปัจจุบัน
                     
                     for (int i = 0; i < signers.size(); i++) {
                         SignerInfo signer = signers.get(i);
@@ -208,7 +231,11 @@ public class AnnouncementPdfGenerator extends PdfGeneratorBase {
                 }
             }
             
-            return convertToBase64(document);
+            String pdfBase64 = convertToBase64(document);
+            
+            // NOTE: HTML tables are now drawn inline in SECTION 4.5
+            
+            return pdfBase64;
             
         } catch (Exception e) {
             log.error("Error generating announcement PDF: ", e);

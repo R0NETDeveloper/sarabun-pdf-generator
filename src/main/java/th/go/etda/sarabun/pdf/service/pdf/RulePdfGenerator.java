@@ -42,6 +42,7 @@ import th.go.etda.sarabun.pdf.util.HtmlUtils;
 public class RulePdfGenerator extends PdfGeneratorBase {
     
     private final MemoPdfGenerator memoPdfGenerator;
+    private final HtmlContentRenderer htmlContentRenderer;
     
     @Override
     public BookType getBookType() {
@@ -88,13 +89,19 @@ public class RulePdfGenerator extends PdfGeneratorBase {
         // รวบรวมเนื้อหา
         String content = buildContent(request);
         
+        // ตรวจสอบและรวบรวม HTML content
+        String htmlContent = null;
+        if (request.getDocumentMain() != null && hasHtmlContent(request.getDocumentMain().getBookContent())) {
+            htmlContent = buildHtmlContent(request.getDocumentMain().getBookContent());
+        }
+        
         // รวบรวมผู้ลงนาม
         List<SignerInfo> signers = buildSigners(request);
         
-        log.info("Generating rule - govName: {}, title: {}, edition: {}, year: {}, content length: {}", 
-                govName, title, edition, year, content.length());
+        log.info("Generating rule - govName: {}, title: {}, edition: {}, year: {}, content length: {}, hasHtml: {}", 
+                govName, title, edition, year, content.length(), htmlContent != null);
         
-        return generatePdfInternal(govName, title, edition, year, dateThai, content, signers, bookNo, request.getSpeedLayer());
+        return generatePdfInternal(govName, title, edition, year, dateThai, content, htmlContent, signers, bookNo, request.getSpeedLayer());
     }
     
     /**
@@ -140,10 +147,11 @@ public class RulePdfGenerator extends PdfGeneratorBase {
                                        String year,
                                        String dateThai,
                                        String content,
+                                       String htmlContent,
                                        List<SignerInfo> signers,
                                        String bookNo,
                                        String speedLayer) throws Exception {
-        log.info("=== Generating rule PDF internal ===");
+        log.info("=== Generating rule PDF internal, hasHtml: {} ===", htmlContent != null && !htmlContent.isEmpty());
         
         try (PDDocument document = new PDDocument()) {
             PDPage page = new PDPage(PDRectangle.A4);
@@ -199,7 +207,9 @@ public class RulePdfGenerator extends PdfGeneratorBase {
                 contentStream.stroke();
                 yPosition -= 20;
                 
-                // SECTION 6: เนื้อหา
+                // SECTION 6: เนื้อหา (รองรับทั้ง plain text และ HTML table inline)
+                PDPage currentPage = page;
+                
                 if (content != null && !content.isEmpty()) {
                     yPosition -= SPACING_BEFORE_CONTENT;
                     
@@ -209,8 +219,8 @@ public class RulePdfGenerator extends PdfGeneratorBase {
                         if (yPosition < MIN_Y_POSITION) {
                             contentStream.close();
                             
-                            PDPage newPage = createNewPage(document, fontRegular, bookNo);
-                            contentStream = new PDPageContentStream(document, newPage, 
+                            currentPage = createNewPage(document, fontRegular, bookNo);
+                            contentStream = new PDPageContentStream(document, currentPage, 
                                     PDPageContentStream.AppendMode.APPEND, true);
                             yPosition = PAGE_HEIGHT - MARGIN_TOP - 50;
                         }
@@ -220,6 +230,21 @@ public class RulePdfGenerator extends PdfGeneratorBase {
                                                     MARGIN_LEFT, yPosition, 
                                                     PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT);
                     }
+                }
+                
+                // SECTION 6.5: วาด HTML content (ทั้งข้อความและตารางผสมกัน)
+                if (htmlContent != null && !htmlContent.isEmpty()) {
+                    yPosition -= 10;
+                    
+                    ContentContext ctx = drawMixedHtmlContent(document, currentPage, contentStream,
+                            htmlContent, fontRegular, fontBold, MARGIN_LEFT, yPosition,
+                            PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT, bookNo);
+                    
+                    contentStream = ctx.getContentStream();
+                    currentPage = ctx.getCurrentPage();
+                    yPosition = ctx.getYPosition();
+                    
+                    log.info("Mixed HTML content drawn in rule PDF, new yPosition: {}", yPosition);
                 }
                 
                 // SECTION 7: "ประกาศ ณ วันที่ ..."
@@ -232,8 +257,6 @@ public class RulePdfGenerator extends PdfGeneratorBase {
                 // SECTION 8: ช่องลงนาม (เจาะ Signature Field จริง พร้อม label "เรียน")
                 if (signers != null && !signers.isEmpty()) {
                     yPosition -= SPACING_BEFORE_SIGNATURES;
-                    
-                    PDPage currentPage = page; // track หน้าปัจจุบัน
                     
                     for (int i = 0; i < signers.size(); i++) {
                         SignerInfo signer = signers.get(i);
@@ -261,7 +284,11 @@ public class RulePdfGenerator extends PdfGeneratorBase {
                 }
             }
             
-            return convertToBase64(document);
+            String pdfBase64 = convertToBase64(document);
+            
+            // NOTE: HTML tables are now drawn inline in SECTION 6.5
+            
+            return pdfBase64;
             
         } catch (Exception e) {
             log.error("Error generating rule PDF: ", e);

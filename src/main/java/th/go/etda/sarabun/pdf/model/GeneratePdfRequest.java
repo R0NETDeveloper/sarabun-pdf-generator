@@ -172,6 +172,10 @@ public class GeneratePdfRequest {
     
     /**
      * BookContent Model - เนื้อหาหนังสือ (New Format)
+     * 
+     * contentType:
+     * - "text" หรือ null: เนื้อหาเป็น plain text (default)
+     * - "html": เนื้อหาเป็น HTML รองรับ tables, images, CSS
      */
     @Data
     @Builder
@@ -182,7 +186,17 @@ public class GeneratePdfRequest {
         private String contentTitle;        // หัวข้อเนื้อหา
         
         @JsonProperty("Content")
-        private String content;             // เนื้อหา (HTML)
+        private String content;             // เนื้อหา (HTML หรือ plain text)
+        
+        @JsonProperty("ContentType")
+        private String contentType;         // ประเภทเนื้อหา: "text" (default) หรือ "html"
+        
+        /**
+         * ตรวจสอบว่าเนื้อหาเป็น HTML หรือไม่
+         */
+        public boolean isHtmlContent() {
+            return "html".equalsIgnoreCase(contentType);
+        }
     }
     
     /**

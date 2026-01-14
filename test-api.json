@@ -9,8 +9,7 @@
     "bookContent": [
         {
             "bookContentTitle": "Subject",
-            "bookContent": "Test content body",
-            "nextPageStatus": false
+            "bookContent": "Test content body"
         }
     ]
 }

@@ -44,6 +44,7 @@ import th.go.etda.sarabun.pdf.util.HtmlUtils;
 public class StampPdfGenerator extends PdfGeneratorBase {
     
     private final MemoPdfGenerator memoPdfGenerator;
+    private final HtmlContentRenderer htmlContentRenderer;
     
     @Override
     public BookType getBookType() {
@@ -146,6 +147,12 @@ public class StampPdfGenerator extends PdfGeneratorBase {
         // รวบรวมเนื้อหา
         String content = buildContent(request);
         
+        // ตรวจสอบและรวบรวม HTML content
+        String htmlContent = null;
+        if (request.getDocumentMain() != null && hasHtmlContent(request.getDocumentMain().getBookContent())) {
+            htmlContent = buildHtmlContent(request.getDocumentMain().getBookContent());
+        }
+        
         // สร้าง SignerInfo จาก bookSigned (ผู้ลงนาม) - ไม่ใช่จาก recipient
         List<SignerInfo> signers = buildSigners(request);
         
@@ -161,9 +168,9 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                         ? recipient.getEndDoc() 
                         : request.getEndDoc();
         
-        log.info("Generating stamp for recipient: {}, endDoc: {}, docIndex: {}", recipients, endDoc, documentIndex);
+        log.info("Generating stamp for recipient: {}, endDoc: {}, hasHtml: {}, docIndex: {}", recipients, endDoc, htmlContent != null, documentIndex);
         
-        return generatePdfInternal(bookNo, recipients, content, signers, departmentName, contactInfo, endDoc, request.getSpeedLayer(), documentIndex);
+        return generatePdfInternal(bookNo, recipients, content, htmlContent, signers, departmentName, contactInfo, endDoc, request.getSpeedLayer(), documentIndex);
     }
     
     /**
@@ -192,6 +199,12 @@ public class StampPdfGenerator extends PdfGeneratorBase {
         // รวบรวมเนื้อหา
         String content = buildContent(request);
         
+        // ตรวจสอบและรวบรวม HTML content
+        String htmlContent = null;
+        if (request.getDocumentMain() != null && hasHtmlContent(request.getDocumentMain().getBookContent())) {
+            htmlContent = buildHtmlContent(request.getDocumentMain().getBookContent());
+        }
+        
         // รวบรวมผู้ลงนาม
         List<SignerInfo> signers = buildSigners(request);
         
@@ -205,10 +218,10 @@ public class StampPdfGenerator extends PdfGeneratorBase {
         // หนังสือประทับตราไม่มี endDoc (ไม่มีคำลงท้าย)
         String endDoc = null;
         
-        log.info("Generating stamp - bookNo: {}, recipients: {}, content length: {}, docIndex: {}", 
-                bookNo, recipients, content.length(), documentIndex);
+        log.info("Generating stamp - bookNo: {}, recipients: {}, content length: {}, hasHtml: {}, docIndex: {}", 
+                bookNo, recipients, content.length(), htmlContent != null, documentIndex);
         
-        return generatePdfInternal(bookNo, recipients, content, signers, departmentName, contactInfo, endDoc, request.getSpeedLayer(), documentIndex);
+        return generatePdfInternal(bookNo, recipients, content, htmlContent, signers, departmentName, contactInfo, endDoc, request.getSpeedLayer(), documentIndex);
     }
     
     /**
@@ -218,13 +231,14 @@ public class StampPdfGenerator extends PdfGeneratorBase {
     private String generatePdfInternal(String bookNo,
                                        String recipients,
                                        String content,
+                                       String htmlContent,
                                        List<SignerInfo> signers,
                                        String departmentName,
                                        ContactInfo contactInfo,
                                        String endDoc,
                                        String speedLayer,
                                        int documentIndex) throws Exception {
-        log.info("=== Generating stamp PDF internal ===");
+        log.info("=== Generating stamp PDF internal, hasHtml: {} ===", htmlContent != null && !htmlContent.isEmpty());
         
         try (PDDocument document = new PDDocument()) {
             PDPage page = new PDPage(PDRectangle.A4);
@@ -263,7 +277,9 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                                     PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT, "ถึง  ");
                 yPosition -= SPACING_BETWEEN_FIELDS;
                 
-                // SECTION 3: เนื้อหา
+                // SECTION 3: เนื้อหา (รองรับทั้ง plain text และ HTML table inline)
+                PDPage currentPage = page;
+                
                 if (content != null && !content.isEmpty()) {
                     yPosition -= SPACING_BEFORE_CONTENT;
                     
@@ -275,8 +291,8 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                         if (yPosition < MIN_Y_POSITION) {
                             contentStream.close();
                             
-                            PDPage newPage = createNewPage(document, fontRegular, bookNo);
-                            contentStream = new PDPageContentStream(document, newPage, 
+                            currentPage = createNewPage(document, fontRegular, bookNo);
+                            contentStream = new PDPageContentStream(document, currentPage, 
                                     PDPageContentStream.AppendMode.APPEND, true);
                             yPosition = PAGE_HEIGHT - MARGIN_TOP - 50;
                         }
@@ -292,14 +308,27 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                     }
                 }
                 
+                // SECTION 3.5: วาด HTML content (ทั้งข้อความและตารางผสมกัน)
+                if (htmlContent != null && !htmlContent.isEmpty()) {
+                    yPosition -= 10;
+                    
+                    ContentContext ctx = drawMixedHtmlContent(document, currentPage, contentStream,
+                            htmlContent, fontRegular, fontBold, MARGIN_LEFT, yPosition,
+                            PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT, bookNo);
+                    
+                    contentStream = ctx.getContentStream();
+                    currentPage = ctx.getCurrentPage();
+                    yPosition = ctx.getYPosition();
+                    
+                    log.info("Mixed HTML content drawn in stamp PDF, new yPosition: {}", yPosition);
+                }
+                
                 yPosition -= 30;
                 
                 // SECTION 4 + 5: ช่องลงนาม พร้อม label "เรียน" + ลายน้ำ ETDA สีแดง
                 // ชื่อหน่วยงานจะวาดอยู่บนหัวของช่องลงนาม
                 if (signers != null && !signers.isEmpty()) {
                     yPosition -= SPACING_BEFORE_SIGNATURES;
-                    
-                    PDPage currentPage = page;
                     
                     for (int i = 0; i < signers.size(); i++) {
                         SignerInfo signer = signers.get(i);
@@ -383,7 +412,11 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                 }
             }
             
-            return convertToBase64(document);
+            String pdfBase64 = convertToBase64(document);
+            
+            // NOTE: HTML tables are now drawn inline in SECTION 3.5
+            
+            return pdfBase64;
             
         } catch (Exception e) {
             log.error("Error generating stamp PDF: ", e);

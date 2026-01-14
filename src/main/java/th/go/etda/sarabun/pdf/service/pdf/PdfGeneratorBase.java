@@ -1364,6 +1364,82 @@ public abstract class PdfGeneratorBase {
     // ============================================
     
     /**
+     * ข้อมูลเนื้อหาที่ประมวลผลแล้ว
+     */
+    @lombok.Data
+    @lombok.Builder
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class ProcessedContent {
+        private String textContent;     // เนื้อหา plain text (สำหรับ drawMultilineText)
+        private String htmlContent;     // เนื้อหา HTML (สำหรับ HtmlContentRenderer)
+        private boolean hasHtmlContent; // มีเนื้อหา HTML หรือไม่
+    }
+    
+    /**
+     * ประมวลผลเนื้อหาจาก bookContent
+     * แยกเนื้อหา text และ html ออกจากกัน
+     * 
+     * @param bookContent รายการ BookContent
+     * @return ProcessedContent ที่มีทั้ง textContent และ htmlContent
+     */
+    protected ProcessedContent processContentItems(List<GeneratePdfRequest.BookContent> bookContent) {
+        StringBuilder textBuilder = new StringBuilder();
+        StringBuilder htmlBuilder = new StringBuilder();
+        boolean hasHtml = false;
+        
+        if (bookContent == null || bookContent.isEmpty()) {
+            return ProcessedContent.builder()
+                .textContent("")
+                .htmlContent("")
+                .hasHtmlContent(false)
+                .build();
+        }
+        
+        for (var item : bookContent) {
+            String title = item.getContentTitle();
+            String content = item.getContent();
+            boolean isHtmlItem = item.isHtmlContent();
+            
+            if (isHtmlItem) {
+                hasHtml = true;
+                // เพิ่มเข้า HTML builder
+                if (title != null && !title.isEmpty()) {
+                    htmlBuilder.append("<p><strong>").append(title).append("</strong>  ");
+                }
+                if (content != null && !content.isEmpty()) {
+                    htmlBuilder.append(content);
+                }
+                if (title != null && !title.isEmpty() && !content.contains("</p>")) {
+                    htmlBuilder.append("</p>");
+                }
+                htmlBuilder.append("\n");
+            } else {
+                // เพิ่มเข้า text builder (แปลง HTML เป็น plain text ถ้าจำเป็น)
+                if (title != null && !title.isEmpty()) {
+                    String titleText = HtmlUtils.isHtml(title) 
+                        ? HtmlUtils.htmlToPlainText(title)
+                        : title;
+                    textBuilder.append(titleText).append("  ");
+                }
+                if (content != null && !content.isEmpty()) {
+                    String contentText = HtmlUtils.isHtml(content)
+                        ? HtmlUtils.htmlToPlainText(content)
+                        : content;
+                    textBuilder.append(contentText);
+                }
+                textBuilder.append("\n\n");
+            }
+        }
+        
+        return ProcessedContent.builder()
+            .textContent(textBuilder.toString().trim())
+            .htmlContent(htmlBuilder.toString().trim())
+            .hasHtmlContent(hasHtml)
+            .build();
+    }
+    
+    /**
      * สร้างเนื้อหาจาก bookContent โดยแปลง HTML เป็น plain text
      * 
      * Method นี้ใช้ร่วมกันในทุก PDF Generator เนื่องจาก logic เหมือนกันทุกประการ:
@@ -1401,5 +1477,317 @@ public abstract class PdfGeneratorBase {
             }
         }
         return contentBuilder.toString().trim();
+    }
+    
+    /**
+     * สร้างเนื้อหา HTML จาก bookContent (สำหรับ HTML rendering)
+     * 
+     * @param bookContent รายการ BookContent
+     * @return HTML string พร้อม render
+     */
+    protected String buildHtmlContent(List<GeneratePdfRequest.BookContent> bookContent) {
+        if (bookContent == null || bookContent.isEmpty()) {
+            return "";
+        }
+        
+        StringBuilder htmlBuilder = new StringBuilder();
+        
+        for (var item : bookContent) {
+            String title = item.getContentTitle();
+            String content = item.getContent();
+            
+            // เพิ่ม title ถ้ามี
+            if (title != null && !title.isEmpty()) {
+                if (HtmlUtils.isHtml(title)) {
+                    htmlBuilder.append(title);
+                } else {
+                    htmlBuilder.append("<p><strong>").append(escapeHtml(title)).append("</strong></p>\n");
+                }
+            }
+            
+            // เพิ่ม content
+            if (content != null && !content.isEmpty()) {
+                if (HtmlUtils.isHtml(content) || item.isHtmlContent()) {
+                    // เนื้อหาเป็น HTML แล้ว
+                    htmlBuilder.append(content).append("\n");
+                } else {
+                    // แปลง plain text เป็น HTML
+                    String htmlContent = plainTextToHtml(content);
+                    htmlBuilder.append(htmlContent).append("\n");
+                }
+            }
+        }
+        
+        return htmlBuilder.toString().trim();
+    }
+    
+    /**
+     * แปลง plain text เป็น HTML
+     * รักษา whitespace และ newlines
+     */
+    protected String plainTextToHtml(String plainText) {
+        if (plainText == null || plainText.isEmpty()) {
+            return "";
+        }
+        
+        // Escape HTML entities
+        String escaped = escapeHtml(plainText);
+        
+        // Split by paragraphs (double newline)
+        String[] paragraphs = escaped.split("\n\n");
+        StringBuilder html = new StringBuilder();
+        
+        for (String paragraph : paragraphs) {
+            if (paragraph.trim().isEmpty()) {
+                html.append("<p>&nbsp;</p>\n");
+            } else {
+                // Preserve leading spaces for Thai document style
+                String processed = paragraph.replace("\n", "<br/>");
+                // Handle indentation
+                if (processed.startsWith("        ")) {
+                    processed = "<span style=\"margin-left:40pt;\">" + processed.substring(8) + "</span>";
+                }
+                html.append("<p>").append(processed).append("</p>\n");
+            }
+        }
+        
+        return html.toString();
+    }
+    
+    /**
+     * Escape HTML entities
+     */
+    protected String escapeHtml(String text) {
+        if (text == null) return "";
+        return text
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;");
+    }
+    
+    /**
+     * ตรวจสอบว่า bookContent มี HTML content หรือไม่
+     * 
+     * @param bookContent รายการ BookContent
+     * @return true ถ้ามีอย่างน้อย 1 item ที่เป็น HTML
+     */
+    protected boolean hasHtmlContent(List<GeneratePdfRequest.BookContent> bookContent) {
+        if (bookContent == null || bookContent.isEmpty()) {
+            return false;
+        }
+        
+        for (var item : bookContent) {
+            if (item.isHtmlContent()) {
+                return true;
+            }
+            // ตรวจสอบจากเนื้อหาด้วย
+            if (item.getContent() != null && HtmlUtils.isHtml(item.getContent())) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    // ============================================
+    // Table Drawing Methods - วาดตาราง HTML inline
+    // ============================================
+    
+    /**
+     * Context object สำหรับส่งผ่าน state ระหว่างวาดตาราง
+     * ใช้สำหรับ track contentStream และ page ที่อาจเปลี่ยนเมื่อขึ้นหน้าใหม่
+     */
+    @lombok.Data
+    @lombok.Builder
+    public static class ContentContext {
+        private PDPageContentStream contentStream;
+        private PDPage currentPage;
+        private float yPosition;
+    }
+    
+    /**
+     * วาดตาราง HTML ลงใน content stream โดยตรง (inline ในเนื้อหา)
+     * 
+     * @param document PDDocument
+     * @param page หน้าปัจจุบัน
+     * @param contentStream PDPageContentStream ปัจจุบัน
+     * @param htmlTable HTML string ที่มี &lt;table&gt;
+     * @param font ฟอนต์ปกติ
+     * @param fontBold ฟอนต์หนา
+     * @param startX ตำแหน่ง X เริ่มต้น
+     * @param startY ตำแหน่ง Y เริ่มต้น
+     * @param maxWidth ความกว้างสูงสุดของตาราง
+     * @param bookNo เลขที่หนังสือ (สำหรับวาดเมื่อขึ้นหน้าใหม่)
+     * @return ContentContext ที่มี contentStream, page, และ yPosition ใหม่
+     */
+    protected ContentContext drawTableInline(PDDocument document,
+                                             PDPage page,
+                                             PDPageContentStream contentStream,
+                                             String htmlTable,
+                                             PDFont font,
+                                             PDFont fontBold,
+                                             float startX,
+                                             float startY,
+                                             float maxWidth,
+                                             String bookNo) throws Exception {
+        
+        TableRenderer renderer = new TableRenderer();
+        TableRenderer.TableData tableData = renderer.parseHtmlTable(htmlTable, maxWidth);
+        
+        if (tableData == null || tableData.getRows().isEmpty()) {
+            log.warn("No table data found in HTML");
+            return ContentContext.builder()
+                .contentStream(contentStream)
+                .currentPage(page)
+                .yPosition(startY)
+                .build();
+        }
+        
+        TableRenderer.DrawContext ctx = TableRenderer.DrawContext.builder()
+            .document(document)
+            .page(page)
+            .contentStream(contentStream)
+            .font(font)
+            .fontBold(fontBold)
+            .fontSize(FONT_SIZE_CONTENT)
+            .startX(startX)
+            .startY(startY)
+            .maxWidth(maxWidth)
+            .marginTop(MARGIN_TOP)
+            .marginBottom(MIN_Y_POSITION)
+            .pageHeight(PAGE_HEIGHT)
+            .bookNo(bookNo)
+            .build();
+        
+        TableRenderer.DrawResult result = renderer.drawTable(ctx, tableData);
+        
+        return ContentContext.builder()
+            .contentStream(result.getContentStream())
+            .currentPage(result.getCurrentPage())
+            .yPosition(result.getNewYPosition())
+            .build();
+    }
+    
+    /**
+     * ตรวจสอบว่า content มีตารางหรือไม่
+     */
+    protected boolean containsHtmlTable(String content) {
+        return TableRenderer.containsTable(content);
+    }
+    
+    /**
+     * แยกตารางออกจาก HTML content
+     */
+    protected List<String> extractTablesFromHtml(String htmlContent) {
+        return TableRenderer.extractTables(htmlContent);
+    }
+    
+    /**
+     * วาด HTML content ที่มีทั้งข้อความและตารางผสมกัน (จาก editor)
+     * 
+     * รองรับ HTML แบบ:
+     * <p>ข้อความก่อนตาราง</p>
+     * <table>...</table>
+     * <p>ข้อความหลังตาราง</p>
+     * 
+     * @param document PDDocument
+     * @param page หน้าปัจจุบัน
+     * @param contentStream PDPageContentStream ปัจจุบัน
+     * @param htmlContent HTML content ที่มีทั้งข้อความและตาราง
+     * @param font ฟอนต์ปกติ
+     * @param fontBold ฟอนต์หนา
+     * @param startX ตำแหน่ง X เริ่มต้น
+     * @param startY ตำแหน่ง Y เริ่มต้น
+     * @param maxWidth ความกว้างสูงสุด
+     * @param bookNo เลขที่หนังสือ
+     * @return ContentContext ที่มี contentStream, page, และ yPosition ใหม่
+     */
+    protected ContentContext drawMixedHtmlContent(PDDocument document,
+                                                   PDPage page,
+                                                   PDPageContentStream contentStream,
+                                                   String htmlContent,
+                                                   PDFont font,
+                                                   PDFont fontBold,
+                                                   float startX,
+                                                   float startY,
+                                                   float maxWidth,
+                                                   String bookNo) throws Exception {
+        
+        if (htmlContent == null || htmlContent.isEmpty()) {
+            return ContentContext.builder()
+                .contentStream(contentStream)
+                .currentPage(page)
+                .yPosition(startY)
+                .build();
+        }
+        
+        // แยก HTML content เป็นส่วนๆ (ข้อความ และ ตาราง)
+        List<TableRenderer.ContentPart> parts = TableRenderer.splitHtmlContent(htmlContent);
+        
+        float currentY = startY;
+        PDPage currentPage = page;
+        PDPageContentStream currentStream = contentStream;
+        
+        log.info("Drawing mixed HTML content with {} parts", parts.size());
+        
+        for (TableRenderer.ContentPart part : parts) {
+            if (part.isText()) {
+                // วาดข้อความ
+                String text = part.getContent();
+                if (text != null && !text.isEmpty()) {
+                    String[] lines = text.split("\n");
+                    
+                    for (String line : lines) {
+                        if (line.trim().isEmpty()) {
+                            currentY -= 10; // เว้นบรรทัดว่าง
+                            continue;
+                        }
+                        
+                        // ตรวจสอบว่าต้องขึ้นหน้าใหม่หรือไม่
+                        if (currentY < MIN_Y_POSITION) {
+                            currentStream.close();
+                            
+                            currentPage = createNewPage(document, font, bookNo);
+                            currentStream = new PDPageContentStream(document, currentPage, 
+                                    PDPageContentStream.AppendMode.APPEND, true);
+                            currentY = PAGE_HEIGHT - MARGIN_TOP - 50;
+                        }
+                        
+                        currentY = drawMultilineText(currentStream, line, font, FONT_SIZE_CONTENT, 
+                                                    startX, currentY, maxWidth);
+                    }
+                }
+            } else if (part.isTable()) {
+                // วาดตาราง
+                currentY -= 15; // เว้นระยะก่อนตาราง
+                
+                // ตรวจสอบว่าต้องขึ้นหน้าใหม่ก่อนวาดตารางหรือไม่
+                if (currentY < MIN_Y_POSITION + 100) {
+                    currentStream.close();
+                    
+                    currentPage = createNewPage(document, font, bookNo);
+                    currentStream = new PDPageContentStream(document, currentPage, 
+                            PDPageContentStream.AppendMode.APPEND, true);
+                    currentY = PAGE_HEIGHT - MARGIN_TOP - 50;
+                }
+                
+                // วาดตาราง
+                ContentContext ctx = drawTableInline(document, currentPage, currentStream,
+                        part.getContent(), font, fontBold, startX, currentY, maxWidth, bookNo);
+                
+                currentStream = ctx.getContentStream();
+                currentPage = ctx.getCurrentPage();
+                currentY = ctx.getYPosition();
+                
+                currentY -= 10; // เว้นระยะหลังตาราง
+            }
+        }
+        
+        return ContentContext.builder()
+            .contentStream(currentStream)
+            .currentPage(currentPage)
+            .yPosition(currentY)
+            .build();
     }
 }

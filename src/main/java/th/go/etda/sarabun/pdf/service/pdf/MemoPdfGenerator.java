@@ -38,6 +38,12 @@ import th.go.etda.sarabun.pdf.util.HtmlUtils;
 @Component
 public class MemoPdfGenerator extends PdfGeneratorBase {
     
+    private final HtmlContentRenderer htmlContentRenderer;
+    
+    public MemoPdfGenerator(HtmlContentRenderer htmlContentRenderer) {
+        this.htmlContentRenderer = htmlContentRenderer;
+    }
+    
     @Override
     public BookType getBookType() {
         return BookType.MEMO;
@@ -97,18 +103,22 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
         // รวบรวมเนื้อหาจาก documentMain
         String content = buildContentFromDocMain(docMain);
         
+        // ตรวจสอบและรวบรวม HTML content
+        String htmlContent = hasHtmlContentInDocMain(docMain) ? buildHtmlContentFromDocMain(docMain) : null;
+        
         // รวบรวมผู้ลงนาม
         List<SignerInfo> signers = buildSigners(request);
         
-        log.info("Generating memo - govName: {}, title: {}, content length: {}", 
-                govName, title, content.length());
+        log.info("Generating memo - govName: {}, title: {}, content length: {}, hasHtml: {}", 
+                govName, title, content.length(), htmlContent != null);
         
-        return generatePdfInternal(govName, dateThai, bookNo, title, recipients, content, 
+        return generatePdfInternal(govName, dateThai, bookNo, title, recipients, content, htmlContent,
                                   speedLayer, signers);
     }
     
     /**
      * รวบรวมเนื้อหาจาก documentMain (New Format)
+     * Skip HTML content (จะ render แยก)
      */
     private String buildContentFromDocMain(GeneratePdfRequest.DocumentMain docMain) {
         if (docMain == null || docMain.getBookContent() == null || docMain.getBookContent().isEmpty()) {
@@ -117,6 +127,11 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
         
         StringBuilder sb = new StringBuilder();
         for (var bc : docMain.getBookContent()) {
+            // ถ้าเป็น HTML content ให้ skip (จะ render แยก)
+            if (bc.isHtmlContent()) {
+                continue;
+            }
+            
             // ใช้ contentTitle และ content (New Format)
             if (bc.getContentTitle() != null && !bc.getContentTitle().isEmpty()) {
                 sb.append(bc.getContentTitle()).append("\n");
@@ -134,6 +149,46 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
     }
     
     /**
+     * ตรวจสอบว่า documentMain มี HTML content หรือไม่
+     */
+    private boolean hasHtmlContentInDocMain(GeneratePdfRequest.DocumentMain docMain) {
+        if (docMain == null || docMain.getBookContent() == null) {
+            return false;
+        }
+        for (var bc : docMain.getBookContent()) {
+            if (bc.isHtmlContent()) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * สร้าง HTML content จาก documentMain (สำหรับ HTML rendering)
+     */
+    private String buildHtmlContentFromDocMain(GeneratePdfRequest.DocumentMain docMain) {
+        if (docMain == null || docMain.getBookContent() == null || docMain.getBookContent().isEmpty()) {
+            return "";
+        }
+        
+        StringBuilder html = new StringBuilder();
+        for (var bc : docMain.getBookContent()) {
+            // เฉพาะ HTML content
+            if (!bc.isHtmlContent()) {
+                continue;
+            }
+            
+            if (bc.getContentTitle() != null && !bc.getContentTitle().isEmpty()) {
+                html.append("<p><strong>").append(bc.getContentTitle()).append("</strong></p>\n");
+            }
+            if (bc.getContent() != null && !bc.getContent().isEmpty()) {
+                html.append(bc.getContent()).append("\n");
+            }
+        }
+        return html.toString().trim();
+    }
+    
+    /**
      * สร้าง PDF ภายใน
      */
     private String generatePdfInternal(String govName,
@@ -142,9 +197,10 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
                                        String title,
                                        String recipients,
                                        String content,
+                                       String htmlContent,
                                        String speedLayer,
                                        List<SignerInfo> signers) throws Exception {
-        log.info("=== Generating memo PDF internal ===");
+        log.info("=== Generating memo PDF internal, hasHtml: {} ===", htmlContent != null && !htmlContent.isEmpty());
         
         try (PDDocument document = new PDDocument()) {
             PDPage page = new PDPage(PDRectangle.A4);
@@ -222,7 +278,10 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
                     yPosition -= SPACING_BETWEEN_FIELDS;
                 }
                 
-                // SECTION 6: เนื้อหา
+                // SECTION 6: เนื้อหา (รองรับทั้ง plain text และ HTML mixed content)
+                PDPage currentPage = page; // track หน้าปัจจุบัน
+                
+                // วาด plain text content ก่อน (ถ้ามี)
                 if (content != null && !content.isEmpty()) {
                     yPosition -= SPACING_BEFORE_CONTENT;
                     
@@ -232,8 +291,8 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
                         if (yPosition < MIN_Y_POSITION) {
                             contentStream.close();
                             
-                            PDPage newPage = createNewPage(document, fontRegular, bookNo);
-                            contentStream = new PDPageContentStream(document, newPage, 
+                            currentPage = createNewPage(document, fontRegular, bookNo);
+                            contentStream = new PDPageContentStream(document, currentPage, 
                                     PDPageContentStream.AppendMode.APPEND, true);
                             yPosition = PAGE_HEIGHT - MARGIN_TOP - 50;
                         }
@@ -245,11 +304,24 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
                     }
                 }
                 
+                // SECTION 6.5: วาด HTML content (ทั้งข้อความและตารางผสมกัน)
+                if (htmlContent != null && !htmlContent.isEmpty()) {
+                    yPosition -= SPACING_BEFORE_CONTENT;
+                    
+                    ContentContext ctx = drawMixedHtmlContent(document, currentPage, contentStream,
+                            htmlContent, fontRegular, fontBold, MARGIN_LEFT, yPosition,
+                            PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT, bookNo);
+                    
+                    contentStream = ctx.getContentStream();
+                    currentPage = ctx.getCurrentPage();
+                    yPosition = ctx.getYPosition();
+                    
+                    log.info("Mixed HTML content drawn in memo, new yPosition: {}", yPosition);
+                }
+                
                 // SECTION 7: ช่องลงนาม (เจาะ Signature Field จริง)
                 if (signers != null && !signers.isEmpty()) {
                     yPosition -= SPACING_BEFORE_SIGNATURES;
-                    
-                    PDPage currentPage = page; // track หน้าปัจจุบัน
                     
                     for (int i = 0; i < signers.size(); i++) {
                         SignerInfo signer = signers.get(i);
@@ -276,7 +348,12 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
                 }
             }
             
-            return convertToBase64(document);
+            String pdfBase64 = convertToBase64(document);
+            
+            // NOTE: HTML tables are now drawn inline in SECTION 6.5
+            // No need to append as separate pages
+            
+            return pdfBase64;
             
         } catch (Exception e) {
             log.error("Error generating memo PDF: ", e);

@@ -43,6 +43,7 @@ import th.go.etda.sarabun.pdf.util.HtmlUtils;
 public class MinistryPdfGenerator extends PdfGeneratorBase {
     
     private final MemoPdfGenerator memoPdfGenerator;
+    private final HtmlContentRenderer htmlContentRenderer;
     
     @Override
     public BookType getBookType() {
@@ -163,6 +164,12 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
         // รวบรวมเนื้อหา
         String content = buildContent(request);
         
+        // ตรวจสอบและรวบรวม HTML content
+        String htmlContent = null;
+        if (request.getDocumentMain() != null && hasHtmlContent(request.getDocumentMain().getBookContent())) {
+            htmlContent = buildHtmlContent(request.getDocumentMain().getBookContent());
+        }
+        
         // รวบรวมผู้ลงนาม
         List<SignerInfo> signers = buildSigners(request);
         
@@ -171,10 +178,10 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
                         ? recipient.getEndDoc() 
                         : request.getEndDoc();
         
-        log.info("Generating ministry - govName: {}, recipients: {}, endDoc: {}, docIndex: {}", 
-                govName, recipients, endDoc, documentIndex);
+        log.info("Generating ministry - govName: {}, recipients: {}, endDoc: {}, hasHtml: {}, docIndex: {}", 
+                govName, recipients, endDoc, htmlContent != null, documentIndex);
         
-        return generateMinistryPdfInternal(govName, dateThai, bookNo, title, recipients, content, 
+        return generateMinistryPdfInternal(govName, dateThai, bookNo, title, recipients, content, htmlContent,
                                           request.getSpeedLayer(), signers, endDoc, documentIndex);
     }
     
@@ -189,11 +196,12 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
                                                String title,
                                                String recipients,
                                                String content,
+                                               String htmlContent,
                                                String speedLayer,
                                                List<SignerInfo> signers,
                                                String endDoc,
                                                int documentIndex) throws Exception {
-        log.info("=== Generating ministry PDF internal ===");
+        log.info("=== Generating ministry PDF internal, hasHtml: {} ===", htmlContent != null && !htmlContent.isEmpty());
         
         try (PDDocument document = new PDDocument()) {
             PDPage page = new PDPage(PDRectangle.A4);
@@ -271,7 +279,9 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
                     yPosition -= SPACING_BETWEEN_FIELDS;
                 }
                 
-                // SECTION 6: เนื้อหา
+                // SECTION 6: เนื้อหา (รองรับทั้ง plain text และ HTML table inline)
+                PDPage currentPage = page; // track หน้าปัจจุบัน
+                
                 if (content != null && !content.isEmpty()) {
                     yPosition -= SPACING_BEFORE_CONTENT;
                     
@@ -281,8 +291,8 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
                         if (yPosition < MIN_Y_POSITION) {
                             contentStream.close();
                             
-                            PDPage newPage = createNewPage(document, fontRegular, bookNo);
-                            contentStream = new PDPageContentStream(document, newPage, 
+                            currentPage = createNewPage(document, fontRegular, bookNo);
+                            contentStream = new PDPageContentStream(document, currentPage, 
                                     PDPageContentStream.AppendMode.APPEND, true);
                             yPosition = PAGE_HEIGHT - MARGIN_TOP - 50;
                         }
@@ -294,11 +304,24 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
                     }
                 }
                 
+                // SECTION 6.5: วาด HTML content (ทั้งข้อความและตารางผสมกัน)
+                if (htmlContent != null && !htmlContent.isEmpty()) {
+                    yPosition -= SPACING_BEFORE_CONTENT;
+                    
+                    ContentContext ctx = drawMixedHtmlContent(document, currentPage, contentStream,
+                            htmlContent, fontRegular, fontBold, MARGIN_LEFT, yPosition,
+                            PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT, bookNo);
+                    
+                    contentStream = ctx.getContentStream();
+                    currentPage = ctx.getCurrentPage();
+                    yPosition = ctx.getYPosition();
+                    
+                    log.info("Mixed HTML content drawn in ministry PDF, new yPosition: {}", yPosition);
+                }
+                
                 // SECTION 7: ช่องลงนาม
                 if (signers != null && !signers.isEmpty()) {
                     yPosition -= SPACING_BEFORE_SIGNATURES;
-                    
-                    PDPage currentPage = page;
                     
                     for (int i = 0; i < signers.size(); i++) {
                         SignerInfo signer = signers.get(i);
@@ -327,7 +350,11 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
                 }
             }
             
-            return convertToBase64(document);
+            String pdfBase64 = convertToBase64(document);
+            
+            // NOTE: HTML tables are now drawn inline in SECTION 6.5
+            
+            return pdfBase64;
             
         } catch (Exception e) {
             log.error("Error generating ministry PDF: ", e);

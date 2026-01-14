@@ -46,6 +46,7 @@ import th.go.etda.sarabun.pdf.util.HtmlUtils;
 public class OutboundPdfGenerator extends PdfGeneratorBase {
     
     private final MemoPdfGenerator memoPdfGenerator;
+    private final HtmlContentRenderer htmlContentRenderer;
     
     @Override
     public BookType getBookType() {
@@ -166,6 +167,9 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
         // รวบรวมเนื้อหา จาก documentSub
         String content = buildContentFromDocSub(docSub);
         
+        // รวบรวม HTML content (ถ้ามี)
+        String htmlContent = hasHtmlContentInDocSub(docSub) ? buildHtmlContentFromDocSub(docSub) : null;
+        
         // สร้าง SignerInfo จาก bookSigned (ผู้ลงนาม)
         List<SignerInfo> signers = buildSigners(request);
         
@@ -177,11 +181,11 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
         String salutationContent = recipient.getSalutationContent();
         String endDoc = recipient.getEndDoc();
         
-        log.info("Generating outbound for recipient: {}, salutation: {}, endDoc: {}, docIndex: {}", 
-                recipients, salutation, endDoc, documentIndex);
+        log.info("Generating outbound for recipient: {}, salutation: {}, endDoc: {}, docIndex: {}, hasHtml: {}", 
+                recipients, salutation, endDoc, documentIndex, htmlContent != null);
         
         return generatePdfInternal(bookNo, address, date, title, recipients, recipientsAddress,
-                                  referTo, attachments, content, signers,
+                                  referTo, attachments, content, htmlContent, signers,
                                   salutation, salutationContent, 
                                   endDoc, contactInfo, speedLayer, documentIndex);
     }
@@ -213,17 +217,20 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
         // รวบรวมเนื้อหา จาก documentSub
         String content = buildContentFromDocSub(docSub);
         
+        // รวบรวม HTML content (ถ้ามี)
+        String htmlContent = hasHtmlContentInDocSub(docSub) ? buildHtmlContentFromDocSub(docSub) : null;
+        
         // รวบรวมผู้ลงนาม
         List<SignerInfo> signers = buildSigners(request);
         
         // ข้อมูลติดต่อ จาก documentSub
         ContactInfo contactInfo = buildContactInfoFromString(contact);
         
-        log.info("Generating outbound - bookNo: {}, title: {}, content length: {}, docIndex: {}", 
-                bookNo, title, content.length(), documentIndex);
+        log.info("Generating outbound - bookNo: {}, title: {}, content length: {}, hasHtml: {}, docIndex: {}", 
+                bookNo, title, content.length(), htmlContent != null, documentIndex);
         
         return generatePdfInternal(bookNo, address, date, title, recipients, recipientsAddress,
-                                  referTo, attachments, content, signers,
+                                  referTo, attachments, content, htmlContent, signers,
                                   null, null, 
                                   null, contactInfo, speedLayer, documentIndex);
     }
@@ -241,6 +248,7 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                                        String referTo,
                                        List<String> attachments,
                                        String content,
+                                       String htmlContent,
                                        List<SignerInfo> signers,
                                        String salutation,
                                        String salutationEnding,
@@ -248,7 +256,7 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                                        ContactInfo contactInfo,
                                        String speedLayer,
                                        int documentIndex) throws Exception {
-        log.info("=== Generating outbound PDF internal ===");
+        log.info("=== Generating outbound PDF internal, hasHtmlContent: {} ===", htmlContent != null && !htmlContent.isEmpty());
         
         try (PDDocument document = new PDDocument()) {
             PDPage page = new PDPage(PDRectangle.A4);
@@ -367,7 +375,10 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                 }
                 yPosition -= SPACING_BETWEEN_FIELDS;
                 
-                // SECTION 7: เนื้อหา
+                // SECTION 7: เนื้อหา (รองรับทั้ง plain text และ HTML mixed content)
+                PDPage currentPage = page; // track หน้าปัจจุบัน
+                
+                // วาด plain text content ก่อน (ถ้ามี)
                 if (content != null && !content.isEmpty()) {
                     yPosition -= SPACING_BEFORE_CONTENT;
                     
@@ -377,8 +388,8 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                         if (yPosition < MIN_Y_POSITION) {
                             contentStream.close();
                             
-                            PDPage newPage = createNewPage(document, fontRegular, bookNo);
-                            contentStream = new PDPageContentStream(document, newPage, 
+                            currentPage = createNewPage(document, fontRegular, bookNo);
+                            contentStream = new PDPageContentStream(document, currentPage, 
                                     PDPageContentStream.AppendMode.APPEND, true);
                             yPosition = PAGE_HEIGHT - MARGIN_TOP - 50;
                         }
@@ -390,11 +401,25 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                     }
                 }
                 
+                // SECTION 7.5: วาด HTML content (ทั้งข้อความและตารางผสมกัน)
+                if (htmlContent != null && !htmlContent.isEmpty()) {
+                    yPosition -= SPACING_BEFORE_CONTENT;
+                    
+                    // ใช้ drawMixedHtmlContent เพื่อวาดทั้งข้อความและตารางตามลำดับ
+                    ContentContext ctx = drawMixedHtmlContent(document, currentPage, contentStream,
+                            htmlContent, fontRegular, fontBold, MARGIN_LEFT, yPosition,
+                            PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT, bookNo);
+                    
+                    contentStream = ctx.getContentStream();
+                    currentPage = ctx.getCurrentPage();
+                    yPosition = ctx.getYPosition();
+                    
+                    log.info("Mixed HTML content drawn, new yPosition: {}", yPosition);
+                }
+                
                 // SECTION 8+9: ช่องลงนาม (เจาะ Signature Field จริง + รวม endDoc เป็น label บนกรอบ)
                 if (signers != null && !signers.isEmpty()) {
                     yPosition -= SPACING_BEFORE_SIGNATURES;
-                    
-                    PDPage currentPage = page; // track หน้าปัจจุบัน
                     
                     for (int i = 0; i < signers.size(); i++) {
                         SignerInfo signer = signers.get(i);
@@ -476,7 +501,12 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                 }
             }
             
-            return convertToBase64(document);
+            String pdfBase64 = convertToBase64(document);
+            
+            // NOTE: HTML tables are now drawn inline in SECTION 7.5
+            // No need to append as separate pages
+            
+            return pdfBase64;
             
         } catch (Exception e) {
             log.error("Error generating outbound PDF: ", e);
@@ -531,6 +561,7 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
     
     /**
      * รวบรวมเนื้อหาจาก documentSub (New Format)
+     * สำหรับ plain text rendering (ใช้ drawMultilineText)
      */
     private String buildContentFromDocSub(GeneratePdfRequest.DocumentSub docSub) {
         if (docSub == null || docSub.getBookContent() == null || docSub.getBookContent().isEmpty()) {
@@ -539,6 +570,11 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
         
         StringBuilder sb = new StringBuilder();
         for (var bc : docSub.getBookContent()) {
+            // ถ้าเป็น HTML content ให้ skip (จะ render แยก)
+            if (bc.isHtmlContent()) {
+                continue;
+            }
+            
             // ใช้ contentTitle และ content (New Format)
             if (bc.getContentTitle() != null && !bc.getContentTitle().isEmpty()) {
                 sb.append(bc.getContentTitle()).append("\n");
@@ -553,6 +589,46 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
             }
         }
         return sb.toString().trim();
+    }
+    
+    /**
+     * ตรวจสอบว่า documentSub มี HTML content หรือไม่
+     */
+    private boolean hasHtmlContentInDocSub(GeneratePdfRequest.DocumentSub docSub) {
+        if (docSub == null || docSub.getBookContent() == null) {
+            return false;
+        }
+        for (var bc : docSub.getBookContent()) {
+            if (bc.isHtmlContent()) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * สร้าง HTML content จาก documentSub (สำหรับ HTML rendering)
+     */
+    private String buildHtmlContentFromDocSub(GeneratePdfRequest.DocumentSub docSub) {
+        if (docSub == null || docSub.getBookContent() == null || docSub.getBookContent().isEmpty()) {
+            return "";
+        }
+        
+        StringBuilder html = new StringBuilder();
+        for (var bc : docSub.getBookContent()) {
+            // เฉพาะ HTML content
+            if (!bc.isHtmlContent()) {
+                continue;
+            }
+            
+            if (bc.getContentTitle() != null && !bc.getContentTitle().isEmpty()) {
+                html.append("<p><strong>").append(bc.getContentTitle()).append("</strong></p>\n");
+            }
+            if (bc.getContent() != null && !bc.getContent().isEmpty()) {
+                html.append(bc.getContent()).append("\n");
+            }
+        }
+        return html.toString().trim();
     }
     
     /**
