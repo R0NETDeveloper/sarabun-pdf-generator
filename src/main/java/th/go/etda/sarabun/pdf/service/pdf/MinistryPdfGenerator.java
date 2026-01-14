@@ -166,10 +166,10 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
         
         // ตรวจสอบและรวบรวม HTML content (bookContent เป็น Object ไม่ใช่ Array)
         String htmlContent = null;
-        if (request.getDocumentMain() != null && 
-            request.getDocumentMain().getBookContent() != null &&
-            hasHtmlContent(request.getDocumentMain().getBookContent())) {
-            htmlContent = buildHtmlContent(request.getDocumentMain().getBookContent());
+        if (request.getDocumentSub() != null && 
+            request.getDocumentSub().getBookContent() != null &&
+            hasHtmlContent(request.getDocumentSub().getBookContent())) {
+            htmlContent = buildHtmlContent(request.getDocumentSub().getBookContent());
         }
         
         // รวบรวมผู้ลงนาม
