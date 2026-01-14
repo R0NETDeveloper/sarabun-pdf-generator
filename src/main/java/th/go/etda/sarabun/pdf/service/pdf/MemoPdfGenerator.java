@@ -63,20 +63,30 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
     
     /**
      * สร้าง PDF บันทึกข้อความ
+     * อ่านข้อมูลจาก documentMain (New Format)
      */
     public String generateMemoPdf(GeneratePdfRequest request) throws Exception {
-        // รวบรวมข้อมูล
-        String govName = request.getDivisionName() != null ? request.getDivisionName() : 
-                        (request.getDepartment() != null ? request.getDepartment() : "");
-        String dateThai = request.getDateThai();
-        String title = request.getBookTitle() != null ? request.getBookTitle() : "";
-        String bookNo = request.getBookNo();
+        // อ่านจาก documentMain (New Format)
+        GeneratePdfRequest.DocumentMain docMain = request.getDocumentMain();
         
-        // รวบรวมรายชื่อผู้รับ
+        String govName = "";
+        String dateThai = "";
+        String title = "";
+        String bookNo = "";
+        String speedLayer = "";
+        
+        if (docMain != null) {
+            govName = docMain.getDivisionName() != null ? docMain.getDivisionName() : 
+                     (docMain.getDepartment() != null ? docMain.getDepartment() : "");
+            dateThai = docMain.getDateThai();
+            title = docMain.getBookTitle() != null ? docMain.getBookTitle() : "";
+            bookNo = docMain.getBookNo();
+            speedLayer = docMain.getSpeedLayer();
+        }
+        
+        // รวบรวมรายชื่อผู้รับจาก bookLearner
         String recipients = "";
-        if (request.getRecipients() != null && !request.getRecipients().isEmpty()) {
-            recipients = request.getRecipients();
-        } else if (request.getBookLearner() != null && !request.getBookLearner().isEmpty()) {
+        if (request.getBookLearner() != null && !request.getBookLearner().isEmpty()) {
             recipients = request.getBookLearner().stream()
                 .map(l -> l.getPositionName())
                 .filter(Objects::nonNull)
@@ -84,8 +94,8 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
                 .collect(Collectors.joining("\n"));
         }
         
-        // รวบรวมเนื้อหา
-        String content = buildContent(request);
+        // รวบรวมเนื้อหาจาก documentMain
+        String content = buildContentFromDocMain(docMain);
         
         // รวบรวมผู้ลงนาม
         List<SignerInfo> signers = buildSigners(request);
@@ -94,7 +104,33 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
                 govName, title, content.length());
         
         return generatePdfInternal(govName, dateThai, bookNo, title, recipients, content, 
-                                  request.getSpeedLayer(), signers);
+                                  speedLayer, signers);
+    }
+    
+    /**
+     * รวบรวมเนื้อหาจาก documentMain (New Format)
+     */
+    private String buildContentFromDocMain(GeneratePdfRequest.DocumentMain docMain) {
+        if (docMain == null || docMain.getBookContent() == null || docMain.getBookContent().isEmpty()) {
+            return "";
+        }
+        
+        StringBuilder sb = new StringBuilder();
+        for (var bc : docMain.getBookContent()) {
+            // ใช้ contentTitle และ content (New Format)
+            if (bc.getContentTitle() != null && !bc.getContentTitle().isEmpty()) {
+                sb.append(bc.getContentTitle()).append("\n");
+            }
+            if (bc.getContent() != null && !bc.getContent().isEmpty()) {
+                String content = bc.getContent();
+                // แปลง HTML เป็น plain text
+                if (HtmlUtils.isHtml(content)) {
+                    content = HtmlUtils.htmlToPlainText(content);
+                }
+                sb.append(content).append("\n");
+            }
+        }
+        return sb.toString().trim();
     }
     
     /**

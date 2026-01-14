@@ -63,14 +63,7 @@ public class GeneratePdfController {
      */
     @PostMapping("/preview")
     public ResponseEntity<ApiResponse<String>> previewPdf(@RequestBody GeneratePdfRequest request) {
-        if (request.getBookContent() != null && !request.getBookContent().isEmpty()) {
-            for (int i = 0; i < request.getBookContent().size(); i++) {
-                var content = request.getBookContent().get(i);
-                log.info("  bookContent[{}].title: {}", i, content.getBookContentTitle());
-                log.info("  bookContent[{}].content: {}", i, content.getBookContent());
-            }
-        }
-        log.info("==========================================");
+        log.info("============ PDF PREVIEW REQUEST ============");
         
         try {
             ApiResponse<String> response = generatePdfService.previewPdf(request);
@@ -171,108 +164,100 @@ public class GeneratePdfController {
     }
     
     /**
-     * สร้างข้อมูลตัวอย่างสำหรับทดสอบ - ครบทุกเคส
-     * 
-     * ทดสอบ:
-     * ✅ ข้อมูลพื้นฐาน (หัวหนังสือ, เลขที่, วันที่)
-     * ✅ HTML content แปลงเป็น plain text
-     * ✅ Multi-line recipients (เรียนหลายคน)
-     * ✅ ผู้ลงนาม (bookSigned) - แสดงกรอบลายเซ็น
-     * ✅ ผู้เกี่ยวข้อง (bookLearner, bookSubmited, bookReview)
-     * ✅ SubDetail - ข้อมูลเพิ่มเติม
+     * สร้างข้อมูลตัวอย่างสำหรับทดสอบ - NEW FORMAT
      */
     private GeneratePdfRequest createTestRequest() {
         GeneratePdfRequest request = new GeneratePdfRequest();
         
-        // ========== ข้อมูลพื้นฐาน ==========
-        request.setBookNameId("1");
-        request.setBookTitle("ขอความอนุเคราะห์จัดส่งเอกสาร PDF สำหรับทดสอบการจัดทำหนังสือราชการด้วย Sarabun PDF API ด้วยการขึ้นบรรทัดใหม่อัตโนมัติ");
-        request.setBookNo("ดศ (สพธอ) ๕๑๑.๐๕/ ๑๒๓๔");
-        request.setDateThai("29 ธันวาคม 2568");
-        request.setTimeThai("14:30 น.");
-        request.setDepartment("สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์");
-        request.setDivisionName("ฝ่ายพัฒนาระบบและเทคโนโลยีสารสนเทศ");
-        request.setYear("2568");
-        request.setSpeedLayer("ด่วนที่สุด");
-        request.setSecretLayerId("ปกติ");
+        // ========== BookNameId ==========
+        request.setBookNameId("90F72F0E-528D-4992-907A-F2C6B37AD9A5"); // Outbound
         
-        // ========== ผู้รับหนังสือ (เรียน) - Multi-line ==========
-        request.setRecipients(
-            "ผู้อำนวยการสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์\n"
-        );
+        // ========== DocumentMain (บันทึกข้อความ) ==========
+        GeneratePdfRequest.DocumentMain docMain = new GeneratePdfRequest.DocumentMain();
+        docMain.setBookName("หนังสือบันทึกข้อความ");
+        docMain.setBookTitle("ขอความอนุเคราะห์จัดส่งเอกสาร");
+        docMain.setBookNo("สพธอ. 0102/2568");
+        docMain.setDateThai("29 ธันวาคม 2568");
+        docMain.setDepartment("สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์");
+        docMain.setDivisionName("ฝ่ายพัฒนาระบบและเทคโนโลยีสารสนเทศ");
+        docMain.setSpeedLayer("ด่วนที่สุด");
+        docMain.setFormatPdf("A4");
         
-        // ========== เนื้อหาเอกสาร - ทดสอบ HTML & Plain Text + MULTI-PAGE ==========
-        java.util.List<GeneratePdfRequest.BookContent> contentList = new java.util.ArrayList<>();
+        // Content for documentMain
+        java.util.List<GeneratePdfRequest.BookContent> mainContentList = new java.util.ArrayList<>();
+        GeneratePdfRequest.BookContent mainContent = new GeneratePdfRequest.BookContent();
+        mainContent.setContentTitle("");
+        mainContent.setContent("        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์จะจัดการประชุมสัมมนา ในหัวข้อ \"การพัฒนาระบบสารบรรณอิเล็กทรอนิกส์\" ในวันที่ 15 มกราคม 2569 ณ ห้องประชุมใหญ่ ชั้น 5\n\n        จึงเรียนมาเพื่อโปรดพิจารณาส่งผู้แทนเข้าร่วมประชุมสัมมนาดังกล่าวด้วย จะขอบคุณยิ่ง");
+        mainContentList.add(mainContent);
+        docMain.setBookContent(mainContentList);
         
-        // Content 1: HTML Format (จาก Rich Text Editor) - เนื้อหาระเบียบสำนักนายกรัฐมนตรี
-        var content1 = new GeneratePdfRequest.BookContent();
-        content1.setBookContentTitle("");
-        content1.setBookContent(
-            "<p>     ระเบียบสำนักนายกรัฐมนตรี ว่าด้วยงานสารบรรณ (ฉบับที่ ๒) พ.ศ. ๒๕๔๘ โดยที่เป็นการ<br>" +
-            "สมควรแก้ไขเพิ่มเติมระเบียบสำนักนายกรัฐมนตรี ว่าด้วยงานสารบรรณ พ.ศ.๒๕๒๖ เพื่อให้เหมาะสมกับ<br>" +
-            "สภาวการณ์ในปัจจุบันที่มีการปฏิบัติงานสารบรรณด้วยระบบสารบรรณอิเล็กทรอนิกส์ และเป็นการ<br>" +
-            "สอดคล้องกับการบริการราชการแนวทางใหม่ที่มุ่งเน้นผลสัมฤทธิ์ ความคุ้มค่า และการลดขั้นตอนการปฏิบัติ<br>" +
-            "งาน สมควรวางระบบงานสารบรรณให้เป็นการดำเนินงานที่มีระบบ มีความรวดเร็ว มีประสิทธิภาพ และลด<br>" +
-            "ความซํ้าซ้อนในการปฏิบัติราชการ</p>" +
-            "<p>    โดยที่เป็นการสมควรแก้ไขเพิ่มเติมระเบียบสำนักนายกรัฐมนตรีว่าด้วยงานสารบรรณ พ.ศ.<br>" +
-            "๒๕๖๒ เพื่อระบุตำแหน่ง ประเภทตำแหน่ง และระดับตำแหน่งของข้าราชการพลเรือน และพนักงานส่วนท้อง<br>" +
-            "ถิ่นให้สอดคล้องกับตำแหน่ง ประเภทตำแหน่ง และระดับตำแหน่งของข้าราชการพลเรือน หรือพนักงานส่วน<br>" +
-            "ท้องถิ่นนั้นรวมทั้งกำหนดให้พนักงานราชการ และเจ้าหน้าที่ของรัฐอื่น มีหน้าที่ทำสำเนาหนังสือ และรับรอง<br>" +
-            "สำเนาหนังสือนั้นได้ด้วย อาศัยตามความในมาตรา ๑๑</p>"
-        );
-        contentList.add(content1);
+        request.setDocumentMain(docMain);
         
-        // Content 2: Plain Text Format (ไม่มี HTML tags)
-        var content2 = new GeneratePdfRequest.BookContent();
-        content2.setBookContentTitle("หมายเหตุ");
-        content2.setBookContent(
-            "สามารถติดต่อสอบถามเพิ่มเติมได้ที่ฝ่ายพัฒนาระบบและเทคโนโลยีสารสนเทศ " +
-            "หมายเลขโทรศัพท์ 02-123-4567 หรือ Email: info@etda.or.th"
-        );
-        contentList.add(content2);
+        // ========== DocumentSub (หนังสือส่งออก) ==========
+        GeneratePdfRequest.DocumentSub docSub = new GeneratePdfRequest.DocumentSub();
+        docSub.setBookName("หนังสือส่งออก");
+        docSub.setBookTitle("ขอเชิญเข้าร่วมประชุมสัมมนา กับ ETDA");
+        docSub.setDateThai("29 ธันวาคม 2568");
+        docSub.setDepartment("สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์");
+        docSub.setDivisionName("ฝ่ายพัฒนาระบบและเทคโนโลยีสารสนเทศ");
+        docSub.setAddress("สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์\nศูนย์ราชการเฉลิมพระเกียรติฯ (อาคารบี)");
+        docSub.setContact("โทร. 02-123-4567\nอีเมล info@etda.or.th");
+        docSub.setSpeedLayer("ด่วนที่สุด");
         
-        request.setBookContent(contentList);
+        // Content for documentSub
+        java.util.List<GeneratePdfRequest.BookContent> subContentList = new java.util.ArrayList<>();
+        GeneratePdfRequest.BookContent subContent = new GeneratePdfRequest.BookContent();
+        subContent.setContentTitle("");
+        subContent.setContent("        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์จะจัดการประชุมสัมมนา ในหัวข้อ \"การพัฒนาระบบสารบรรณอิเล็กทรอนิกส์\" ในวันที่ 15 มกราคม 2569 ณ ห้องประชุมใหญ่ ชั้น 5\n\n        จึงเรียนมาเพื่อโปรดพิจารณาส่งผู้แทนเข้าร่วมประชุมสัมมนาดังกล่าวด้วย จะขอบคุณยิ่ง");
+        subContentList.add(subContent);
+        docSub.setBookContent(subContentList);
         
-        // ========== ผู้ลงนาม (bookSigned) - แสดงขวาล่าง ==========
-        // รูปแบบ:
-        //   จึงเรียนมาเพื่อทราบและพิจารณา
-        //   (ลายเซ็น)
-        //   (ชื่อผู้ลงนาม)
-        //   (ตำแหน่งผู้ลงนาม)
+        // Attachments for documentSub
+        java.util.List<GeneratePdfRequest.DocumentAttachment> attachments = new java.util.ArrayList<>();
+        GeneratePdfRequest.DocumentAttachment attach1 = new GeneratePdfRequest.DocumentAttachment();
+        attach1.setName("กำหนดการประชุม");
+        attach1.setRemark("จำนวน 1 ฉบับ");
+        attachments.add(attach1);
+        docSub.setAttachment(attachments);
+        
+        request.setDocumentSub(docSub);
+        
+        // ========== ผู้ลงนาม (bookSigned) ==========
         java.util.List<GeneratePdfRequest.BookRelate> signers = new java.util.ArrayList<>();
-        
         GeneratePdfRequest.BookRelate signer = new GeneratePdfRequest.BookRelate();
         signer.setPrefixName("นาย");
         signer.setFirstname("สมชาย");
         signer.setLastname("ใจดี");
-        signer.setPositionName("ผู้อำนวยการฝ่ายพัฒนาระบบและเทคโนโลยีสารสนเทศ");
+        signer.setPositionName("ผู้อำนวยการ");
         signer.setDepartmentName("สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์");
-        signer.setEmail("somchai.j@etda.or.th");
+        signer.setEmail("somchai@etda.or.th");
         signers.add(signer);
-        
         request.setBookSigned(signers);
         
-        // ========== SubDetail - ข้อมูลเพิ่มเติม ==========
-        GeneratePdfRequest.BookSubDetail subDetail = new GeneratePdfRequest.BookSubDetail();
-        java.util.List<GeneratePdfRequest.SubDetailLearner> subDetailLearners = 
-            new java.util.ArrayList<>();
+        // ========== ผู้รับภายใน (bookLearner) ==========
+        java.util.List<GeneratePdfRequest.BookRelate> learners = new java.util.ArrayList<>();
+        GeneratePdfRequest.BookRelate learner = new GeneratePdfRequest.BookRelate();
+        learner.setPrefixName("นาย");
+        learner.setFirstname("วิชัย");
+        learner.setLastname("รับเรื่อง");
+        learner.setPositionName("หัวหน้างานพัฒนา");
+        learner.setDepartmentName("ฝ่ายพัฒนาระบบ");
+        learners.add(learner);
+        request.setBookLearner(learners);
         
-        GeneratePdfRequest.SubDetailLearner subLearner = 
-            new GeneratePdfRequest.SubDetailLearner();
-        subLearner.setEmailEnding("@etda.or.th");
-        subLearner.setDetail("สำหรับผู้ทราบเพิ่มเติม");
-        subDetailLearners.add(subLearner);
-        
-        subDetail.setSubDetailLearner(subDetailLearners);
-        request.setSubDetail(subDetail);
-        
-        // ========== หมายเหตุ ==========
-        // ระบบจะแปลง HTML เป็น plain text อัตโนมัติ:
-        // - <p>, <div> → แบ่งย่อหน้า
-        // - <br> → ขึ้นบรรทัดใหม่
-        // - <ul>, <li> → รายการ
-        // - <strong>, <em> → ลบ tags (ใช้ text ธรรมดา)
-        // - &nbsp;, &amp;, &lt;, &gt; → แปลงเป็นตัวอักษรจริง
+        // ========== ผู้รับภายนอก (toRecipients) ==========
+        java.util.List<GeneratePdfRequest.BookRecipient> recipients = new java.util.ArrayList<>();
+        GeneratePdfRequest.BookRecipient recipient = new GeneratePdfRequest.BookRecipient();
+        recipient.setGuid("R001");
+        recipient.setRecipientNo("1");
+        recipient.setMinistryName("กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม");
+        recipient.setDepartmentName("สำนักงานปลัดกระทรวง");
+        recipient.setOrganizeName("กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม");
+        recipient.setSalutation("เรียน");
+        recipient.setSalutationContent("ท่านปลัดกระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม");
+        recipient.setEndDoc("ขอแสดงความนับถือ");
+        recipients.add(recipient);
+        request.setToRecipients(recipients);
         
         return request;
     }

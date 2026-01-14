@@ -558,21 +558,38 @@
                 ministry: "4B3EB169-6203-4A71-A3BD-A442FEAAA91F", // หนังสือภายใต้กระทรวง
             };
 
-            // Template ตามประเภทเอกสาร (ครบทุกรูปแบบ)
+            // Template ตามประเภทเอกสาร (ครบทุกรูปแบบ) - ใช้ Format ใหม่
             const documentTemplates = {
                 // บันทึกข้อความ - ครบทุกรูปแบบ: ลงนาม + เสนอผ่าน + ผู้เรียน/รับทราบ + ด่วนที่สุด
                 officialMemo: {
                     bookNameId: BOOK_NAME_IDS.officialMemo,
-                    bookTitle: "บันทึกข้อความ ทดสอบสร้างแบบยาวๆ ขึ้นบรรทัดใหม่บันทึกข้อความ ทดสอบสร้างแบบย",
-                    bookNo: "สผ 0101/2568",
-                    dateThai: "8 มกราคม พ.ศ. 2569",
-                    timeThai: "10:30 น.",
-                    department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                    divisionName: "กองพัฒนาระบบบริการ",
-                    speedLayer: "ด่วนที่สุด",
-                    speedLayerId: "3",
                     formatPdf: "A4",
-                    bookContent: [{ bookContentTitle: "", bookContent: "        ด้วยกองพัฒนาระบบบริการมีความประสงค์ขอจัดซื้ออุปกรณ์คอมพิวเตอร์ เพื่อใช้ในการปฏิบัติงานพัฒนาระบบสารบรรณอิเล็กทรอนิกส์\n\n        จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ", nextPageStatus: false }],
+                    // documentMain สำหรับ memo detail
+                    documentMain: {
+                        bookName: "บันทึกข้อความ",
+                        bookTitle: "ขออนุมัติจัดซื้ออุปกรณ์คอมพิวเตอร์",
+                        bookNo: "สผ 0101/ว 2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569",
+                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                        divisionName: "กองพัฒนาระบบบริการ",
+                        bookContent: [
+                            { ContentTitle: "เรื่อง", Content: "ขออนุมัติจัดซื้ออุปกรณ์คอมพิวเตอร์", nextPageStatus: false },
+                            { ContentTitle: "", Content: "        ด้วยกองพัฒนาระบบบริการมีความประสงค์ขอจัดซื้ออุปกรณ์คอมพิวเตอร์ เพื่อใช้ในการปฏิบัติงานพัฒนาระบบสารบรรณอิเล็กทรอนิกส์\n\n        จึงขออนุมัติ", nextPageStatus: false },
+                        ],
+                    },
+                    // documentSub สำหรับบันทึกข้อความ (เนื้อหาหลัก)
+                    documentSub: {
+                        bookName: "บันทึกข้อความ",
+                        bookTitle: "บันทึกข้อความ ทดสอบสร้างแบบยาวๆ ขึ้นบรรทัดใหม่บันทึกข้อความ ทดสอบสร้างแบบย",
+                        bookNo: "สผ 0101/2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569",
+                        timeThai: "10:30 น.",
+                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                        divisionName: "กองพัฒนาระบบบริการ",
+                        speedLayer: "ด่วนที่สุด",
+                        speedLayerId: "3",
+                        bookContent: [{ ContentTitle: "", Content: "        ด้วยกองพัฒนาระบบบริการมีความประสงค์ขอจัดซื้ออุปกรณ์คอมพิวเตอร์ เพื่อใช้ในการปฏิบัติงานพัฒนาระบบสารบรรณอิเล็กทรอนิกส์\n\n        จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ", nextPageStatus: false }],
+                    },
                     // ผู้ลงนาม (ท้ายเนื้อหา) - 2 คน
                     bookSigned: [
                         { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", email: "prasit@etda.or.th", signatureBase64: "" },
@@ -589,22 +606,39 @@
                 // หนังสือภายนอก - ครบทุกรูปแบบ: ลงนาม + เสนอผ่าน + หน่วยงานผู้รับ (3 หน่วยงาน)
                 officialDocument: {
                     bookNameId: BOOK_NAME_IDS.officialDocument,
-                    bookTitle: "ขอเชิญเข้าร่วมประชุมสัมมนา",
-                    bookNo: "สพธอ. 0102/2568",
-                    dateThai: "8 มกราคม พ.ศ. 2569",
-                    department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                    divisionName: "กองพัฒนาระบบบริการ",
-                    address: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์\nศูนย์ราชการเฉลิมพระเกียรติฯ (อาคารบี) \n เลขที่ ๑๒๐ หมู่ที่ ๓ ชั้น ๔ ซอยแจ้งวัฒนะ ๗\nถนนแจ้งวัฒนะ แขวงทุ่งสองห้อง เขตหลักสี่\nกรุงเทพมหานคร ๑๐๒๑๐",
-                    contact: "เลขหมาย ๐ ๒๑๒๓ ๑๒๓๔\nโทรสาร ๐ ๒๑๒๓ ๑๒๐๐\nอีเมล helpdesk@etda.or.th",
-                    speedLayer: "ด่วนที่สุด",
-                    speedLayerId: "3",
                     formatPdf: "A4",
-                    bookReferTo: [{ bookReferToNo: "ดศ 0201/1234", bookReferToName: "หนังสือกระทรวงดิจิทัลฯ", createDate: "2026-01-01T00:00:00" }],
-                    attachment: [
-                        { name: "กำหนดการประชุม", remark: "จำนวน 1 ฉบับ" },
-                        { name: "แบบตอบรับ", remark: "จำนวน 1 ฉบับ" },
-                    ],
-                    bookContent: [{ bookContentTitle: "", bookContent: '        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์จะจัดการประชุมสัมมนาในหัวข้อ "การพัฒนาระบบสารบรรณอิเล็กทรอนิกส์" ในวันที่ 15 มกราคม 2569 ณ ห้องประชุมใหญ่ ชั้น 5\n\n        จึงเรียนมาเพื่อโปรดพิจารณาส่งผู้แทนเข้าร่วมประชุมสัมมนาดังกล่าวด้วย จะขอบคุณยิ่ง', nextPageStatus: false }],
+                    // documentMain สำหรับ memo แนบท้าย
+                    documentMain: {
+                        bookName: "บันทึกข้อความ",
+                        bookTitle: "ขออนุมัติส่งหนังสือภายนอก",
+                        bookNo: "สพธอ. 0102/ว 2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569",
+                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                        divisionName: "กองพัฒนาระบบบริการ",
+                        bookContent: [
+                            { ContentTitle: "เรื่อง", Content: "ขออนุมัติส่งหนังสือเชิญประชุมสัมมนา", nextPageStatus: false },
+                            { ContentTitle: "", Content: '        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์กำหนดจัดการประชุมสัมมนาในหัวข้อ "การพัฒนาระบบสารบรรณอิเล็กทรอนิกส์" ในวันที่ 15 มกราคม 2569\n\n        จึงขออนุมัติส่งหนังสือเชิญหน่วยงานที่เกี่ยวข้องเข้าร่วมประชุมสัมมนาดังกล่าว', nextPageStatus: false },
+                        ],
+                    },
+                    // documentSub สำหรับหนังสือภายนอก (object ไม่ใช่ array)
+                    documentSub: {
+                        bookName: "หนังสือภายนอก",
+                        bookTitle: "ขอเชิญเข้าร่วมประชุมสัมมนา",
+                        bookNo: "สพธอ. 0102/2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569",
+                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                        divisionName: "กองพัฒนาระบบบริการ",
+                        address: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์\nศูนย์ราชการเฉลิมพระเกียรติฯ (อาคารบี) \n เลขที่ ๑๒๐ หมู่ที่ ๓ ชั้น ๔ ซอยแจ้งวัฒนะ ๗\nถนนแจ้งวัฒนะ แขวงทุ่งสองห้อง เขตหลักสี่\nกรุงเทพมหานคร ๑๐๒๑๐",
+                        contact: "เลขหมาย ๐ ๒๑๒๓ ๑๒๓๔\nโทรสาร ๐ ๒๑๒๓ ๑๒๐๐\nอีเมล helpdesk@etda.or.th",
+                        speedLayer: "ด่วนที่สุด",
+                        speedLayerId: "3",
+                        bookReferTo: [{ bookReferToNo: "ดศ 0201/1234", bookReferToName: "หนังสือกระทรวงดิจิทัลฯ", createDate: "2026-01-01T00:00:00" }],
+                        attachment: [
+                            { name: "กำหนดการประชุม", remark: "จำนวน 1 ฉบับ" },
+                            { name: "แบบตอบรับ", remark: "จำนวน 1 ฉบับ" },
+                        ],
+                        bookContent: [{ ContentTitle: "", Content: '        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์จะจัดการประชุมสัมมนาในหัวข้อ "การพัฒนาระบบสารบรรณอิเล็กทรอนิกส์" ในวันที่ 15 มกราคม 2569 ณ ห้องประชุมใหญ่ ชั้น 5\n\n        จึงเรียนมาเพื่อโปรดพิจารณาส่งผู้แทนเข้าร่วมประชุมสัมมนาดังกล่าวด้วย จะขอบคุณยิ่ง', nextPageStatus: false }],
+                    },
                     // ผู้ลงนาม - 2 คน
                     bookSigned: [
                         { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", email: "prasit@etda.or.th", signatureBase64: "" },
@@ -615,10 +649,10 @@
                         { relatedNo: "1", prefixName: "นาย", firstname: "วิชัย", lastname: "เสนอผ่าน", positionName: "หัวหน้าฝ่ายบริหาร", departmentName: "กองบริหารงานทั่วไป", email: "wichai@etda.or.th" },
                         { relatedNo: "2", prefixName: "นาง", firstname: "สมศรี", lastname: "ตรวจสอบ", positionName: "ผู้จัดการฝ่าย", departmentName: "กองพัฒนาระบบบริการ", email: "somsri@etda.or.th" },
                     ],
-                    // ผู้เรียน/รับทราบ (memo แนบท้าย) - 1 คน
+                    // ผู้เรียน/รับทราบ - 1 คน
                     bookLearner: [{ relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "หัวหน้างานพัฒนา", departmentName: "กองพัฒนาระบบบริการ", email: "somchai@etda.or.th" }],
-                    // หน่วยงานผู้รับ (แต่ละหน่วยงาน = 1 PDF) - 2 กระทรวง
-                    bookRecipients: [
+                    // ใช้ toRecipients แทน bookRecipients สำหรับผู้รับภายนอก
+                    toRecipients: [
                         {
                             guid: "R001",
                             recipientNo: "1",
@@ -651,21 +685,38 @@
                 },
                 regulation: {
                     bookNameId: BOOK_NAME_IDS.regulation,
-                    bookTitle: "ระเบียบสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                    bookNo: "",
-                    dateThai: "8 มกราคม พ.ศ. 2569",
-                    department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                    divisionName: "",
-                    year: "พ.ศ. 2569",
                     formatPdf: "A4",
-                    bookContent: [
-                        {
-                            bookContentTitle: "",
-                            bookContent:
-                                '        โดยที่เป็นการสมควรกำหนดระเบียบว่าด้วยการปฏิบัติงานระบบสารบรรณอิเล็กทรอนิกส์\n\n        อาศัยอำนาจตามความในมาตรา 8 แห่งพระราชบัญญัติว่าด้วยธุรกรรมทางอิเล็กทรอนิกส์ พ.ศ. 2544 ผู้อำนวยการสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ออกระเบียบไว้ดังต่อไปนี้\n\n        ข้อ 1 ระเบียบนี้เรียกว่า "ระเบียบสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ว่าด้วยการปฏิบัติงานระบบสารบรรณอิเล็กทรอนิกส์ พ.ศ. 2569"\n\n        ข้อ 2 ระเบียบนี้ให้ใช้บังคับตั้งแต่วันถัดจากวันประกาศเป็นต้นไป',
-                            nextPageStatus: false,
-                        },
-                    ],
+                    // documentMain สำหรับ memo detail
+                    documentMain: {
+                        bookName: "บันทึกข้อความ",
+                        bookTitle: "ขออนุมัติออกระเบียบ",
+                        bookNo: "สพธอ. 0104/ว 2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569",
+                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                        divisionName: "กองพัฒนาระบบบริการ",
+                        bookContent: [
+                            { ContentTitle: "เรื่อง", Content: "ขออนุมัติออกระเบียบว่าด้วยการปฏิบัติงานระบบสารบรรณอิเล็กทรอนิกส์", nextPageStatus: false },
+                            { ContentTitle: "", Content: "        ด้วยสำนักงานมีความประสงค์ออกระเบียบว่าด้วยการปฏิบัติงานระบบสารบรรณอิเล็กทรอนิกส์\n\n        จึงขออนุมัติ", nextPageStatus: false },
+                        ],
+                    },
+                    // documentSub สำหรับระเบียบ
+                    documentSub: {
+                        bookName: "ระเบียบ",
+                        bookTitle: "ระเบียบสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                        bookNo: "",
+                        dateThai: "8 มกราคม พ.ศ. 2569",
+                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                        divisionName: "",
+                        year: "พ.ศ. 2569",
+                        bookContent: [
+                            {
+                                ContentTitle: "",
+                                Content:
+                                    '        โดยที่เป็นการสมควรกำหนดระเบียบว่าด้วยการปฏิบัติงานระบบสารบรรณอิเล็กทรอนิกส์\n\n        อาศัยอำนาจตามความในมาตรา 8 แห่งพระราชบัญญัติว่าด้วยธุรกรรมทางอิเล็กทรอนิกส์ พ.ศ. 2544 ผู้อำนวยการสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ออกระเบียบไว้ดังต่อไปนี้\n\n        ข้อ 1 ระเบียบนี้เรียกว่า "ระเบียบสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ว่าด้วยการปฏิบัติงานระบบสารบรรณอิเล็กทรอนิกส์ พ.ศ. 2569"\n\n        ข้อ 2 ระเบียบนี้ให้ใช้บังคับตั้งแต่วันถัดจากวันประกาศเป็นต้นไป',
+                                nextPageStatus: false,
+                            },
+                        ],
+                    },
                     // ผู้ลงนาม - 2 คน
                     bookSigned: [
                         { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", email: "prasit@etda.or.th", signatureBase64: "" },
@@ -678,24 +729,36 @@
                     ],
                     // ผู้เรียน/รับทราบ - 1 คน
                     bookLearner: [{ relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "หัวหน้างานพัฒนา", departmentName: "กองพัฒนาระบบบริการ", email: "somchai@etda.or.th" }],
-                    // หน่วยงานผู้รับ - 2 กระทรวง
-                    bookRecipients: [
-                        { guid: "R001", recipientNo: "1", ministryName: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", departmentName: "สำนักงานปลัดกระทรวง", organizeName: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", address: "ศูนย์ราชการเฉลิมพระเกียรติฯ ถนนแจ้งวัฒนะ", postalCode: "10210", contactName: "ปลัดกระทรวง", contactEmail: "contact@mdes.go.th" },
-                        { guid: "R002", recipientNo: "2", ministryName: "กระทรวงการท่องเที่ยวและกีฬา", departmentName: "การท่องเที่ยวแห่งประเทศไทย", organizeName: "การท่องเที่ยวแห่งประเทศไทย", address: "1600 ถนนเพชรบุรีตัดใหม่ แขวงมักกะสัน เขตราชเทวี", postalCode: "10400", contactName: "ผู้ว่าการ", contactEmail: "info@tat.or.th" },
-                    ],
                 },
                 announce: {
                     bookNameId: BOOK_NAME_IDS.announce,
-                    bookTitle: "ประกาศสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                    bookNo: "",
-                    dateThai: "8 มกราคม พ.ศ. 2569",
-                    department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                    divisionName: "",
-                    year: "พ.ศ. 2569",
                     formatPdf: "A4",
-                    bookContent: [
-                        { bookContentTitle: "", bookContent: "        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์มีความประสงค์จะรับสมัครบุคคลเพื่อคัดเลือกเข้าเป็นพนักงาน ตำแหน่งนักพัฒนาระบบ จำนวน 2 อัตรา\n\n        1. คุณสมบัติของผู้สมัคร\n            1.1 สำเร็จการศึกษาระดับปริญญาตรีขึ้นไป สาขาวิทยาการคอมพิวเตอร์หรือสาขาที่เกี่ยวข้อง\n            1.2 มีประสบการณ์ในการพัฒนาระบบไม่น้อยกว่า 2 ปี\n\n        2. กำหนดการรับสมัคร\n            ตั้งแต่วันที่ 8 - 31 มกราคม 2569", nextPageStatus: false },
-                    ],
+                    // documentMain สำหรับ memo detail
+                    documentMain: {
+                        bookName: "บันทึกข้อความ",
+                        bookTitle: "ขออนุมัติออกประกาศรับสมัครพนักงาน",
+                        bookNo: "สพธอ. 0105/ว 2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569",
+                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                        divisionName: "กองบริหารทรัพยากรบุคคล",
+                        bookContent: [
+                            { ContentTitle: "เรื่อง", Content: "ขออนุมัติออกประกาศรับสมัครพนักงาน", nextPageStatus: false },
+                            { ContentTitle: "", Content: "        ด้วยสำนักงานมีความประสงค์รับสมัครบุคคลเพื่อคัดเลือกเข้าเป็นพนักงาน\n\n        จึงขออนุมัติออกประกาศรับสมัคร", nextPageStatus: false },
+                        ],
+                    },
+                    // documentSub สำหรับประกาศ
+                    documentSub: {
+                        bookName: "ประกาศ",
+                        bookTitle: "ประกาศสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                        bookNo: "",
+                        dateThai: "8 มกราคม พ.ศ. 2569",
+                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                        divisionName: "",
+                        year: "พ.ศ. 2569",
+                        bookContent: [
+                            { ContentTitle: "", Content: "        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์มีความประสงค์จะรับสมัครบุคคลเพื่อคัดเลือกเข้าเป็นพนักงาน ตำแหน่งนักพัฒนาระบบ จำนวน 2 อัตรา\n\n        1. คุณสมบัติของผู้สมัคร\n            1.1 สำเร็จการศึกษาระดับปริญญาตรีขึ้นไป สาขาวิทยาการคอมพิวเตอร์หรือสาขาที่เกี่ยวข้อง\n            1.2 มีประสบการณ์ในการพัฒนาระบบไม่น้อยกว่า 2 ปี\n\n        2. กำหนดการรับสมัคร\n            ตั้งแต่วันที่ 8 - 31 มกราคม 2569", nextPageStatus: false },
+                        ],
+                    },
                     // ผู้ลงนาม - 2 คน
                     bookSigned: [
                         { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", email: "prasit@etda.or.th", signatureBase64: "" },
@@ -708,25 +771,37 @@
                     ],
                     // ผู้เรียน/รับทราบ - 1 คน
                     bookLearner: [{ relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "หัวหน้างานพัฒนา", departmentName: "กองพัฒนาระบบบริการ", email: "somchai@etda.or.th" }],
-                    // หน่วยงานผู้รับ - 2 กระทรวง
-                    bookRecipients: [
-                        { guid: "R001", recipientNo: "1", ministryName: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", departmentName: "สำนักงานปลัดกระทรวง", organizeName: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", address: "ศูนย์ราชการเฉลิมพระเกียรติฯ ถนนแจ้งวัฒนะ", postalCode: "10210", contactName: "ปลัดกระทรวง", contactEmail: "contact@mdes.go.th" },
-                        { guid: "R002", recipientNo: "2", ministryName: "กระทรวงการท่องเที่ยวและกีฬา", departmentName: "การท่องเที่ยวแห่งประเทศไทย", organizeName: "การท่องเที่ยวแห่งประเทศไทย", address: "1600 ถนนเพชรบุรีตัดใหม่ แขวงมักกะสัน เขตราชเทวี", postalCode: "10400", contactName: "ผู้ว่าการ", contactEmail: "info@tat.or.th" },
-                    ],
                 },
                 command: {
                     bookNameId: BOOK_NAME_IDS.command,
-                    bookTitle: "คำสั่งสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                    bookNo: "ที่ 1/2569",
-                    dateThai: "8 มกราคม พ.ศ. 2569",
-                    department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                    divisionName: "",
-                    year: "พ.ศ. 2569",
                     formatPdf: "A4",
-                    bookContent: [
-                        { bookContentTitle: "เรื่อง", bookContent: "แต่งตั้งคณะทำงานพัฒนาระบบสารบรรณอิเล็กทรอนิกส์", nextPageStatus: false },
-                        { bookContentTitle: "", bookContent: "        เพื่อให้การพัฒนาระบบสารบรรณอิเล็กทรอนิกส์เป็นไปอย่างมีประสิทธิภาพ จึงแต่งตั้งคณะทำงานประกอบด้วย\n\n        1. ผู้อำนวยการกองพัฒนาระบบบริการ     ประธานคณะทำงาน\n        2. หัวหน้าฝ่ายพัฒนาระบบ                   คณะทำงาน\n        3. นักพัฒนาระบบ                            คณะทำงานและเลขานุการ\n\n        ทั้งนี้ ตั้งแต่บัดนี้เป็นต้นไป", nextPageStatus: false },
-                    ],
+                    // documentMain สำหรับ memo detail
+                    documentMain: {
+                        bookName: "บันทึกข้อความ",
+                        bookTitle: "ขออนุมัติออกคำสั่งแต่งตั้งคณะทำงาน",
+                        bookNo: "สพธอ. 0106/ว 2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569",
+                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                        divisionName: "กองพัฒนาระบบบริการ",
+                        bookContent: [
+                            { ContentTitle: "เรื่อง", Content: "ขออนุมัติออกคำสั่งแต่งตั้งคณะทำงานพัฒนาระบบสารบรรณอิเล็กทรอนิกส์", nextPageStatus: false },
+                            { ContentTitle: "", Content: "        ด้วยสำนักงานมีความประสงค์แต่งตั้งคณะทำงานพัฒนาระบบสารบรรณอิเล็กทรอนิกส์\n\n        จึงขออนุมัติออกคำสั่ง", nextPageStatus: false },
+                        ],
+                    },
+                    // documentSub สำหรับคำสั่ง
+                    documentSub: {
+                        bookName: "คำสั่ง",
+                        bookTitle: "คำสั่งสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                        bookNo: "ที่ 1/2569",
+                        dateThai: "8 มกราคม พ.ศ. 2569",
+                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                        divisionName: "",
+                        year: "พ.ศ. 2569",
+                        bookContent: [
+                            { ContentTitle: "เรื่อง", Content: "แต่งตั้งคณะทำงานพัฒนาระบบสารบรรณอิเล็กทรอนิกส์", nextPageStatus: false },
+                            { ContentTitle: "", Content: "        เพื่อให้การพัฒนาระบบสารบรรณอิเล็กทรอนิกส์เป็นไปอย่างมีประสิทธิภาพ จึงแต่งตั้งคณะทำงานประกอบด้วย\n\n        1. ผู้อำนวยการกองพัฒนาระบบบริการ     ประธานคณะทำงาน\n        2. หัวหน้าฝ่ายพัฒนาระบบ                   คณะทำงาน\n        3. นักพัฒนาระบบ                            คณะทำงานและเลขานุการ\n\n        ทั้งนี้ ตั้งแต่บัดนี้เป็นต้นไป", nextPageStatus: false },
+                        ],
+                    },
                     // ผู้ลงนาม - 2 คน
                     bookSigned: [
                         { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", email: "prasit@etda.or.th", signatureBase64: "" },
@@ -739,24 +814,78 @@
                     ],
                     // ผู้เรียน/รับทราบ - 1 คน
                     bookLearner: [{ relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "หัวหน้างานพัฒนา", departmentName: "กองพัฒนาระบบบริการ", email: "somchai@etda.or.th" }],
-                    // หน่วยงานผู้รับ - 2 กระทรวง
-                    bookRecipients: [
-                        { guid: "R001", recipientNo: "1", ministryName: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", departmentName: "สำนักงานปลัดกระทรวง", organizeName: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", address: "ศูนย์ราชการเฉลิมพระเกียรติฯ ถนนแจ้งวัฒนะ", postalCode: "10210", contactName: "ปลัดกระทรวง", contactEmail: "contact@mdes.go.th" },
-                        { guid: "R002", recipientNo: "2", ministryName: "กระทรวงการท่องเที่ยวและกีฬา", departmentName: "การท่องเที่ยวแห่งประเทศไทย", organizeName: "การท่องเที่ยวแห่งประเทศไทย", address: "1600 ถนนเพชรบุรีตัดใหม่ แขวงมักกะสัน เขตราชเทวี", postalCode: "10400", contactName: "ผู้ว่าการ", contactEmail: "info@tat.or.th" },
-                    ],
                 },
                 rules: {
                     bookNameId: BOOK_NAME_IDS.rules,
-                    bookTitle: "ข้อบังคับสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                    bookNo: "",
-                    dateThai: "8 มกราคม พ.ศ. 2569",
-                    department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                    divisionName: "",
-                    year: "พ.ศ. 2569",
                     formatPdf: "A4",
-                    bookContent: [
-                        { bookContentTitle: "", bookContent: '        อาศัยอำนาจตามความในมาตรา 8 แห่งพระราชบัญญัติว่าด้วยธุรกรรมทางอิเล็กทรอนิกส์ พ.ศ. 2544 ผู้อำนวยการสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ออกข้อบังคับไว้ดังต่อไปนี้\n\n        ข้อ 1 ข้อบังคับนี้เรียกว่า "ข้อบังคับสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ว่าด้วยจรรยาบรรณพนักงาน พ.ศ. 2569"\n\n        ข้อ 2 พนักงานต้องปฏิบัติหน้าที่ด้วยความซื่อสัตย์สุจริต\n\n        ข้อ 3 พนักงานต้องรักษาความลับของทางราชการ', nextPageStatus: false },
+                    // documentMain สำหรับ memo detail
+                    documentMain: {
+                        bookName: "บันทึกข้อความ",
+                        bookTitle: "ขออนุมัติออกข้อบังคับ",
+                        bookNo: "สพธอ. 0107/ว 2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569",
+                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                        divisionName: "กองบริหารทรัพยากรบุคคล",
+                        bookContent: [
+                            { ContentTitle: "เรื่อง", Content: "ขออนุมัติออกข้อบังคับว่าด้วยจรรยาบรรณพนักงาน", nextPageStatus: false },
+                            { ContentTitle: "", Content: "        ด้วยสำนักงานมีความประสงค์ออกข้อบังคับว่าด้วยจรรยาบรรณพนักงาน\n\n        จึงขออนุมัติ", nextPageStatus: false },
+                        ],
+                    },
+                    // documentSub สำหรับข้อบังคับ
+                    documentSub: {
+                        bookName: "ข้อบังคับ",
+                        bookTitle: "ข้อบังคับสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                        bookNo: "",
+                        dateThai: "8 มกราคม พ.ศ. 2569",
+                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                        divisionName: "",
+                        year: "พ.ศ. 2569",
+                        bookContent: [
+                            { ContentTitle: "", Content: '        อาศัยอำนาจตามความในมาตรา 8 แห่งพระราชบัญญัติว่าด้วยธุรกรรมทางอิเล็กทรอนิกส์ พ.ศ. 2544 ผู้อำนวยการสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ออกข้อบังคับไว้ดังต่อไปนี้\n\n        ข้อ 1 ข้อบังคับนี้เรียกว่า "ข้อบังคับสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ว่าด้วยจรรยาบรรณพนักงาน พ.ศ. 2569"\n\n        ข้อ 2 พนักงานต้องปฏิบัติหน้าที่ด้วยความซื่อสัตย์สุจริต\n\n        ข้อ 3 พนักงานต้องรักษาความลับของทางราชการ', nextPageStatus: false },
+                        ],
+                    },
+                    // ผู้ลงนาม - 2 คน
+                    bookSigned: [
+                        { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", email: "prasit@etda.or.th", signatureBase64: "" },
+                        { relatedNo: "2", prefixName: "นางสาว", firstname: "อัจฉรีย์", lastname: "สมุทรสาร", positionName: "ผู้ชำนาญการ", departmentName: "กองพัฒนาระบบบริการ", email: "atcharee@etda.or.th", signatureBase64: "" },
                     ],
+                    // เสนอผ่าน - 2 คน
+                    bookSubmited: [
+                        { relatedNo: "1", prefixName: "นาย", firstname: "วิชัย", lastname: "เสนอผ่าน", positionName: "หัวหน้าฝ่ายบริหาร", departmentName: "กองบริหารงานทั่วไป", email: "wichai@etda.or.th" },
+                        { relatedNo: "2", prefixName: "นาง", firstname: "สมศรี", lastname: "ตรวจสอบ", positionName: "ผู้จัดการฝ่าย", departmentName: "กองพัฒนาระบบบริการ", email: "somsri@etda.or.th" },
+                    ],
+                    // ผู้เรียน/รับทราบ - 1 คน
+                    bookLearner: [{ relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "หัวหน้างานพัฒนา", departmentName: "กองพัฒนาระบบบริการ", email: "somchai@etda.or.th" }],
+                },
+                seal: {
+                    bookNameId: BOOK_NAME_IDS.seal,
+                    formatPdf: "A4",
+                    // documentMain สำหรับ memo แนบท้าย
+                    documentMain: {
+                        bookName: "บันทึกข้อความ",
+                        bookTitle: "ขออนุมัติส่งหนังสือประทับตรา",
+                        bookNo: "สพธอ. 0103/ว 2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569",
+                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                        divisionName: "กองพัฒนาระบบบริการ",
+                        bookContent: [
+                            { ContentTitle: "เรื่อง", Content: "ขออนุมัติส่งสำเนาประกาศ", nextPageStatus: false },
+                            { ContentTitle: "", Content: "        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ได้ออกประกาศเรื่อง การใช้งานระบบสารบรรณอิเล็กทรอนิกส์\n\n        จึงขออนุมัติส่งสำเนาประกาศให้หน่วยงานที่เกี่ยวข้องทราบ", nextPageStatus: false },
+                        ],
+                    },
+                    // documentSub สำหรับหนังสือประทับตรา
+                    documentSub: {
+                        bookName: "หนังสือประทับตรา",
+                        bookTitle: "หนังสือประทับตรา",
+                        bookNo: "สพธอ. 0103/2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569",
+                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                        contact: "เลขหมาย ๐ ๒๑๒๓ ๑๒๓๔\\nโทรสาร ๐ ๒๑๒๓ ๑๒๐๐\\nอีเมล helpdesk@etda.or.th",
+                        divisionName: "กองพัฒนาระบบบริการ",
+                        bookContent: [{ ContentTitle: "", Content: "        ขอส่งสำเนาประกาศสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ เรื่อง การใช้งานระบบสารบรรณอิเล็กทรอนิกส์ มาเพื่อทราบ", nextPageStatus: false }],
+                        bookReferTo: [],
+                        attachment: [],
+                    },
                     // ผู้ลงนาม - 2 คน
                     bookSigned: [
                         { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", email: "prasit@etda.or.th", signatureBase64: "" },
@@ -770,38 +899,7 @@
                     // ผู้เรียน/รับทราบ - 1 คน
                     bookLearner: [{ relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "หัวหน้างานพัฒนา", departmentName: "กองพัฒนาระบบบริการ", email: "somchai@etda.or.th" }],
                     // หน่วยงานผู้รับ - 2 กระทรวง
-                    bookRecipients: [
-                        { guid: "R001", recipientNo: "1", ministryName: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", departmentName: "สำนักงานปลัดกระทรวง", organizeName: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", address: "ศูนย์ราชการเฉลิมพระเกียรติฯ ถนนแจ้งวัฒนะ", postalCode: "10210", contactName: "ปลัดกระทรวง", contactEmail: "contact@mdes.go.th" },
-                        { guid: "R002", recipientNo: "2", ministryName: "กระทรวงการท่องเที่ยวและกีฬา", departmentName: "การท่องเที่ยวแห่งประเทศไทย", organizeName: "การท่องเที่ยวแห่งประเทศไทย", address: "1600 ถนนเพชรบุรีตัดใหม่ แขวงมักกะสัน เขตราชเทวี", postalCode: "10400", contactName: "ผู้ว่าการ", contactEmail: "info@tat.or.th" },
-                    ],
-                },
-                seal: {
-                    bookNameId: BOOK_NAME_IDS.seal,
-                    bookTitle: "หนังสือประทับตรา",
-                    bookNo: "สพธอ. 0103/2568",
-                    dateThai: "8 มกราคม พ.ศ. 2569",
-                    department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                    contact: "เลขหมาย ๐ ๒๑๒๓ ๑๒๓๔\\nโทรสาร ๐ ๒๑๒๓ ๑๒๐๐\\nอีเมล helpdesk@etda.or.th",
-                    divisionName: "กองพัฒนาระบบบริการ",
-                    formatPdf: "A4",
-                    bookContent: [
-                        { bookContentTitle: "ถึง", bookContent: "หัวหน้าส่วนราชการทุกแห่ง", nextPageStatus: false },
-                        { bookContentTitle: "", bookContent: "        ขอส่งสำเนาประกาศสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ เรื่อง การใช้งานระบบสารบรรณอิเล็กทรอนิกส์ มาเพื่อทราบ", nextPageStatus: false },
-                    ],
-                    // ผู้ลงนาม - 2 คน (หนังสือประทับตราไม่มีลายเซ็น แต่มี memo แนบท้าย)
-                    bookSigned: [
-                        { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", email: "prasit@etda.or.th", signatureBase64: "" },
-                        { relatedNo: "2", prefixName: "นางสาว", firstname: "อัจฉรีย์", lastname: "สมุทรสาร", positionName: "ผู้ชำนาญการ", departmentName: "กองพัฒนาระบบบริการ", email: "atcharee@etda.or.th", signatureBase64: "" },
-                    ],
-                    // เสนอผ่าน - 2 คน
-                    bookSubmited: [
-                        { relatedNo: "1", prefixName: "นาย", firstname: "วิชัย", lastname: "เสนอผ่าน", positionName: "หัวหน้าฝ่ายบริหาร", departmentName: "กองบริหารงานทั่วไป", email: "wichai@etda.or.th" },
-                        { relatedNo: "2", prefixName: "นาง", firstname: "สมศรี", lastname: "ตรวจสอบ", positionName: "ผู้จัดการฝ่าย", departmentName: "กองพัฒนาระบบบริการ", email: "somsri@etda.or.th" },
-                    ],
-                    // ผู้เรียน/รับทราบ - 1 คน
-                    bookLearner: [{ relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "หัวหน้างานพัฒนา", departmentName: "กองพัฒนาระบบบริการ", email: "somchai@etda.or.th" }],
-                    // หน่วยงานผู้รับ - 2 กระทรวง
-                    bookRecipients: [
+                    toRecipients: [
                         {
                             guid: "R001",
                             recipientNo: "1",
@@ -812,7 +910,9 @@
                             postalCode: "10210",
                             contactName: "ปลัดกระทรวง",
                             contactEmail: "contact@mdes.go.th",
-                            endDoc: "ขอแสดงความนับถือ-1",
+                            salutation: "ถึง",
+                            salutationContent: "หัวหน้าส่วนราชการทุกแห่ง",
+                            endDoc: "",
                         },
                         {
                             guid: "R002",
@@ -824,24 +924,42 @@
                             postalCode: "10400",
                             contactName: "ผู้ว่าการ",
                             contactEmail: "info@tat.or.th",
-                            endDoc: "ขอแสดงความนับถือ-2",
+                            salutation: "ถึง",
+                            salutationContent: "ผู้ว่าการท่องเที่ยว",
+                            endDoc: "",
                         },
                     ],
                 },
                 // หนังสือภายใต้กระทรวง
                 ministry: {
                     bookNameId: BOOK_NAME_IDS.ministry,
-                    bookTitle: "ขอความอนุเคราะห์ข้อมูล",
-                    bookNo: "ดศ 0201/2568",
-                    dateThai: "8 มกราคม พ.ศ. 2569",
-                    department: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม",
-                    divisionName: "สำนักงานปลัดกระทรวง",
-                    address: "ศูนย์ราชการเฉลิมพระเกียรติฯ (อาคารบี)\nถนนแจ้งวัฒนะ แขวงทุ่งสองห้อง เขตหลักสี่\nกรุงเทพมหานคร ๑๐๒๑๐",
-                    recipients: "ผู้อำนวยการสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                    salutation: "เรียน",
-                    endDoc: "ขอแสดงความนับถือ",
                     formatPdf: "A4",
-                    bookContent: [{ bookContentTitle: "", bookContent: "        ด้วยกระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม มีความประสงค์ขอความอนุเคราะห์ข้อมูลเกี่ยวกับการพัฒนาระบบสารบรรณอิเล็กทรอนิกส์\n\n        จึงเรียนมาเพื่อโปรดพิจารณา", nextPageStatus: false }],
+                    // documentMain สำหรับ memo แนบท้าย
+                    documentMain: {
+                        bookName: "บันทึกข้อความ",
+                        bookTitle: "ขออนุมัติส่งหนังสือขอความอนุเคราะห์",
+                        bookNo: "ดศ 0201/ว 2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569",
+                        department: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม",
+                        divisionName: "สำนักงานปลัดกระทรวง",
+                        bookContent: [
+                            { ContentTitle: "เรื่อง", Content: "ขออนุมัติส่งหนังสือขอความอนุเคราะห์ข้อมูล", nextPageStatus: false },
+                            { ContentTitle: "", Content: "        ด้วยกระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคมมีความประสงค์ขอข้อมูลเกี่ยวกับการพัฒนาระบบสารบรรณอิเล็กทรอนิกส์\n\n        จึงขออนุมัติส่งหนังสือขอความอนุเคราะห์ข้อมูลจากหน่วยงานที่เกี่ยวข้อง", nextPageStatus: false },
+                        ],
+                    },
+                    // documentSub สำหรับหนังสือภายนอก
+                    documentSub: {
+                        bookName: "หนังสือภายนอก (กระทรวง)",
+                        bookTitle: "ขอความอนุเคราะห์ข้อมูล",
+                        bookNo: "ดศ 0201/2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569",
+                        department: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม",
+                        divisionName: "สำนักงานปลัดกระทรวง",
+                        address: "ศูนย์ราชการเฉลิมพระเกียรติฯ (อาคารบี)\nถนนแจ้งวัฒนะ แขวงทุ่งสองห้อง เขตหลักสี่\nกรุงเทพมหานคร ๑๐๒๑๐",
+                        bookContent: [{ ContentTitle: "", Content: "        ด้วยกระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม มีความประสงค์ขอความอนุเคราะห์ข้อมูลเกี่ยวกับการพัฒนาระบบสารบรรณอิเล็กทรอนิกส์\n\n        จึงเรียนมาเพื่อโปรดพิจารณา", nextPageStatus: false }],
+                        bookReferTo: [],
+                        attachment: [],
+                    },
                     // ผู้ลงนาม - 2 คน
                     bookSigned: [
                         { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ปลัดกระทรวง", departmentName: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", email: "prasit@mdes.go.th", signatureBase64: "" },
@@ -855,7 +973,7 @@
                     // ผู้เรียน/รับทราบ - 1 คน
                     bookLearner: [{ relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "หัวหน้างานพัฒนา", departmentName: "กองกลาง", email: "somchai@mdes.go.th" }],
                     // หน่วยงานผู้รับ - 2 กระทรวง
-                    bookRecipients: [
+                    toRecipients: [
                         {
                             guid: "R001",
                             recipientNo: "1",
@@ -866,6 +984,9 @@
                             postalCode: "10400",
                             contactName: "ปลัดกระทรวง",
                             contactEmail: "contact@mof.go.th",
+                            salutation: "เรียน",
+                            salutationContent: "ผู้อำนวยการสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                            endDoc: "ขอแสดงความนับถือ",
                         },
                         {
                             guid: "R002",
@@ -877,6 +998,9 @@
                             postalCode: "10200",
                             contactName: "ปลัดกระทรวง",
                             contactEmail: "contact@moi.go.th",
+                            salutation: "เรียน",
+                            salutationContent: "อธิบดีกรมการปกครอง",
+                            endDoc: "ขอแสดงความนับถือ",
                         },
                     ],
                 },

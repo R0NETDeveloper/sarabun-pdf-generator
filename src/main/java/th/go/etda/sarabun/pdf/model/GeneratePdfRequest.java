@@ -11,13 +11,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Request Model สำหรับ PDF Generation
+ * Request Model สำหรับ PDF Generation (New Format)
  * 
- * แปลงมาจาก: 
- * - ETDA.SarabunMultitenant.Model/GeneratePdfModel.cs (GenPdfReq)
- * - ETDA.SarabunMultitenant.Model/BookModel.cs (CreateBookReqModel)
- * 
- * GenPdfReq extends CreateBookReqModel
+ * โครงสร้างใหม่:
+ * - bookNameId: GUID ประเภทเอกสาร
+ * - documentMain: ข้อมูลเอกสารหลัก (บันทึกข้อความ)
+ * - documentSub: ข้อมูลเอกสารรอง (หนังสือส่งออก)
+ * - bookSigned, bookSubmited, bookLearner: ผู้เกี่ยวข้อง
+ * - toRecipients: ผู้รับหนังสือภายนอก
  */
 @Data
 @Builder
@@ -26,241 +27,211 @@ import lombok.NoArgsConstructor;
 public class GeneratePdfRequest {
     
     // ============================================
-    // จาก CreateBookReqModel (Base)
+    // Root Level Fields
     // ============================================
-    private String actionCode;              // รหัส Action
-    private String processId;               // รหัส Process
-    private String bookTypeId;              // รหัสประเภทหนังสือ
     private String bookNameId;              // รหัสชื่อหนังสือ (GUID สำคัญ!)
-    private String speedLayerId;            // รหัสชั้นความเร็ว
-    private String secretLayerId;           // รหัสชั้นความลับ
-    private String numReleaseChannelId;     // รหัสช่องทางออกเลข
-    private String ministyId;               // รหัสกระทรวง
-    private String departmentId;            // รหัสหน่วยงาน
-    private String divisionId;              // รหัสส่วนงาน
-    private String organizeId;              // รหัสองค์กร
-    private String bookTitle;               // ชื่อเรื่อง
-    private String docTypeId;               // รหัสประเภทเอกสาร
-    private Boolean isMultiBookName;        // มีหลายชื่อหนังสือ
-    private String divisionRemark;          // หมายเหตุส่วนงาน
-    private LocalDateTime createDate;       // วันที่สร้าง
-    
-    // === รายการข้อมูลย่อย ===
-    private List<BookContent> bookContent;          // เนื้อหาหนังสือ
-    private List<DocumentAttachment> attachment;   // ไฟล์แนบ
-    private List<BookReferTo> bookReferTo;          // อ้างถึง
-    private BookSettingRelate settingRelate;        // การตั้งค่าความสัมพันธ์
-    private List<BookRelate> bookLearner;           // ผู้รับภายใน (เรียน) - ใช้กับบันทึกข้อความ
-    private List<BookRecipient> bookRecipients;     // ผู้รับภายนอก (หน่วยงาน) - ใช้กับหนังสือส่งออก
-    private List<BookRelate> bookSubmited;          // ผู้เสนอผ่าน
-    private List<BookRelate> bookReview;            // ผู้ตรวจสอบ
-    private List<BookRelate> bookSigned;            // ผู้ลงนาม
-    
-    private String address;                 // ที่อยู่
-    private String contact;                 // ข้อมูลติดต่อ (string/HTML) - backward compatible
-    private ContactInfo contactInfo;        // ข้อมูลติดต่อ (object) - ใหม่ ⭐
-    private Boolean isShowSpeed;            // แสดงชั้นความเร็ว
-    private String formatPdf;               // รูปแบบ PDF (A4, etc.)
     
     // ============================================
-    // จาก GenPdfReq (Extended)
+    // เอกสารหลักและเอกสารรอง (New Format)
     // ============================================
-    private String guid;                    // GUID ของเอกสาร
-    private String statusId;                // รหัสสถานะ
-    private BookSubDetail subDetail;        // ข้อมูลเอกสารรอง
-    private String divisionName;            // ชื่อหน่วยงาน
-    private String numRelease;              // เลขที่ออก
-    private String speedLayer;              // ชั้นความเร็ว (หลัก)
-    private String speedLayerOther;         // ชั้นความเร็ว (รอง)
-    private Boolean isShow;                 // แสดงลายเซ็นหรือไม่
-    private String pdfBase64;               // PDF เดิม (Base64)
-    private String type;                    // ประเภท ("Main", "Other")
-    private String year;                    // ปี พ.ศ.
-    private String endDoc;                  // ข้อความท้ายเอกสาร (เช่น "ขอแสดงความนับถือ", "ควรมิควรแล้วแต่จะโปรดเกล้าฯ")
-    private String salutation;              // คำขึ้นต้น (เช่น "ขอประทานกราบทูล", "ขอเรียน")
-    private String salutationEnding;        // คำลงท้ายขึ้นต้น (เช่น "เรียนถึงคนนั้น", "ทราบ")
-    private String dateThai;                // วันที่ภาษาไทย
-    private String timeThai;                // เวลาภาษาไทย
-    private String bookNo;                  // เลขที่หนังสือ
-    private String department;              // ชื่อหน่วยงาน
-    private String recipients;              // ผู้รับหนังสือ (เรียน) - สำหรับ backward compatibility
+    private DocumentMain documentMain;      // ข้อมูลเอกสารหลัก (บันทึกข้อความ)
+    private DocumentSub documentSub;        // ข้อมูลเอกสารรอง (หนังสือส่งออก)
+    
+    // ============================================
+    // ผู้เกี่ยวข้อง
+    // ============================================
+    private List<BookRelate> bookSigned;    // ผู้ลงนาม
+    private List<BookRelate> bookSubmited;  // ผู้เสนอผ่าน  
+    private List<BookRelate> bookLearner;   // ผู้รับภายใน (เรียน)
+    
+    // ============================================
+    // ผู้รับหนังสือภายนอก (New Format)
+    // ============================================
+    private List<BookRecipient> toRecipients;   // ผู้รับหนังสือภายนอก (หน่วยงาน)
+    
+    // ============================================
+    // Helper methods สำหรับดึงข้อมูลจาก documentMain
+    // เพื่อ backward compatibility กับ generators อื่นๆ
+    // ============================================
+    
+    public String getBookTitle() {
+        return documentMain != null ? documentMain.getBookTitle() : null;
+    }
+    
+    public String getBookNo() {
+        return documentMain != null ? documentMain.getBookNo() : null;
+    }
+    
+    public String getDateThai() {
+        return documentMain != null ? documentMain.getDateThai() : null;
+    }
+    
+    public String getDepartment() {
+        return documentMain != null ? documentMain.getDepartment() : null;
+    }
+    
+    public String getDivisionName() {
+        return documentMain != null ? documentMain.getDivisionName() : null;
+    }
+    
+    public String getAddress() {
+        return documentMain != null ? documentMain.getAddress() : null;
+    }
+    
+    public String getSpeedLayer() {
+        return documentMain != null ? documentMain.getSpeedLayer() : null;
+    }
+    
+    public String getSpeedLayerId() {
+        return documentMain != null ? documentMain.getSpeedLayerId() : null;
+    }
+    
+    public String getFormatPdf() {
+        return documentMain != null ? documentMain.getFormatPdf() : null;
+    }
+    
+    public List<BookContent> getBookContent() {
+        return documentMain != null ? documentMain.getBookContent() : null;
+    }
+    
+    // Alias: toRecipients เป็น bookRecipients
+    public List<BookRecipient> getBookRecipients() {
+        return toRecipients;
+    }
+    
+    // Helper methods เพิ่มเติมสำหรับ backward compatibility
+    public BookSubDetail getSubDetail() {
+        // Map documentSub to BookSubDetail-like object
+        return null; // TODO: implement if needed
+    }
+    
+    public String getRecipients() {
+        return null; // Not used in new format
+    }
+    
+    public String getEndDoc() {
+        return null; // Get from toRecipients instead
+    }
+    
+    public String getContact() {
+        return documentSub != null ? documentSub.getContact() : null;
+    }
+    
+    public ContactInfo getContactInfo() {
+        return null; // Not used in new format
+    }
     
     // ============================================
     // Inner Classes
     // ============================================
     
     /**
-     * BookContent Model
-     * แปลงมาจาก: BookModel.BookContentModel
+     * DocumentMain Model - ข้อมูลเอกสารหลัก (บันทึกข้อความ)
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DocumentMain {
+        private String bookName;            // ชื่อประเภทหนังสือ (เช่น "หนังสือบันทึกข้อความ")
+        private String bookTitle;           // ชื่อเรื่อง
+        private String bookNo;              // เลขที่หนังสือ
+        private String dateThai;            // วันที่ภาษาไทย
+        private String department;          // ชื่อหน่วยงาน
+        private String divisionName;        // ชื่อส่วนงาน
+        private String address;             // ที่อยู่
+        private String speedLayer;          // ชั้นความเร็ว
+        private String speedLayerId;        // รหัสชั้นความเร็ว
+        private String formatPdf;           // รูปแบบ PDF (A4, etc.)
+        private List<BookContent> bookContent;  // เนื้อหาหนังสือ
+    }
+    
+    /**
+     * DocumentSub Model - ข้อมูลเอกสารรอง (หนังสือส่งออก)
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DocumentSub {
+        private String bookName;            // ชื่อประเภทหนังสือ (เช่น "หนังสือส่งออก")
+        private String bookTitle;           // ชื่อเรื่อง
+        private String bookNo;              // เลขที่หนังสือ
+        private String dateThai;            // วันที่ภาษาไทย
+        private String department;          // ชื่อหน่วยงาน
+        private String divisionName;        // ชื่อส่วนงาน
+        private String address;             // ที่อยู่
+        private String contact;             // ข้อมูลติดต่อ
+        private String speedLayer;          // ชั้นความเร็ว
+        private String speedLayerId;        // รหัสชั้นความเร็ว
+        private String year;                // ปี พ.ศ.
+        private List<BookContent> bookContent;          // เนื้อหาหนังสือ
+        private List<BookReferTo> bookReferTo;          // อ้างถึง
+        private List<DocumentAttachment> attachment;   // สิ่งที่ส่งมาด้วย
+    }
+    
+    /**
+     * BookContent Model - เนื้อหาหนังสือ (New Format)
      */
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class BookContent {
-        @JsonProperty("guid")
-        private String guid;                // GUID
-        private String bookDetailId;        // รหัสรายละเอียด
-        private String bookNameId;          // รหัสชื่อหนังสือ
-        private String bookNameName;        // ชื่อหนังสือ
-        private String bookContentNo;       // ลำดับเนื้อหา
-        private String bookContentTitle;    // หัวข้อเนื้อหา
-        private String bookContent;         // เนื้อหา (HTML)
-        private Boolean nextPageStatus;     // ขึ้นหน้าใหม่
+        @JsonProperty("ContentTitle")
+        private String contentTitle;        // หัวข้อเนื้อหา
+        
+        @JsonProperty("Content")
+        private String content;             // เนื้อหา (HTML)
     }
     
     /**
-     * BookRelate Model
-     * แปลงมาจาก: BookModel.BookRelateReqModel
-     * ใช้สำหรับ Learner, Submited, Review, Signed
+     * BookRelate Model - ผู้เกี่ยวข้อง (New Format)
+     * ใช้สำหรับ bookLearner, bookSubmited, bookSigned
      */
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class BookRelate {
-        private String relatedId;           // รหัสความสัมพันธ์
-        private String settingRelateId;     // รหัสการตั้งค่า
-        private String relatedType;         // ประเภทความสัมพันธ์
-        private String relatedOptionOrder;  // ลำดับ
-        private String departmentId;        // รหัสหน่วยงาน
-        private String organizeId;          // รหัสองค์กร
-        private String relatedNo;           // เลขที่
-        private String relateOrganizeId;    // รหัสองค์กรที่เกี่ยวข้อง
-        private String positionId;          // รหัสตำแหน่ง
-        private String relatePositionId;    // รหัสตำแหน่งที่เกี่ยวข้อง
-        private String personalId;          // รหัสบุคคล
-        private String personalOption;      // ตัวเลือกบุคคล
-        private String positionName;        // ชื่อตำแหน่ง ⭐
-        private String relatePersonalId;    // รหัสบุคคลที่เกี่ยวข้อง
-        private String bookDetailId;        // รหัสรายละเอียดหนังสือ
-        private String bookRelateId;        // รหัสความสัมพันธ์หนังสือ
-        private Boolean signStatus;         // สถานะการลงนาม
-        private LocalDateTime signDate;     // วันที่ลงนาม
-        private String bookRelateDetailId;  // รหัสรายละเอียด
-        private String email;               // อีเมล ⭐
-        private String prefixName;          // คำนำหน้า ⭐
-        private String firstname;           // ชื่อ ⭐
-        private String lastname;            // นามสกุล ⭐
-        private String departmentName;      // ชื่อหน่วยงาน ⭐
-        private String organizeName;        // ชื่อองค์กร
-        private String signatureBase64;     // ลายเซ็น Base64 (เพิ่มเติม)
-    }
-    
-    /**
-     * BookSubDetail Model
-     * แปลงมาจาก: BookModel.BookSubDetailModel
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class BookSubDetail {
-        @JsonProperty("guid")
-        private String guid;                // GUID
-        private String bookNo;              // เลขที่หนังสือ
-        private String bookTypeId;          // รหัสประเภท
-        private String speedLayerId;        // รหัสชั้นความเร็ว
-        private String speedLayerName;      // ชื่อชั้นความเร็ว
-        private String secretLayerId;       // รหัสชั้นความลับ
-        private String secretLayerName;     // ชื่อชั้นความลับ
-        private String numReleaseChannelId; // รหัสช่องทาง
-        private String numReleaseChannelName; // ชื่อช่องทาง
-        private String ministyId;           // รหัสกระทรวง
-        private String ministyName;         // ชื่อกระทรวง
-        private String departmentId;        // รหัสหน่วยงาน
-        private String departmentName;      // ชื่อหน่วยงาน
-        private String divisionId;          // รหัสส่วนงาน
-        private String divisionName;        // ชื่อส่วนงาน
-        private String organizeId;          // รหัสองค์กร
-        private String organizeName;        // ชื่อองค์กร
-        private String bookTitle;           // ชื่อเรื่อง
-        private String docTypeId;           // รหัสประเภทเอกสาร
-        private String docTypeName;         // ชื่อประเภทเอกสาร
-        private Boolean isMultiBookName;    // มีหลายชื่อ
-        private String divisionRemark;      // หมายเหตุ
-        private String creatorId;           // ผู้สร้าง
-        private LocalDateTime createDate;   // วันที่สร้าง
-        
-        private List<BookContent> bookContent;          // เนื้อหา
-        private List<DocumentAttachment> attachment;   // ไฟล์แนบ
-        private List<BookReferTo> bookReferTo;          // อ้างถึง
-        private List<SubDetailLearner> subDetailLearner; // ผู้รับ (รอง)
-        
-        private String address;             // ที่อยู่
-        private String contact;             // ข้อมูลติดต่อ
-        private String docNo;               // ลำดับที่
-    }
-    
-    /**
-     * SubDetailLearner Model
-     * แปลงมาจาก: BookModel.BookSubRelateModel
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SubDetailLearner {
-        @JsonProperty("guid")
-        private String guid;                // GUID
-        private String bookSubDetailId;     // รหัสเอกสารรอง
         private String relatedNo;           // ลำดับ
-        private String ministryId;          // รหัสกระทรวง
-        private String ministryName;        // ชื่อกระทรวง
-        private String departmentId;        // รหัสหน่วยงาน
-        private String departmentName;      // ชื่อหน่วยงาน ⭐
-        private String emailTo;             // อีเมลถึง
-        private String emailCC;             // อีเมล CC
-        private String emailBCC;            // อีเมล BCC
-        private String emailSubject;        // หัวเรื่องอีเมล
-        private String beginSubject;        // ข้อความเปิด
-        private String emailEnding;         // ข้อความปิด ⭐
-        private String detail;              // รายละเอียดเพิ่มเติม
+        private String prefixName;          // คำนำหน้า
+        private String firstname;           // ชื่อ
+        private String lastname;            // นามสกุล
+        private String positionName;        // ชื่อตำแหน่ง
+        private String departmentName;      // ชื่อหน่วยงาน
+        private String email;               // อีเมล
+        private String signatureBase64;     // ลายเซ็น Base64
     }
     
     /**
-     * DocumentAttachment Model
-     * แปลงมาจาก: DocumentModel.DocumentModel
+     * DocumentAttachment Model - สิ่งที่ส่งมาด้วย (New Format)
      */
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class DocumentAttachment {
-        private String id;                  // รหัส
-        private String url;                 // URL ไฟล์
-        private String urlId;               // รหัส URL
-        private String name;                // ชื่อไฟล์
-        private String documentType;        // ประเภทเอกสาร
-        private String documentTypeName;    // ชื่อประเภทเอกสาร
-        @Builder.Default
-        private Boolean isAdd = false;      // เพิ่มใหม่
-        @Builder.Default
-        private Boolean isDelete = false;   // ลบ
-        private String refId;               // รหัสอ้างอิง
-        private String remark;              // หมายเหตุ ⭐ (สำหรับสิ่งที่ส่งมาด้วย)
+        private String name;                // ชื่อไฟล์/รายการ
+        private String remark;              // หมายเหตุ (เช่น "จำนวน 1 ฉบับ")
     }
     
     /**
-     * BookReferTo Model
-     * แปลงมาจาก: BookModel.BookReferToModel
+     * BookReferTo Model - อ้างถึง (New Format)
      */
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class BookReferTo {
-        @JsonProperty("guid")
-        private String guid;                // GUID
-        private String bookDetailId;        // รหัสรายละเอียด
         private String bookReferToNo;       // เลขที่อ้างถึง
         private String bookReferToName;     // ชื่อหนังสืออ้างถึง
         private LocalDateTime createDate;   // วันที่
     }
     
     /**
-     * BookRecipient Model - ผู้รับหนังสือภายนอก (สำหรับ Outbound)
-     * ใช้สำหรับหนังสือส่งออกที่ส่งไปยังหน่วยงานภายนอก
+     * BookRecipient Model - ผู้รับหนังสือภายนอก (New Format)
+     * ใช้สำหรับ toRecipients
      */
     @Data
     @Builder
@@ -270,71 +241,65 @@ public class GeneratePdfRequest {
         @JsonProperty("guid")
         private String guid;                // GuId
         private String recipientNo;         // ลำดับผู้รับ
-        private String ministryId;          // รหัสกระทรวง
         private String ministryName;        // ชื่อกระทรวง
-        private String departmentId;        // รหัสกรม
         private String departmentName;      // ชื่อกรม
-        private String divisionId;          // รหัสหน่วยงาน
-        private String divisionName;        // ชื่อหน่วยงาน
-        private String organizeName;        // ชื่อองค์กร (สำหรับแสดงใน "เรียน") ⭐
+        private String organizeName;        // ชื่อองค์กร
         private String address;             // ที่อยู่
         private String postalCode;          // รหัสไปรษณีย์
         private String contactName;         // ชื่อผู้ติดต่อ
-        private String contactPhone;        // เบอร์โทรศัพท์
         private String contactEmail;        // อีเมล
-        private String deliveryMethod;      // วิธีการจัดส่ง
-        private String remark;              // หมายเหตุ
+        private String salutation;          // คำขึ้นต้น เช่น "เรียน", "กราบเรียน"
+        private String salutationContent;   // เนื้อหาต่อจากคำขึ้นต้น (เช่น "ท่านปลัดกระทรวง...")
+        private String endDoc;              // คำลงท้าย เช่น "ขอแสดงความนับถือ"
         
-        // === คำขึ้นต้น/คำลงท้าย (เฉพาะผู้รับรายนี้) ===
-        private String salutation;          // คำขึ้นต้น เช่น "เรียน", "กราบเรียน" ⭐
-        private String salutationContent;   // เนื้อหาต่อจากคำขึ้นต้น ⭐
-        private String endDoc;              // คำลงท้าย เช่น "ขอแสดงความนับถือ" ⭐
+        // Helper method for backward compatibility
+        public String getDivisionName() {
+            return null; // Not used in new format
+        }
     }
-
+    
     /**
-     * ContactInfo Model - ข้อมูลติดต่อ
-     * 
-     * รองรับ 2 แบบ:
-     * 1. ส่งเป็น object โดยตรง (contactInfo)
-     * 2. ส่งเป็น string/HTML (contact) แล้ว parse
+     * BookSubDetail Model - stub for backward compatibility
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class BookSubDetail {
+        private String docNo;               // เลขที่เอกสาร/ฉบับที่
+        private List<SubDetailLearner> subDetailLearner;
+    }
+    
+    /**
+     * SubDetailLearner Model - stub for backward compatibility
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SubDetailLearner {
+        private String emailEnding;
+        private String detail;
+    }
+    
+    /**
+     * ContactInfo Model - stub for backward compatibility
      */
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ContactInfo {
-        private String department;      // ชื่อหน่วยงาน
-        private String phone;           // เบอร์โทรศัพท์
-        private String fax;             // โทรสาร
-        private String email;           // อีเมล
+        private String department;
+        private String phone;
+        private String fax;
+        private String email;
         
-        /**
-         * ตรวจสอบว่ามีข้อมูลติดต่ออย่างน้อย 1 อย่างหรือไม่
-         */
         public boolean hasAnyInfo() {
             return (department != null && !department.isEmpty()) ||
                    (phone != null && !phone.isEmpty()) ||
                    (fax != null && !fax.isEmpty()) ||
                    (email != null && !email.isEmpty());
         }
-    }
-
-    /**
-     * BookSettingRelate Model
-     * แปลงมาจาก: BookModel.BookSettingRelateModel
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class BookSettingRelate {
-        @JsonProperty("guid")
-        private String guid;                // GUID
-        private String name;                // ชื่อ
-        private String creatorId;           // ผู้สร้าง
-        private LocalDateTime createDate;   // วันที่สร้าง
-        private LocalDateTime updateDate;   // วันที่แก้ไข
-        private Boolean oneTimeStatus;      // ใช้ครั้งเดียว
-        private Boolean deleteStatus;       // สถานะลบ
     }
 }

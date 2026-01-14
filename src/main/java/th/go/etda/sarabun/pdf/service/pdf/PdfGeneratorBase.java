@@ -1368,27 +1368,33 @@ public abstract class PdfGeneratorBase {
      * 
      * Method นี้ใช้ร่วมกันในทุก PDF Generator เนื่องจาก logic เหมือนกันทุกประการ:
      * 1. วนลูปทุก item ใน bookContent
-     * 2. แปลง bookContentTitle จาก HTML -> plain text (ถ้ามี)
-     * 3. แปลง bookContent จาก HTML -> plain text (ถ้ามี)
+     * 2. แปลง ContentTitle จาก HTML -> plain text (ถ้ามี)
+     * 3. แปลง Content จาก HTML -> plain text (ถ้ามี)
      * 4. รวมเป็น String เดียวโดยคั่นด้วย \n\n
      * 
-     * @param request GeneratePdfRequest ที่มี bookContent
+     * @param request GeneratePdfRequest ที่มี documentMain.bookContent
      * @return String เนื้อหาที่พร้อมใช้ใน PDF
      */
     protected String buildContent(GeneratePdfRequest request) {
         StringBuilder contentBuilder = new StringBuilder();
-        if (request.getBookContent() != null && !request.getBookContent().isEmpty()) {
-            for (var item : request.getBookContent()) {
-                if (item.getBookContentTitle() != null && !item.getBookContentTitle().isEmpty()) {
-                    String titleText = HtmlUtils.isHtml(item.getBookContentTitle()) 
-                        ? HtmlUtils.htmlToPlainText(item.getBookContentTitle())
-                        : item.getBookContentTitle();
+        
+        // อ่านจาก documentMain (New Format)
+        if (request.getDocumentMain() != null && 
+            request.getDocumentMain().getBookContent() != null && 
+            !request.getDocumentMain().getBookContent().isEmpty()) {
+            
+            for (var item : request.getDocumentMain().getBookContent()) {
+                // ใช้ contentTitle และ content (New Format)
+                if (item.getContentTitle() != null && !item.getContentTitle().isEmpty()) {
+                    String titleText = HtmlUtils.isHtml(item.getContentTitle()) 
+                        ? HtmlUtils.htmlToPlainText(item.getContentTitle())
+                        : item.getContentTitle();
                     contentBuilder.append(titleText).append("  ");
                 }
-                if (item.getBookContent() != null && !item.getBookContent().isEmpty()) {
-                    String contentText = HtmlUtils.isHtml(item.getBookContent())
-                        ? HtmlUtils.htmlToPlainText(item.getBookContent())
-                        : item.getBookContent();
+                if (item.getContent() != null && !item.getContent().isEmpty()) {
+                    String contentText = HtmlUtils.isHtml(item.getContent())
+                        ? HtmlUtils.htmlToPlainText(item.getContent())
+                        : item.getContent();
                     contentBuilder.append(contentText);
                 }
                 contentBuilder.append("\n\n");
