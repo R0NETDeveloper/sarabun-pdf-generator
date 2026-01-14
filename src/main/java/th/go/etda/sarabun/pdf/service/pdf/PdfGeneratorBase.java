@@ -1371,154 +1371,131 @@ public abstract class PdfGeneratorBase {
     @lombok.NoArgsConstructor
     @lombok.AllArgsConstructor
     public static class ProcessedContent {
+        private String subject;         // หัวเรื่อง (วาดหลัง "เรื่อง")
         private String textContent;     // เนื้อหา plain text (สำหรับ drawMultilineText)
         private String htmlContent;     // เนื้อหา HTML (สำหรับ HtmlContentRenderer)
         private boolean hasHtmlContent; // มีเนื้อหา HTML หรือไม่
     }
     
     /**
-     * ประมวลผลเนื้อหาจาก bookContent
-     * แยกเนื้อหา text และ html ออกจากกัน
+     * ประมวลผลเนื้อหาจาก bookContent (Object ไม่ใช่ Array)
      * 
-     * @param bookContent รายการ BookContent
-     * @return ProcessedContent ที่มีทั้ง textContent และ htmlContent
+     * @param bookContent BookContent object
+     * @return ProcessedContent ที่มี subject, textContent, htmlContent
      */
-    protected ProcessedContent processContentItems(List<GeneratePdfRequest.BookContent> bookContent) {
-        StringBuilder textBuilder = new StringBuilder();
-        StringBuilder htmlBuilder = new StringBuilder();
-        boolean hasHtml = false;
-        
-        if (bookContent == null || bookContent.isEmpty()) {
+    protected ProcessedContent processBookContent(GeneratePdfRequest.BookContent bookContent) {
+        if (bookContent == null) {
             return ProcessedContent.builder()
+                .subject("")
                 .textContent("")
                 .htmlContent("")
                 .hasHtmlContent(false)
                 .build();
         }
         
-        for (var item : bookContent) {
-            String title = item.getContentTitle();
-            String content = item.getContent();
-            boolean isHtmlItem = item.isHtmlContent();
-            
-            if (isHtmlItem) {
-                hasHtml = true;
-                // เพิ่มเข้า HTML builder
-                if (title != null && !title.isEmpty()) {
-                    htmlBuilder.append("<p><strong>").append(title).append("</strong>  ");
-                }
-                if (content != null && !content.isEmpty()) {
-                    htmlBuilder.append(content);
-                }
-                if (title != null && !title.isEmpty() && !content.contains("</p>")) {
-                    htmlBuilder.append("</p>");
-                }
-                htmlBuilder.append("\n");
+        String subject = bookContent.getSubject();
+        String content = bookContent.getContent();
+        boolean isHtml = bookContent.isHtmlContent() || 
+                         (content != null && HtmlUtils.isHtml(content));
+        
+        String textContent = "";
+        String htmlContent = "";
+        
+        if (content != null && !content.isEmpty()) {
+            if (isHtml) {
+                htmlContent = content;
+                // แปลง HTML เป็น plain text สำหรับกรณีที่ต้องการ fallback
+                textContent = HtmlUtils.htmlToPlainText(content);
             } else {
-                // เพิ่มเข้า text builder (แปลง HTML เป็น plain text ถ้าจำเป็น)
-                if (title != null && !title.isEmpty()) {
-                    String titleText = HtmlUtils.isHtml(title) 
-                        ? HtmlUtils.htmlToPlainText(title)
-                        : title;
-                    textBuilder.append(titleText).append("  ");
-                }
-                if (content != null && !content.isEmpty()) {
-                    String contentText = HtmlUtils.isHtml(content)
-                        ? HtmlUtils.htmlToPlainText(content)
-                        : content;
-                    textBuilder.append(contentText);
-                }
-                textBuilder.append("\n\n");
+                textContent = content;
             }
         }
         
         return ProcessedContent.builder()
-            .textContent(textBuilder.toString().trim())
-            .htmlContent(htmlBuilder.toString().trim())
-            .hasHtmlContent(hasHtml)
+            .subject(subject != null ? subject : "")
+            .textContent(textContent)
+            .htmlContent(htmlContent)
+            .hasHtmlContent(isHtml)
             .build();
     }
     
     /**
-     * สร้างเนื้อหาจาก bookContent โดยแปลง HTML เป็น plain text
-     * 
-     * Method นี้ใช้ร่วมกันในทุก PDF Generator เนื่องจาก logic เหมือนกันทุกประการ:
-     * 1. วนลูปทุก item ใน bookContent
-     * 2. แปลง ContentTitle จาก HTML -> plain text (ถ้ามี)
-     * 3. แปลง Content จาก HTML -> plain text (ถ้ามี)
-     * 4. รวมเป็น String เดียวโดยคั่นด้วย \n\n
+     * สร้างเนื้อหา plain text จาก bookContent
      * 
      * @param request GeneratePdfRequest ที่มี documentMain.bookContent
      * @return String เนื้อหาที่พร้อมใช้ใน PDF
      */
     protected String buildContent(GeneratePdfRequest request) {
-        StringBuilder contentBuilder = new StringBuilder();
-        
-        // อ่านจาก documentMain (New Format)
+        // อ่านจาก documentMain.bookContent (New Format - Object)
         if (request.getDocumentMain() != null && 
-            request.getDocumentMain().getBookContent() != null && 
-            !request.getDocumentMain().getBookContent().isEmpty()) {
+            request.getDocumentMain().getBookContent() != null) {
             
-            for (var item : request.getDocumentMain().getBookContent()) {
-                // ใช้ contentTitle และ content (New Format)
-                if (item.getContentTitle() != null && !item.getContentTitle().isEmpty()) {
-                    String titleText = HtmlUtils.isHtml(item.getContentTitle()) 
-                        ? HtmlUtils.htmlToPlainText(item.getContentTitle())
-                        : item.getContentTitle();
-                    contentBuilder.append(titleText).append("  ");
+            GeneratePdfRequest.BookContent bookContent = request.getDocumentMain().getBookContent();
+            String content = bookContent.getContent();
+            
+            if (content != null && !content.isEmpty()) {
+                // ถ้าเป็น HTML ให้แปลงเป็น plain text
+                if (bookContent.isHtmlContent() || HtmlUtils.isHtml(content)) {
+                    return HtmlUtils.htmlToPlainText(content);
                 }
-                if (item.getContent() != null && !item.getContent().isEmpty()) {
-                    String contentText = HtmlUtils.isHtml(item.getContent())
-                        ? HtmlUtils.htmlToPlainText(item.getContent())
-                        : item.getContent();
-                    contentBuilder.append(contentText);
-                }
-                contentBuilder.append("\n\n");
+                return content;
             }
         }
-        return contentBuilder.toString().trim();
+        return "";
+    }
+    
+    /**
+     * ดึง subject จาก bookContent
+     * 
+     * @param request GeneratePdfRequest
+     * @return String หัวเรื่อง
+     */
+    protected String getSubject(GeneratePdfRequest request) {
+        if (request.getDocumentMain() != null && 
+            request.getDocumentMain().getBookContent() != null) {
+            return request.getDocumentMain().getBookContent().getSubject();
+        }
+        // Fallback to bookTitle
+        return request.getBookTitle();
+    }
+    
+    /**
+     * ดึง subject จาก documentSub.bookContent (สำหรับหนังสือส่งออก)
+     * 
+     * @param request GeneratePdfRequest
+     * @return String หัวเรื่อง
+     */
+    protected String getSubjectFromDocSub(GeneratePdfRequest request) {
+        if (request.getDocumentSub() != null && 
+            request.getDocumentSub().getBookContent() != null) {
+            return request.getDocumentSub().getBookContent().getSubject();
+        }
+        return null;
     }
     
     /**
      * สร้างเนื้อหา HTML จาก bookContent (สำหรับ HTML rendering)
      * 
-     * @param bookContent รายการ BookContent
+     * @param bookContent BookContent object
      * @return HTML string พร้อม render
      */
-    protected String buildHtmlContent(List<GeneratePdfRequest.BookContent> bookContent) {
-        if (bookContent == null || bookContent.isEmpty()) {
+    protected String buildHtmlContent(GeneratePdfRequest.BookContent bookContent) {
+        if (bookContent == null) {
             return "";
         }
         
-        StringBuilder htmlBuilder = new StringBuilder();
-        
-        for (var item : bookContent) {
-            String title = item.getContentTitle();
-            String content = item.getContent();
-            
-            // เพิ่ม title ถ้ามี
-            if (title != null && !title.isEmpty()) {
-                if (HtmlUtils.isHtml(title)) {
-                    htmlBuilder.append(title);
-                } else {
-                    htmlBuilder.append("<p><strong>").append(escapeHtml(title)).append("</strong></p>\n");
-                }
-            }
-            
-            // เพิ่ม content
-            if (content != null && !content.isEmpty()) {
-                if (HtmlUtils.isHtml(content) || item.isHtmlContent()) {
-                    // เนื้อหาเป็น HTML แล้ว
-                    htmlBuilder.append(content).append("\n");
-                } else {
-                    // แปลง plain text เป็น HTML
-                    String htmlContent = plainTextToHtml(content);
-                    htmlBuilder.append(htmlContent).append("\n");
-                }
-            }
+        String content = bookContent.getContent();
+        if (content == null || content.isEmpty()) {
+            return "";
         }
         
-        return htmlBuilder.toString().trim();
+        // ถ้าเป็น HTML แล้ว return ตรงๆ
+        if (bookContent.isHtmlContent() || HtmlUtils.isHtml(content)) {
+            return content;
+        }
+        
+        // ถ้าเป็น plain text ให้แปลงเป็น HTML
+        return plainTextToHtml(content);
     }
     
     /**
@@ -1568,26 +1545,23 @@ public abstract class PdfGeneratorBase {
     }
     
     /**
-     * ตรวจสอบว่า bookContent มี HTML content หรือไม่
+     * ตรวจสอบว่า bookContent เป็น HTML content หรือไม่
      * 
-     * @param bookContent รายการ BookContent
-     * @return true ถ้ามีอย่างน้อย 1 item ที่เป็น HTML
+     * @param bookContent BookContent object
+     * @return true ถ้าเป็น HTML
      */
-    protected boolean hasHtmlContent(List<GeneratePdfRequest.BookContent> bookContent) {
-        if (bookContent == null || bookContent.isEmpty()) {
+    protected boolean hasHtmlContent(GeneratePdfRequest.BookContent bookContent) {
+        if (bookContent == null) {
             return false;
         }
         
-        for (var item : bookContent) {
-            if (item.isHtmlContent()) {
-                return true;
-            }
-            // ตรวจสอบจากเนื้อหาด้วย
-            if (item.getContent() != null && HtmlUtils.isHtml(item.getContent())) {
-                return true;
-            }
+        if (bookContent.isHtmlContent()) {
+            return true;
         }
-        return false;
+        
+        // ตรวจสอบจากเนื้อหาด้วย
+        String content = bookContent.getContent();
+        return content != null && HtmlUtils.isHtml(content);
     }
     
     // ============================================

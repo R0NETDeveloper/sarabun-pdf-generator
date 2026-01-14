@@ -117,75 +117,77 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
     }
     
     /**
-     * รวบรวมเนื้อหาจาก documentMain (New Format)
-     * Skip HTML content (จะ render แยก)
+     * รวบรวมเนื้อหาจาก documentMain.bookContent (New Format - Object)
      */
     private String buildContentFromDocMain(GeneratePdfRequest.DocumentMain docMain) {
-        if (docMain == null || docMain.getBookContent() == null || docMain.getBookContent().isEmpty()) {
+        if (docMain == null || docMain.getBookContent() == null) {
             return "";
         }
         
-        StringBuilder sb = new StringBuilder();
-        for (var bc : docMain.getBookContent()) {
-            // ถ้าเป็น HTML content ให้ skip (จะ render แยก)
-            if (bc.isHtmlContent()) {
-                continue;
-            }
-            
-            // ใช้ contentTitle และ content (New Format)
-            if (bc.getContentTitle() != null && !bc.getContentTitle().isEmpty()) {
-                sb.append(bc.getContentTitle()).append("\n");
-            }
-            if (bc.getContent() != null && !bc.getContent().isEmpty()) {
-                String content = bc.getContent();
-                // แปลง HTML เป็น plain text
-                if (HtmlUtils.isHtml(content)) {
-                    content = HtmlUtils.htmlToPlainText(content);
-                }
-                sb.append(content).append("\n");
-            }
+        GeneratePdfRequest.BookContent bc = docMain.getBookContent();
+        String content = bc.getContent();
+        
+        if (content == null || content.isEmpty()) {
+            return "";
         }
-        return sb.toString().trim();
+        
+        // ถ้าเป็น HTML content ให้แปลงเป็น plain text
+        if (bc.isHtmlContent() || HtmlUtils.isHtml(content)) {
+            return HtmlUtils.htmlToPlainText(content);
+        }
+        
+        return content;
     }
     
     /**
-     * ตรวจสอบว่า documentMain มี HTML content หรือไม่
+     * ดึง subject จาก documentMain.bookContent
+     */
+    private String getSubjectFromDocMain(GeneratePdfRequest.DocumentMain docMain) {
+        if (docMain == null || docMain.getBookContent() == null) {
+            return null;
+        }
+        return docMain.getBookContent().getSubject();
+    }
+    
+    /**
+     * ตรวจสอบว่า documentMain.bookContent เป็น HTML content หรือไม่
      */
     private boolean hasHtmlContentInDocMain(GeneratePdfRequest.DocumentMain docMain) {
         if (docMain == null || docMain.getBookContent() == null) {
             return false;
         }
-        for (var bc : docMain.getBookContent()) {
-            if (bc.isHtmlContent()) {
-                return true;
-            }
+        
+        GeneratePdfRequest.BookContent bc = docMain.getBookContent();
+        if (bc.isHtmlContent()) {
+            return true;
         }
-        return false;
+        
+        String content = bc.getContent();
+        return content != null && HtmlUtils.isHtml(content);
     }
     
     /**
-     * สร้าง HTML content จาก documentMain (สำหรับ HTML rendering)
+     * สร้าง HTML content จาก documentMain.bookContent (สำหรับ HTML rendering)
      */
     private String buildHtmlContentFromDocMain(GeneratePdfRequest.DocumentMain docMain) {
-        if (docMain == null || docMain.getBookContent() == null || docMain.getBookContent().isEmpty()) {
+        if (docMain == null || docMain.getBookContent() == null) {
             return "";
         }
         
-        StringBuilder html = new StringBuilder();
-        for (var bc : docMain.getBookContent()) {
-            // เฉพาะ HTML content
-            if (!bc.isHtmlContent()) {
-                continue;
-            }
-            
-            if (bc.getContentTitle() != null && !bc.getContentTitle().isEmpty()) {
-                html.append("<p><strong>").append(bc.getContentTitle()).append("</strong></p>\n");
-            }
-            if (bc.getContent() != null && !bc.getContent().isEmpty()) {
-                html.append(bc.getContent()).append("\n");
-            }
+        GeneratePdfRequest.BookContent bc = docMain.getBookContent();
+        String content = bc.getContent();
+        
+        if (content == null || content.isEmpty()) {
+            return "";
         }
-        return html.toString().trim();
+        
+        // ถ้าเป็น HTML แล้ว return ตรงๆ
+        if (bc.isHtmlContent() || HtmlUtils.isHtml(content)) {
+            return content;
+        }
+        
+        // ถ้าเป็น plain text ให้แปลงเป็น HTML
+        return plainTextToHtml(content);
     }
     
     /**
@@ -281,8 +283,12 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
                 // SECTION 6: เนื้อหา (รองรับทั้ง plain text และ HTML mixed content)
                 PDPage currentPage = page; // track หน้าปัจจุบัน
                 
-                // วาด plain text content ก่อน (ถ้ามี)
-                if (content != null && !content.isEmpty()) {
+                // ตรวจสอบว่ามี HTML content หรือไม่
+                boolean hasHtml = htmlContent != null && !htmlContent.isEmpty();
+                
+                // วาด plain text content (เฉพาะกรณีที่ไม่มี HTML content)
+                // ถ้ามี HTML content จะใช้ HTML renderer แทน
+                if (!hasHtml && content != null && !content.isEmpty()) {
                     yPosition -= SPACING_BEFORE_CONTENT;
                     
                     String[] lines = content.split("\n");
@@ -305,7 +311,7 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
                 }
                 
                 // SECTION 6.5: วาด HTML content (ทั้งข้อความและตารางผสมกัน)
-                if (htmlContent != null && !htmlContent.isEmpty()) {
+                if (hasHtml) {
                     yPosition -= SPACING_BEFORE_CONTENT;
                     
                     ContentContext ctx = drawMixedHtmlContent(document, currentPage, contentStream,

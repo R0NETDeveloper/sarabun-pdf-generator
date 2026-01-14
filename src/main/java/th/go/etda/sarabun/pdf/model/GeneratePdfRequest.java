@@ -90,8 +90,15 @@ public class GeneratePdfRequest {
         return documentMain != null ? documentMain.getFormatPdf() : null;
     }
     
-    public List<BookContent> getBookContent() {
+    public BookContent getBookContent() {
         return documentMain != null ? documentMain.getBookContent() : null;
+    }
+    
+    /**
+     * ดึง bookContent จาก documentSub (สำหรับหนังสือส่งออก, ระเบียบ, คำสั่ง ฯลฯ)
+     */
+    public BookContent getSubBookContent() {
+        return documentSub != null ? documentSub.getBookContent() : null;
     }
     
     // Alias: toRecipients เป็น bookRecipients
@@ -134,7 +141,7 @@ public class GeneratePdfRequest {
     @AllArgsConstructor
     public static class DocumentMain {
         private String bookName;            // ชื่อประเภทหนังสือ (เช่น "หนังสือบันทึกข้อความ")
-        private String bookTitle;           // ชื่อเรื่อง
+        private String bookTitle;           // ชื่อเรื่อง (สำหรับ backward compatibility)
         private String bookNo;              // เลขที่หนังสือ
         private String dateThai;            // วันที่ภาษาไทย
         private String department;          // ชื่อหน่วยงาน
@@ -143,7 +150,7 @@ public class GeneratePdfRequest {
         private String speedLayer;          // ชั้นความเร็ว
         private String speedLayerId;        // รหัสชั้นความเร็ว
         private String formatPdf;           // รูปแบบ PDF (A4, etc.)
-        private List<BookContent> bookContent;  // เนื้อหาหนังสือ
+        private BookContent bookContent;    // เนื้อหาหนังสือ (Object ไม่ใช่ Array)
     }
     
     /**
@@ -155,7 +162,7 @@ public class GeneratePdfRequest {
     @AllArgsConstructor
     public static class DocumentSub {
         private String bookName;            // ชื่อประเภทหนังสือ (เช่น "หนังสือส่งออก")
-        private String bookTitle;           // ชื่อเรื่อง
+        private String bookTitle;           // ชื่อเรื่อง (สำหรับ backward compatibility)
         private String bookNo;              // เลขที่หนังสือ
         private String dateThai;            // วันที่ภาษาไทย
         private String department;          // ชื่อหน่วยงาน
@@ -165,30 +172,38 @@ public class GeneratePdfRequest {
         private String speedLayer;          // ชั้นความเร็ว
         private String speedLayerId;        // รหัสชั้นความเร็ว
         private String year;                // ปี พ.ศ.
-        private List<BookContent> bookContent;          // เนื้อหาหนังสือ
-        private List<BookReferTo> bookReferTo;          // อ้างถึง
-        private List<DocumentAttachment> attachment;   // สิ่งที่ส่งมาด้วย
+        private BookContent bookContent;            // เนื้อหาหนังสือ (Object ไม่ใช่ Array)
+        private List<BookReferTo> bookReferTo;      // อ้างถึง
+        private List<DocumentAttachment> attachment; // สิ่งที่ส่งมาด้วย
     }
     
     /**
-     * BookContent Model - เนื้อหาหนังสือ (New Format)
+     * BookContent Model - เนื้อหาหนังสือ (New Format - Object ไม่ใช่ Array)
      * 
-     * contentType:
-     * - "text" หรือ null: เนื้อหาเป็น plain text (default)
-     * - "html": เนื้อหาเป็น HTML รองรับ tables, images, CSS
+     * โครงสร้าง:
+     * - subject: หัวเรื่องเอกสาร (วาดหลัง "เรื่อง")
+     * - content: เนื้อหากลาง (วาดหลัง "เรียน" หรือเนื้อความ)
+     * - contentType: ประเภทเนื้อหา "text" (default) หรือ "html"
+     * 
+     * ตัวอย่าง:
+     * {
+     *   "subject": "ขออนุมัติจัดซื้ออุปกรณ์",
+     *   "content": "<p>ด้วยกอง...</p><table>...</table>",
+     *   "contentType": "html"
+     * }
      */
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class BookContent {
-        @JsonProperty("ContentTitle")
-        private String contentTitle;        // หัวข้อเนื้อหา
+        @JsonProperty("subject")
+        private String subject;             // หัวเรื่อง (วาดหลัง "เรื่อง")
         
-        @JsonProperty("Content")
-        private String content;             // เนื้อหา (HTML หรือ plain text)
+        @JsonProperty("content")
+        private String content;             // เนื้อหากลาง (HTML หรือ plain text)
         
-        @JsonProperty("ContentType")
+        @JsonProperty("contentType")
         private String contentType;         // ประเภทเนื้อหา: "text" (default) หรือ "html"
         
         /**
@@ -196,6 +211,20 @@ public class GeneratePdfRequest {
          */
         public boolean isHtmlContent() {
             return "html".equalsIgnoreCase(contentType);
+        }
+        
+        /**
+         * ตรวจสอบว่ามี subject หรือไม่
+         */
+        public boolean hasSubject() {
+            return subject != null && !subject.trim().isEmpty();
+        }
+        
+        /**
+         * ตรวจสอบว่ามี content หรือไม่
+         */
+        public boolean hasContent() {
+            return content != null && !content.trim().isEmpty();
         }
     }
     

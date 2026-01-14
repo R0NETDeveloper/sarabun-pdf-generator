@@ -89,9 +89,11 @@ public class RegulationPdfGenerator extends PdfGeneratorBase {
         // รวบรวมเนื้อหา
         String content = buildContent(request);
         
-        // ตรวจสอบและรวบรวม HTML content
+        // ตรวจสอบและรวบรวม HTML content (bookContent เป็น Object ไม่ใช่ Array)
         String htmlContent = null;
-        if (request.getDocumentMain() != null && hasHtmlContent(request.getDocumentMain().getBookContent())) {
+        if (request.getDocumentMain() != null && 
+            request.getDocumentMain().getBookContent() != null &&
+            hasHtmlContent(request.getDocumentMain().getBookContent())) {
             htmlContent = buildHtmlContent(request.getDocumentMain().getBookContent());
         }
         
@@ -210,7 +212,11 @@ public class RegulationPdfGenerator extends PdfGeneratorBase {
                 // SECTION 6: เนื้อหา (รองรับทั้ง plain text และ HTML table inline)
                 PDPage currentPage = page;
                 
-                if (content != null && !content.isEmpty()) {
+                // ตรวจสอบว่ามี HTML content หรือไม่
+                boolean hasHtml = htmlContent != null && !htmlContent.isEmpty();
+                
+                // วาด plain text content (เฉพาะกรณีที่ไม่มี HTML content)
+                if (!hasHtml && content != null && !content.isEmpty()) {
                     yPosition -= SPACING_BEFORE_CONTENT;
                     
                     String[] lines = content.split("\n");
@@ -233,7 +239,7 @@ public class RegulationPdfGenerator extends PdfGeneratorBase {
                 }
                 
                 // SECTION 6.5: วาด HTML content (ทั้งข้อความและตารางผสมกัน)
-                if (htmlContent != null && !htmlContent.isEmpty()) {
+                if (hasHtml) {
                     yPosition -= 10;
                     
                     ContentContext ctx = drawMixedHtmlContent(document, currentPage, contentStream,

@@ -183,13 +183,12 @@ public class GeneratePdfController {
         docMain.setSpeedLayer("ด่วนที่สุด");
         docMain.setFormatPdf("A4");
         
-        // Content for documentMain
-        java.util.List<GeneratePdfRequest.BookContent> mainContentList = new java.util.ArrayList<>();
+        // Content for documentMain (New Format - Object ไม่ใช่ Array)
         GeneratePdfRequest.BookContent mainContent = new GeneratePdfRequest.BookContent();
-        mainContent.setContentTitle("");
+        mainContent.setSubject("ขอเชิญเข้าร่วมประชุมสัมมนา");
         mainContent.setContent("        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์จะจัดการประชุมสัมมนา ในหัวข้อ \"การพัฒนาระบบสารบรรณอิเล็กทรอนิกส์\" ในวันที่ 15 มกราคม 2569 ณ ห้องประชุมใหญ่ ชั้น 5\n\n        จึงเรียนมาเพื่อโปรดพิจารณาส่งผู้แทนเข้าร่วมประชุมสัมมนาดังกล่าวด้วย จะขอบคุณยิ่ง");
-        mainContentList.add(mainContent);
-        docMain.setBookContent(mainContentList);
+        mainContent.setContentType("text");
+        docMain.setBookContent(mainContent);
         
         request.setDocumentMain(docMain);
         
@@ -204,13 +203,12 @@ public class GeneratePdfController {
         docSub.setContact("โทร. 02-123-4567\nอีเมล info@etda.or.th");
         docSub.setSpeedLayer("ด่วนที่สุด");
         
-        // Content for documentSub
-        java.util.List<GeneratePdfRequest.BookContent> subContentList = new java.util.ArrayList<>();
+        // Content for documentSub (New Format - Object ไม่ใช่ Array)
         GeneratePdfRequest.BookContent subContent = new GeneratePdfRequest.BookContent();
-        subContent.setContentTitle("");
+        subContent.setSubject("ขอเชิญเข้าร่วมประชุมสัมมนา กับ ETDA");
         subContent.setContent("        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์จะจัดการประชุมสัมมนา ในหัวข้อ \"การพัฒนาระบบสารบรรณอิเล็กทรอนิกส์\" ในวันที่ 15 มกราคม 2569 ณ ห้องประชุมใหญ่ ชั้น 5\n\n        จึงเรียนมาเพื่อโปรดพิจารณาส่งผู้แทนเข้าร่วมประชุมสัมมนาดังกล่าวด้วย จะขอบคุณยิ่ง");
-        subContentList.add(subContent);
-        docSub.setBookContent(subContentList);
+        subContent.setContentType("text");
+        docSub.setBookContent(subContent);
         
         // Attachments for documentSub
         java.util.List<GeneratePdfRequest.DocumentAttachment> attachments = new java.util.ArrayList<>();
