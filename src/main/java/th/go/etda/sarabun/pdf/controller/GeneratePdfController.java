@@ -88,8 +88,29 @@ public class GeneratePdfController {
      * Health check endpoint - ตรวจสอบสถานะ PDF service
      */
     @GetMapping("/health")
-    public ResponseEntity<ApiResponse<String>> health() {
-        return ResponseEntity.ok(ApiResponse.success("PDF Service is running", "สถานะปกติ"));
+    public ResponseEntity<ApiResponse<HealthInfo>> health() {
+        HealthInfo info = new HealthInfo();
+        info.status = "PDF Service is running";
+        info.fontCacheReady = th.go.etda.sarabun.pdf.service.pdf.FontManager.isInstanceAvailable();
+        
+        if (info.fontCacheReady) {
+            var stats = th.go.etda.sarabun.pdf.service.pdf.FontManager.getInstance().getStats();
+            info.fontCacheSize = stats.getTotalCacheSize();
+            info.fontLoadCount = stats.getTotalLoadCount();
+        }
+        
+        return ResponseEntity.ok(ApiResponse.success(info, "สถานะปกติ"));
+    }
+    
+    /**
+     * ข้อมูล Health Check
+     */
+    @lombok.Data
+    public static class HealthInfo {
+        private String status;
+        private boolean fontCacheReady;
+        private int fontCacheSize;
+        private long fontLoadCount;
     }
     
     /**

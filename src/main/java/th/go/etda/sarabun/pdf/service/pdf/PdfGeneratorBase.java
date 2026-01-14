@@ -156,7 +156,10 @@ public abstract class PdfGeneratorBase {
     
     /**
      * โหลด Thai font จาก resources
+     * 
+     * @deprecated ใช้ loadRegularFont() หรือ loadBoldFont() แทน ซึ่งใช้ FontManager cache
      */
+    @Deprecated
     protected PDFont loadThaiFont(PDDocument document, String fontPath) throws Exception {
         try {
             log.debug("Loading Thai font from: {}", fontPath);
@@ -180,16 +183,32 @@ public abstract class PdfGeneratorBase {
     }
     
     /**
-     * โหลด font ปกติ
+     * โหลด font ปกติ (ใช้ FontManager cache)
      */
     protected PDFont loadRegularFont(PDDocument document) throws Exception {
+        if (FontManager.isInstanceAvailable()) {
+            try {
+                return FontManager.getInstance().getRegularFont(document);
+            } catch (Exception e) {
+                log.warn("FontManager failed, falling back to direct load: {}", e.getMessage());
+            }
+        }
+        // Fallback to direct loading
         return loadThaiFont(document, FONT_PATH);
     }
     
     /**
-     * โหลด font ตัวหนา
+     * โหลด font ตัวหนา (ใช้ FontManager cache)
      */
     protected PDFont loadBoldFont(PDDocument document) throws Exception {
+        if (FontManager.isInstanceAvailable()) {
+            try {
+                return FontManager.getInstance().getBoldFont(document);
+            } catch (Exception e) {
+                log.warn("FontManager failed, falling back to direct load: {}", e.getMessage());
+            }
+        }
+        // Fallback to direct loading
         return loadThaiFont(document, FONT_BOLD_PATH);
     }
     
