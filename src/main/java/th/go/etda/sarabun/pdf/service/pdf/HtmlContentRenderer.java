@@ -2,17 +2,11 @@ package th.go.etda.sarabun.pdf.service.pdf;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.util.Base64;
 
 import org.apache.pdfbox.io.MemoryUsageSetting;
 import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
-import org.apache.pdfbox.pdmodel.font.PDFont;
-import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
@@ -288,6 +282,17 @@ public class HtmlContentRenderer {
                         text-decoration: underline;
                     }
                     
+                    /* Strikethrough (ขีดฆ่า) */
+                    s, strike, del {
+                        text-decoration: line-through;
+                    }
+                    
+                    /* Link styles */
+                    a {
+                        color: #0066cc;
+                        text-decoration: underline;
+                    }
+                    
                     /* Center alignment */
                     .center, .text-center {
                         text-align: center;
@@ -296,6 +301,32 @@ public class HtmlContentRenderer {
                     /* Right alignment */
                     .right, .text-right {
                         text-align: right;
+                    }
+                    
+                    /* Quill Editor alignment classes */
+                    .ql-align-center {
+                        text-align: center;
+                    }
+                    .ql-align-right {
+                        text-align: right;
+                    }
+                    .ql-align-justify {
+                        text-align: justify;
+                    }
+                    
+                    /* Quill Editor indent classes */
+                    .ql-indent-1 { padding-left: 24pt; }
+                    .ql-indent-2 { padding-left: 48pt; }
+                    .ql-indent-3 { padding-left: 72pt; }
+                    .ql-indent-4 { padding-left: 96pt; }
+                    .ql-indent-5 { padding-left: 120pt; }
+                    
+                    /* Quill space classes (จากโค้ดหน้าบ้าน) */
+                    .space-enter {
+                        margin-bottom: 12pt;
+                    }
+                    .space-line {
+                        margin-bottom: 6pt;
                     }
                     
                     /* Image styles */
