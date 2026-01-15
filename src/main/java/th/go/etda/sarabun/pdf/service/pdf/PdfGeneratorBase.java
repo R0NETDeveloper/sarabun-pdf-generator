@@ -1176,10 +1176,8 @@ public abstract class PdfGeneratorBase {
                                                    contentStream, submiter, fontRegular, 
                                                    yPosition, "Submit", currentPageNumber, i, SignBoxType.SUBMIT, false);
                     
-                    // วาดเส้นแบ่ง (ถ้าไม่ใช่คนสุดท้าย)
-                    if (i < submiters.size() - 1) {
-                        yPosition = drawDashedLineSeparator(contentStream, yPosition);
-                    }
+                    // วาดเส้นประหลังลายเซ็นทุกคน
+                    yPosition = drawDashedLineSeparator(contentStream, yPosition);
                 }
             } finally {
                 contentStream.close();
@@ -1293,10 +1291,8 @@ public abstract class PdfGeneratorBase {
                                                    contentStream, learner, fontRegular,
                                                    yPosition, "Learner", currentPageNumber, i, SignBoxType.LEARNER, false);
                     
-                    // วาดเส้นแบ่ง (ถ้าไม่ใช่คนสุดท้าย)
-                    if (i < learners.size() - 1) {
-                        yPosition = drawDashedLineSeparator(contentStream, yPosition);
-                    }
+                    // วาดเส้นประหลังลายเซ็นทุกคน
+                    yPosition = drawDashedLineSeparator(contentStream, yPosition);
                 }
             } finally {
                 contentStream.close();
@@ -1307,7 +1303,7 @@ public abstract class PdfGeneratorBase {
     }
     
     /**
-     * วาดเส้นประแบ่งระหว่างผู้ลงนามแต่ละคน
+     * วาดเส้นประด้านล่างสุดของหน้าลายเซ็น
      */
     protected float drawDashedLineSeparator(PDPageContentStream contentStream, float yPosition) throws IOException {
         float lineY = yPosition - 15;
