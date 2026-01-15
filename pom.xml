@@ -128,6 +128,13 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 		
+		<!-- Bucket4j สำหรับ Rate Limiting -->
+		<dependency>
+			<groupId>com.bucket4j</groupId>
+			<artifactId>bucket4j-core</artifactId>
+			<version>8.10.1</version>
+		</dependency>
+		
 		<!-- Dev Tools -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

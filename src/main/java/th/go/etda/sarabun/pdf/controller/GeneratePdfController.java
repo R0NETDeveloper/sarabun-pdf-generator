@@ -13,12 +13,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import th.go.etda.sarabun.pdf.config.RateLimitConfig;
 import th.go.etda.sarabun.pdf.constant.BookType;
 import th.go.etda.sarabun.pdf.model.ApiResponse;
 import th.go.etda.sarabun.pdf.model.GeneratePdfRequest;
 import th.go.etda.sarabun.pdf.service.GeneratePdfService;
+import th.go.etda.sarabun.pdf.service.RequestValidator;
 
 /**
  * PDF Generation REST API Controller
@@ -49,6 +52,8 @@ import th.go.etda.sarabun.pdf.service.GeneratePdfService;
 public class GeneratePdfController {
     
     private final GeneratePdfService generatePdfService;
+    private final RateLimitConfig rateLimitConfig;
+    private final RequestValidator requestValidator;
     
     /**
      * สร้าง PDF Preview (V1 - เดิม)
@@ -59,13 +64,36 @@ public class GeneratePdfController {
      * ส่งกลับ PDF ในรูปแบบ Base64 string
      * 
      * @param request ข้อมูลสำหรับสร้าง PDF
+     * @param httpRequest HTTP request สำหรับดึง client IP
      * @return ApiResponse ที่มี PDF Base64
      */
     @PostMapping("/preview")
-    public ResponseEntity<ApiResponse<String>> previewPdf(@RequestBody GeneratePdfRequest request) {
-        log.info("============ PDF PREVIEW REQUEST ============");
+    public ResponseEntity<ApiResponse<String>> previewPdf(
+            @RequestBody GeneratePdfRequest request,
+            HttpServletRequest httpRequest) {
+        
+        String clientIp = getClientIp(httpRequest);
+        log.info("============ PDF PREVIEW REQUEST from {} ============", clientIp);
         
         try {
+            // 1. ตรวจสอบ Rate Limit
+            if (!rateLimitConfig.tryConsume(clientIp)) {
+                log.warn("Rate limit exceeded for IP: {}", clientIp);
+                return ResponseEntity
+                    .status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(ApiResponse.error("คำขอมากเกินไป กรุณารอสักครู่แล้วลองใหม่ (Rate limit exceeded)"));
+            }
+            
+            // 2. ตรวจสอบ Input Validation
+            RequestValidator.ValidationResult validationResult = requestValidator.validate(request);
+            if (!validationResult.isValid()) {
+                log.warn("Validation failed: {}", validationResult.getErrorMessage());
+                return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("ข้อมูลไม่ถูกต้อง: " + validationResult.getErrorMessage()));
+            }
+            
+            // 3. สร้าง PDF
             ApiResponse<String> response = generatePdfService.previewPdf(request);
             
             if (response.getIsOk()) {
@@ -85,6 +113,24 @@ public class GeneratePdfController {
     }
     
     /**
+     * ดึง Client IP จาก request (รองรับ proxy/load balancer)
+     */
+    private String getClientIp(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+            // X-Forwarded-For อาจมีหลาย IP คั่นด้วย comma, ใช้ตัวแรก
+            return xForwardedFor.split(",")[0].trim();
+        }
+        
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isEmpty()) {
+            return xRealIp;
+        }
+        
+        return request.getRemoteAddr();
+    }
+    
+    /**
      * Health check endpoint - ตรวจสอบสถานะ PDF service
      */
     @GetMapping("/health")
@@ -99,6 +145,10 @@ public class GeneratePdfController {
             info.fontLoadCount = stats.getTotalLoadCount();
         }
         
+        // เพิ่มข้อมูล Rate Limit
+        info.rateLimitEnabled = rateLimitConfig.isEnabled();
+        info.rateLimitStats = rateLimitConfig.getStats();
+        
         return ResponseEntity.ok(ApiResponse.success(info, "สถานะปกติ"));
     }
     
@@ -111,6 +161,8 @@ public class GeneratePdfController {
         private boolean fontCacheReady;
         private int fontCacheSize;
         private long fontLoadCount;
+        private boolean rateLimitEnabled;
+        private RateLimitConfig.RateLimitStats rateLimitStats;
     }
     
     /**

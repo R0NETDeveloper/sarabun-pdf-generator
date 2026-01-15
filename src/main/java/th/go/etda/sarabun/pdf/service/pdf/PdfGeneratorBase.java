@@ -797,14 +797,18 @@ public abstract class PdfGeneratorBase {
             merger.addSource(new ByteArrayInputStream(pdfBytes));
         }
         
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        merger.setDestinationStream(outputStream);
-        
-        // ใช้ MemoryUsageSetting ตาม migrateToJava.txt
-        merger.mergeDocuments(MemoryUsageSetting.setupMainMemoryOnly());
-        
-        log.info("Merged {} PDFs successfully", base64Pdfs.size());
-        return Base64.getEncoder().encodeToString(outputStream.toByteArray());
+        // ใช้ try-with-resources เพื่อป้องกัน resource leak
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            merger.setDestinationStream(outputStream);
+            
+            // ใช้ setupMixed แทน setupMainMemoryOnly เพื่อป้องกัน OOM
+            // - ถ้า PDF < 10MB จะใช้ memory
+            // - ถ้า PDF >= 10MB จะใช้ temp file
+            merger.mergeDocuments(MemoryUsageSetting.setupMixed(10 * 1024 * 1024));
+            
+            log.info("Merged {} PDFs successfully", base64Pdfs.size());
+            return Base64.getEncoder().encodeToString(outputStream.toByteArray());
+        }
     }
     
     // ============================================

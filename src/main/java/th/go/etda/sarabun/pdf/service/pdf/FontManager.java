@@ -3,6 +3,7 @@ package th.go.etda.sarabun.pdf.service.pdf;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.font.PDFont;
@@ -50,10 +51,10 @@ public class FontManager {
     private byte[] boldFontBytes;
     
     // ============================================
-    // Statistics
+    // Statistics (Thread-safe counters)
     // ============================================
-    private long regularFontLoadCount = 0;
-    private long boldFontLoadCount = 0;
+    private final AtomicLong regularFontLoadCount = new AtomicLong(0);
+    private final AtomicLong boldFontLoadCount = new AtomicLong(0);
     
     /**
      * โหลด font bytes ตอน startup
@@ -129,11 +130,11 @@ public class FontManager {
             throw new IllegalStateException("FontManager not initialized - regularFontBytes is null");
         }
         
-        regularFontLoadCount++;
+        long loadCount = regularFontLoadCount.incrementAndGet();
         
         try (ByteArrayInputStream bais = new ByteArrayInputStream(regularFontBytes)) {
             PDFont font = PDType0Font.load(document, bais);
-            log.debug("Created regular font for document (total loads: {})", regularFontLoadCount);
+            log.debug("Created regular font for document (total loads: {})", loadCount);
             return font;
         }
     }
@@ -149,11 +150,11 @@ public class FontManager {
             throw new IllegalStateException("FontManager not initialized - boldFontBytes is null");
         }
         
-        boldFontLoadCount++;
+        long loadCount = boldFontLoadCount.incrementAndGet();
         
         try (ByteArrayInputStream bais = new ByteArrayInputStream(boldFontBytes)) {
             PDFont font = PDType0Font.load(document, bais);
-            log.debug("Created bold font for document (total loads: {})", boldFontLoadCount);
+            log.debug("Created bold font for document (total loads: {})", loadCount);
             return font;
         }
     }
@@ -182,8 +183,8 @@ public class FontManager {
         return new FontStats(
             regularFontBytes != null ? regularFontBytes.length : 0,
             boldFontBytes != null ? boldFontBytes.length : 0,
-            regularFontLoadCount,
-            boldFontLoadCount
+            regularFontLoadCount.get(),
+            boldFontLoadCount.get()
         );
     }
     

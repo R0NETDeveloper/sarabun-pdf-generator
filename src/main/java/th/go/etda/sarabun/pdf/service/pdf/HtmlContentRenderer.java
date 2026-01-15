@@ -102,8 +102,18 @@ public class HtmlContentRenderer {
      * แปลง HTML content เป็น PDF และคืนค่าเป็น PDDocument
      * (สำหรับใช้ในการ merge กับ PDF อื่น)
      * 
+     * ⚠️ IMPORTANT: ผู้เรียกต้องปิด PDDocument ด้วย try-with-resources หรือ close() เสมอ
+     * เพื่อป้องกัน Memory Leak
+     * 
+     * ตัวอย่างการใช้งาน:
+     * <pre>
+     * try (PDDocument doc = renderer.renderHtmlToPDDocument(html)) {
+     *     // ใช้งาน doc
+     * }
+     * </pre>
+     * 
      * @param htmlContent เนื้อหา HTML
-     * @return PDDocument
+     * @return PDDocument (ผู้เรียกต้องปิดเอง)
      */
     public PDDocument renderHtmlToPDDocument(String htmlContent) throws Exception {
         byte[] pdfBytes = renderHtmlToPdf(htmlContent);
@@ -124,16 +134,18 @@ public class HtmlContentRenderer {
         // แปลง existing PDF จาก Base64
         byte[] existingPdfBytes = Base64.getDecoder().decode(existingPdfBase64);
         
-        // Merge PDFs
+        // Merge PDFs with try-with-resources
         PDFMergerUtility merger = new PDFMergerUtility();
         merger.addSource(new ByteArrayInputStream(existingPdfBytes));
         merger.addSource(new ByteArrayInputStream(htmlPdfBytes));
         
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        merger.setDestinationStream(outputStream);
-        merger.mergeDocuments(MemoryUsageSetting.setupMainMemoryOnly());
-        
-        return Base64.getEncoder().encodeToString(outputStream.toByteArray());
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            merger.setDestinationStream(outputStream);
+            // ใช้ setupMixed เพื่อป้องกัน OOM กรณี PDF ขนาดใหญ่ (threshold 10MB)
+            merger.mergeDocuments(MemoryUsageSetting.setupMixed(10 * 1024 * 1024));
+            
+            return Base64.getEncoder().encodeToString(outputStream.toByteArray());
+        }
     }
     
     /**
