@@ -469,15 +469,36 @@
                                 <label>📄 ประเภทเอกสาร:</label>
                                 <select id="documentType" onchange="loadDocumentType()">
                                     <option value="">-- เลือกประเภท --</option>
-                                    <option value="officialMemo">บันทึกข้อความ (ครบทุกรูปแบบ)</option>
-                                    <option value="officialDocument">หนังสือส่งออก (ครบทุกรูปแบบ)</option>
-                                    <option value="officialDocumentHtml">📊 หนังสือส่งออก + HTML Table</option>
-                                    <option value="stamp">หนังสือประทับตรา (ครบทุกรูปแบบ)</option>
-                                    <option value="ministry">หนังสือภายใต้กระทรวง (ครบทุกรูปแบบ)</option>
-                                    <option value="regulation">หนังสือระเบียบ</option>
-                                    <option value="announce">หนังสือประกาศ</option>
-                                    <option value="command">หนังสือคำสั่ง</option>
-                                    <option value="rules">หนังสือข้อบังคับ</option>
+                                    <optgroup label="📝 บันทึกข้อความ">
+                                        <option value="memoShort">บันทึกข้อความ - เนื้อหาสั้น (1 หน้า)</option>
+                                        <option value="memoLong">บันทึกข้อความ - เนื้อหายาว (2-3 หน้า)</option>
+                                        <option value="memoTable">บันทึกข้อความ - มีตาราง</option>
+                                    </optgroup>
+                                    <optgroup label="📤 หนังสือส่งออก">
+                                        <option value="outboundShort">หนังสือส่งออก - เนื้อหาสั้น (1 หน้า)</option>
+                                        <option value="outboundLong">หนังสือส่งออก - เนื้อหายาว (2-3 หน้า)</option>
+                                        <option value="outboundTable">หนังสือส่งออก - มีตาราง</option>
+                                    </optgroup>
+                                    <optgroup label="📋 หนังสือประทับตรา">
+                                        <option value="stampShort">หนังสือประทับตรา - เนื้อหาสั้น</option>
+                                        <option value="stampLong">หนังสือประทับตรา - เนื้อหายาว</option>
+                                        <option value="stampTable">หนังสือประทับตรา - มีตาราง</option>
+                                    </optgroup>
+                                    <optgroup label="🏛️ หนังสือกระทรวง">
+                                        <option value="ministryShort">หนังสือกระทรวง - เนื้อหาสั้น</option>
+                                        <option value="ministryLong">หนังสือกระทรวง - เนื้อหายาว</option>
+                                        <option value="ministryTable">หนังสือกระทรวง - มีตาราง</option>
+                                    </optgroup>
+                                    <optgroup label="📜 หนังสือประกาศ/ระเบียบ/คำสั่ง">
+                                        <option value="announceShort">ประกาศ - เนื้อหาสั้น</option>
+                                        <option value="announceLong">ประกาศ - เนื้อหายาว</option>
+                                        <option value="regulationShort">ระเบียบ - เนื้อหาสั้น</option>
+                                        <option value="regulationLong">ระเบียบ - เนื้อหายาว</option>
+                                        <option value="commandShort">คำสั่ง - เนื้อหาสั้น</option>
+                                        <option value="commandLong">คำสั่ง - เนื้อหายาว</option>
+                                        <option value="rulesShort">ข้อบังคับ - เนื้อหาสั้น</option>
+                                        <option value="rulesLong">ข้อบังคับ - เนื้อหายาว</option>
+                                    </optgroup>
                                 </select>
                             </div>
                         </div>
@@ -559,583 +580,410 @@
                 ministry: "4B3EB169-6203-4A71-A3BD-A442FEAAA91F", // หนังสือภายใต้กระทรวง
             };
 
-            // Template ตามประเภทเอกสาร (ครบทุกรูปแบบ) - ใช้ Format ใหม่
-            const documentTemplates = {
-                // บันทึกข้อความ - ครบทุกรูปแบบ: ลงนาม + เสนอผ่าน + ผู้เรียน/รับทราบ + ด่วนที่สุด
-                officialMemo: {
-                    bookNameId: BOOK_NAME_IDS.officialMemo,
-                    formatPdf: "A4",
-                    // documentMain สำหรับ memo detail
-                    documentMain: {
-                        bookName: "บันทึกข้อความ",
-                        bookTitle: "ขออนุมัติจัดซื้ออุปกรณ์คอมพิวเตอร์",
-                        bookNo: "สผ 0101/ว 2568",
-                        dateThai: "8 มกราคม พ.ศ. 2569",
-                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                        divisionName: "กองพัฒนาระบบบริการ",
-                        bookContent: {
-                            subject: "ขออนุมัติจัดซื้ออุปกรณ์คอมพิวเตอร์",
-                            content: "        ด้วยกองพัฒนาระบบบริการมีความประสงค์ขอจัดซื้ออุปกรณ์คอมพิวเตอร์ เพื่อใช้ในการปฏิบัติงานพัฒนาระบบสารบรรณอิเล็กทรอนิกส์\n\n        จึงขออนุมัติ",
-                            contentType: "html",
-                        },
-                    },
-                    // documentSub สำหรับบันทึกข้อความ (เนื้อหาหลัก)
-                    documentSub: {
-                        bookName: "บันทึกข้อความ",
-                        bookTitle: "บันทึกข้อความ ทดสอบสร้างแบบยาวๆ ขึ้นบรรทัดใหม่บันทึกข้อความ ทดสอบสร้างแบบย",
-                        bookNo: "สผ 0101/2568",
-                        dateThai: "8 มกราคม พ.ศ. 2569",
-                        timeThai: "10:30 น.",
-                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                        divisionName: "กองพัฒนาระบบบริการ",
-                        speedLayer: "ด่วนที่สุด",
-                        speedLayerId: "3",
-                        bookContent: {
-                            subject: "",
-                            content: "        ด้วยกองพัฒนาระบบบริการมีความประสงค์ขอจัดซื้ออุปกรณ์คอมพิวเตอร์ เพื่อใช้ในการปฏิบัติงานพัฒนาระบบสารบรรณอิเล็กทรอนิกส์\n\n        จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ",
-                            contentType: "html",
-                        },
-                    },
-                    // ผู้ลงนาม (ท้ายเนื้อหา) - 2 คน
-                    bookSigned: [
-                        { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", email: "prasit@etda.or.th", signatureBase64: "" },
-                        { relatedNo: "2", prefixName: "นางสาว", firstname: "อัจฉรีย์", lastname: "สมุทรสาร", positionName: "ผู้ชำนาญการ", departmentName: "กองพัฒนาระบบบริการ", email: "atcharee@etda.or.th", signatureBase64: "" },
-                    ],
-                    // เสนอผ่าน (ขึ้นหน้าใหม่) - 2 คน
-                    bookSubmited: [
-                        { relatedNo: "1", prefixName: "นาย", firstname: "วิชัย", lastname: "เสนอผ่าน", positionName: "หัวหน้าฝ่ายบริหาร", departmentName: "กองบริหารงานทั่วไป", email: "wichai@etda.or.th" },
-                        { relatedNo: "2", prefixName: "นาง", firstname: "สมศรี", lastname: "ตรวจสอบ", positionName: "ผู้จัดการฝ่าย", departmentName: "กองพัฒนาระบบบริการ", email: "somsri@etda.or.th" },
-                    ],
-                    // ผู้เรียน/รับทราบ (ขึ้นหน้าใหม่ - สำหรับลงนาม) - 1 คน
-                    bookLearner: [{ relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "หัวหน้างานพัฒนา", departmentName: "กองพัฒนาระบบบริการ", email: "somchai@etda.or.th" }],
-                },
-                // หนังสือภายนอก - ครบทุกรูปแบบ: ลงนาม + เสนอผ่าน + หน่วยงานผู้รับ (3 หน่วยงาน)
-                officialDocument: {
-                    bookNameId: BOOK_NAME_IDS.officialDocument,
-                    formatPdf: "A4",
-                    // documentMain สำหรับ memo แนบท้าย
-                    documentMain: {
-                        bookName: "บันทึกข้อความ",
-                        bookTitle: "ขออนุมัติส่งหนังสือภายนอก",
-                        bookNo: "สพธอ. 0102/ว 2568",
-                        dateThai: "8 มกราคม พ.ศ. 2569",
-                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                        divisionName: "กองพัฒนาระบบบริการ",
-                        bookContent: {
-                            subject: "ขออนุมัติส่งหนังสือเชิญประชุมสัมมนา",
-                            content: '        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์กำหนดจัดการประชุมสัมมนาในหัวข้อ "การพัฒนาระบบสารบรรณอิเล็กทรอนิกส์" ในวันที่ 15 มกราคม 2569\n\n        จึงขออนุมัติส่งหนังสือเชิญหน่วยงานที่เกี่ยวข้องเข้าร่วมประชุมสัมมนาดังกล่าว',
-                            contentType: "html",
-                        },
-                    },
-                    // documentSub สำหรับหนังสือภายนอก (object ไม่ใช่ array)
-                    documentSub: {
-                        bookName: "หนังสือภายนอก",
-                        bookTitle: "ขอเชิญเข้าร่วมประชุมสัมมนา",
-                        bookNo: "สพธอ. 0102/2568",
-                        dateThai: "8 มกราคม พ.ศ. 2569",
-                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                        divisionName: "กองพัฒนาระบบบริการ",
-                        address: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์\nศูนย์ราชการเฉลิมพระเกียรติฯ (อาคารบี) \n เลขที่ ๑๒๐ หมู่ที่ ๓ ชั้น ๔ ซอยแจ้งวัฒนะ ๗\nถนนแจ้งวัฒนะ แขวงทุ่งสองห้อง เขตหลักสี่\nกรุงเทพมหานคร ๑๐๒๑๐",
-                        contact: "เลขหมาย ๐ ๒๑๒๓ ๑๒๓๔\nโทรสาร ๐ ๒๑๒๓ ๑๒๐๐\nอีเมล helpdesk@etda.or.th",
-                        speedLayer: "ด่วนที่สุด",
-                        speedLayerId: "3",
-                        bookReferTo: [{ bookReferToNo: "ดศ 0201/1234", bookReferToName: "หนังสือกระทรวงดิจิทัลฯ", createDate: "2026-01-01T00:00:00" }],
-                        attachment: [
-                            { name: "กำหนดการประชุม", remark: "จำนวน 1 ฉบับ" },
-                            { name: "แบบตอบรับ", remark: "จำนวน 1 ฉบับ" },
-                        ],
-                        bookContent: {
-                            subject: "ขอเชิญเข้าร่วมประชุมสัมมนา",
-                            content: '        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์จะจัดการประชุมสัมมนาในหัวข้อ "การพัฒนาระบบสารบรรณอิเล็กทรอนิกส์" ในวันที่ 15 มกราคม 2569 ณ ห้องประชุมใหญ่ ชั้น 5\n\n        จึงเรียนมาเพื่อโปรดพิจารณาส่งผู้แทนเข้าร่วมประชุมสัมมนาดังกล่าวด้วย จะขอบคุณยิ่ง',
-                            contentType: "html",
-                        },
-                    },
-                    // ผู้ลงนาม - 2 คน
-                    bookSigned: [
-                        { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", email: "prasit@etda.or.th", signatureBase64: "" },
-                        { relatedNo: "2", prefixName: "นางสาว", firstname: "อัจฉรีย์", lastname: "สมุทรสาร", positionName: "ผู้ชำนาญการ", departmentName: "กองพัฒนาระบบบริการ", email: "atcharee@etda.or.th", signatureBase64: "" },
-                    ],
-                    // เสนอผ่าน - 2 คน
-                    bookSubmited: [
-                        { relatedNo: "1", prefixName: "นาย", firstname: "วิชัย", lastname: "เสนอผ่าน", positionName: "หัวหน้าฝ่ายบริหาร", departmentName: "กองบริหารงานทั่วไป", email: "wichai@etda.or.th" },
-                        { relatedNo: "2", prefixName: "นาง", firstname: "สมศรี", lastname: "ตรวจสอบ", positionName: "ผู้จัดการฝ่าย", departmentName: "กองพัฒนาระบบบริการ", email: "somsri@etda.or.th" },
-                    ],
-                    // ผู้เรียน/รับทราบ - 1 คน
-                    bookLearner: [{ relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "หัวหน้างานพัฒนา", departmentName: "กองพัฒนาระบบบริการ", email: "somchai@etda.or.th" }],
-                    // ใช้ toRecipients แทน bookRecipients สำหรับผู้รับภายนอก
-                    toRecipients: [
-                        {
-                            guid: "R001",
-                            recipientNo: "1",
-                            ministryName: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม",
-                            departmentName: "สำนักงานปลัดกระทรวง",
-                            organizeName: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม",
-                            address: "ศูนย์ราชการเฉลิมพระเกียรติฯ ถนนแจ้งวัฒนะ",
-                            postalCode: "10210",
-                            contactName: "ปลัดกระทรวง",
-                            contactEmail: "contact@mdes.go.th",
-                            salutation: "เรียน",
-                            salutationContent: "ท่านปลัดกระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม",
-                            endDoc: "ขอแสดงความนับถืออย่างยิ่ง",
-                        },
-                        {
-                            guid: "R002",
-                            recipientNo: "2",
-                            ministryName: "กระทรวงการท่องเที่ยวและกีฬา",
-                            departmentName: "การท่องเที่ยวแห่งประเทศไทย",
-                            organizeName: "การท่องเที่ยวแห่งประเทศไทย",
-                            address: "1600 ถนนเพชรบุรีตัดใหม่ แขวงมักกะสัน เขตราชเทวี",
-                            postalCode: "10400",
-                            contactName: "ผู้ว่าการ",
-                            contactEmail: "info@tat.or.th",
-                            salutation: "เรียน",
-                            salutationContent: "ท่านผู้ว่าการการท่องเที่ยวแห่งประเทศไทย",
-                            endDoc: "ขอแสดงความนับถือ",
-                        },
-                    ],
-                },
-                // =====================================================
-                // หนังสือส่งออก พร้อม HTML Content (ตาราง)
-                // =====================================================
-                officialDocumentHtml: {
-                    bookNameId: BOOK_NAME_IDS.officialDocument,
-                    formatPdf: "A4",
-                    // documentMain สำหรับ memo แนบท้าย
-                    documentMain: {
-                        bookName: "บันทึกข้อความ",
-                        bookTitle: "ขออนุมัติจัดซื้ออุปกรณ์คอมพิวเตอร์",
-                        bookNo: "สพธอ. 0102/ว 2568",
-                        dateThai: "8 มกราคม พ.ศ. 2569",
-                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                        divisionName: "กองพัฒนาระบบบริการ",
-                        bookContent: {
-                            subject: "ขออนุมัติจัดซื้ออุปกรณ์คอมพิวเตอร์",
-                            content: "        ด้วยกองพัฒนาระบบบริการมีความประสงค์ขอจัดซื้ออุปกรณ์คอมพิวเตอร์ตามรายการแนบ เพื่อทดแทนอุปกรณ์เดิมที่เสื่อมสภาพและเพิ่มประสิทธิภาพในการปฏิบัติงาน\n\n        จึงขออนุมัติ",
-                            contentType: "html",
-                        },
-                    },
-                    // documentSub สำหรับหนังสือภายนอก - มี HTML Table
-                    documentSub: {
-                        bookName: "หนังสือภายนอก",
-                        bookTitle: "ขออนุมัติจัดซื้ออุปกรณ์คอมพิวเตอร์",
-                        bookNo: "สพธอ. 0102/2568",
-                        dateThai: "8 มกราคม พ.ศ. 2569",
-                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                        divisionName: "กองพัฒนาระบบบริการ",
-                        address: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์\nศูนย์ราชการเฉลิมพระเกียรติฯ (อาคารบี)\nถนนแจ้งวัฒนะ แขวงทุ่งสองห้อง เขตหลักสี่\nกรุงเทพมหานคร ๑๐๒๑๐",
-                        contact: "เลขหมาย ๐ ๒๑๒๓ ๑๒๓๔\nโทรสาร ๐ ๒๑๒๓ ๑๒๐๐\nอีเมล helpdesk@etda.or.th",
-                        bookContent: {
-                            subject: "ขออนุมัติจัดซื้ออุปกรณ์คอมพิวเตอร์",
-                            content: `        ด้วยกองพัฒนาระบบบริการมีความประสงค์ขอจัดซื้ออุปกรณ์คอมพิวเตอร์ เพื่อใช้ในการพัฒนาระบบสารบรรณอิเล็กทรอนิกส์ โดยมีรายละเอียดดังนี้
+            // Template ตามประเภทเอกสาร - แบ่งเป็น 3 รูปแบบ (Short, Long, Table)
+            // ============================================
+            // Common Data: ผู้ลงนาม, เสนอผ่าน, ผู้เรียน
+            // ============================================
+            const commonSigners = {
+                bookSigned: [
+                    { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", email: "prasit@etda.or.th", signatureBase64: "" },
+                    { relatedNo: "2", prefixName: "นางสาว", firstname: "อัจฉรีย์", lastname: "สมุทรสาร", positionName: "ผู้ชำนาญการ", departmentName: "กองพัฒนาระบบบริการ", email: "atcharee@etda.or.th", signatureBase64: "" },
+                ],
+                bookSubmited: [
+                    { relatedNo: "1", prefixName: "นาย", firstname: "วิชัย", lastname: "เสนอผ่าน", positionName: "หัวหน้าฝ่ายบริหาร", departmentName: "กองบริหารงานทั่วไป", email: "wichai@etda.or.th" },
+                    { relatedNo: "2", prefixName: "นาง", firstname: "สมศรี", lastname: "ตรวจสอบ", positionName: "ผู้จัดการฝ่าย", departmentName: "กองพัฒนาระบบบริการ", email: "somsri@etda.or.th" },
+                ],
+                bookLearner: [
+                    { relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "หัวหน้างานพัฒนา", departmentName: "กองพัฒนาระบบบริการ", email: "somchai@etda.or.th" }
+                ],
+            };
+
+            // Long Content สำหรับทดสอบการขึ้นหน้าใหม่
+            const longContent = `        <strong>ย่อหน้าที่ 1:</strong> ด้วยกองพัฒนาระบบบริการ สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ มีความประสงค์ดำเนินการพัฒนาระบบสารบรรณอิเล็กทรอนิกส์แบบครบวงจร เพื่อรองรับการทำงานในยุคดิจิทัล และเพิ่มประสิทธิภาพการบริหารจัดการเอกสารภาครัฐ
+
+        <strong>ย่อหน้าที่ 2:</strong> ระบบสารบรรณอิเล็กทรอนิกส์ดังกล่าว มีคุณสมบัติและความสามารถหลัก ได้แก่ การรับ-ส่งหนังสือราชการผ่านระบบอิเล็กทรอนิกส์ การลงลายมือชื่อดิจิทัล การจัดเก็บและสืบค้นเอกสาร การติดตามสถานะเอกสาร และการรายงานผลการดำเนินงาน
+
+        <strong>ย่อหน้าที่ 3:</strong> ประโยชน์ที่คาดว่าจะได้รับจากการพัฒนาระบบนี้ ได้แก่ ลดระยะเวลาในการรับ-ส่งเอกสาร ลดค่าใช้จ่ายด้านกระดาษและการจัดส่ง เพิ่มความถูกต้องและความน่าเชื่อถือของเอกสาร รองรับการทำงานแบบ Work from Anywhere และสอดคล้องกับนโยบายรัฐบาลดิจิทัล
+
+        <strong>ย่อหน้าที่ 4:</strong> แผนการดำเนินงานแบ่งออกเป็น 4 ระยะ ได้แก่ ระยะที่ 1 การวิเคราะห์และออกแบบระบบ (3 เดือน) ระยะที่ 2 การพัฒนาระบบ (6 เดือน) ระยะที่ 3 การทดสอบระบบ (2 เดือน) และระยะที่ 4 การติดตั้งและใช้งานจริง (1 เดือน) รวมระยะเวลาดำเนินการทั้งสิ้น 12 เดือน
+
+        <strong>ย่อหน้าที่ 5:</strong> งบประมาณที่ใช้ในการดำเนินโครงการ ประกอบด้วย ค่าพัฒนาซอฟต์แวร์ ค่าอุปกรณ์ฮาร์ดแวร์ ค่าบริการคลาวด์ ค่าฝึกอบรมบุคลากร และค่าบำรุงรักษาระบบ โดยใช้งบประมาณจากกองทุนพัฒนาดิจิทัลเพื่อเศรษฐกิจและสังคม
+
+        <strong>ย่อหน้าที่ 6:</strong> คณะทำงานประกอบด้วยบุคลากรจากหลายหน่วยงาน ได้แก่ กองพัฒนาระบบบริการ กองนโยบายและยุทธศาสตร์ กองบริหารงานทั่วไป และผู้เชี่ยวชาญจากภายนอก เพื่อให้การดำเนินงานครอบคลุมทุกมิติ
+
+        <strong>ย่อหน้าที่ 7:</strong> ความเสี่ยงที่อาจเกิดขึ้น ได้แก่ การเปลี่ยนแปลงความต้องการของผู้ใช้ ข้อจำกัดด้านเทคโนโลยี การต่อต้านการเปลี่ยนแปลงจากบุคลากร และข้อจำกัดด้านงบประมาณ ซึ่งได้มีแผนบริหารความเสี่ยงเพื่อรองรับปัญหาที่อาจเกิดขึ้น
+
+        <strong>ย่อหน้าที่ 8:</strong> ตัวชี้วัดความสำเร็จของโครงการ ประกอบด้วย จำนวนเอกสารที่รับ-ส่งผ่านระบบ ความพึงพอใจของผู้ใช้งาน ระยะเวลาในการดำเนินการต่อเอกสาร และอัตราความผิดพลาดในการจัดการเอกสาร
+
+        <strong>ย่อหน้าที่ 9:</strong> การสนับสนุนและการบำรุงรักษาระบบหลังการติดตั้ง จะมีทีมสนับสนุนตลอด 24 ชั่วโมง มีการอัปเดตระบบอย่างสม่ำเสมอ และมีการอบรมทบทวนให้กับผู้ใช้งานอย่างต่อเนื่อง
+
+        <strong>ย่อหน้าที่ 10:</strong> จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติการดำเนินโครงการพัฒนาระบบสารบรรณอิเล็กทรอนิกส์แบบครบวงจร ตามรายละเอียดข้างต้น และหวังเป็นอย่างยิ่งว่าจะได้รับความอนุเคราะห์จากท่าน`;
+
+            // Table Content สำหรับทดสอบตาราง
+            const tableContent = `        ด้วยกองพัฒนาระบบบริการมีความประสงค์ขอจัดซื้ออุปกรณ์คอมพิวเตอร์ เพื่อใช้ในการพัฒนาระบบสารบรรณอิเล็กทรอนิกส์ โดยมีรายละเอียดดังนี้
+
 <table>
     <thead>
         <tr>
-            <th style="width: 10%;">ลำดับ</th>
-            <th style="width: 40%;">รายการ</th>
-            <th style="width: 15%;">จำนวน</th>
-            <th style="width: 15%;">ราคาต่อหน่วย</th>
-            <th style="width: 20%;">รวม</th>
+            <th style="width: 8%;">ลำดับ</th>
+            <th style="width: 35%;">รายการ</th>
+            <th style="width: 12%;">จำนวน</th>
+            <th style="width: 15%;">ราคา/หน่วย</th>
+            <th style="width: 15%;">รวม (บาท)</th>
+            <th style="width: 15%;">หมายเหตุ</th>
         </tr>
     </thead>
     <tbody>
         <tr>
             <td style="text-align: center;">1</td>
-            <td>คอมพิวเตอร์โน้ตบุ๊ก Intel Core i7</td>
+            <td>คอมพิวเตอร์โน้ตบุ๊ก Intel Core i7 RAM 16GB SSD 512GB</td>
             <td style="text-align: center;">5 เครื่อง</td>
             <td style="text-align: right;">45,000</td>
             <td style="text-align: right;">225,000</td>
+            <td>สำหรับทีมพัฒนา</td>
         </tr>
         <tr>
             <td style="text-align: center;">2</td>
-            <td>จอมอนิเตอร์ 27 นิ้ว 4K</td>
+            <td>จอมอนิเตอร์ 27 นิ้ว 4K IPS Panel</td>
             <td style="text-align: center;">5 เครื่อง</td>
             <td style="text-align: right;">12,000</td>
             <td style="text-align: right;">60,000</td>
+            <td>ต่อพ่วงโน้ตบุ๊ก</td>
         </tr>
         <tr>
             <td style="text-align: center;">3</td>
-            <td>คีย์บอร์ดและเมาส์ไร้สาย</td>
+            <td>คีย์บอร์ดและเมาส์ไร้สาย Logitech MX Series</td>
             <td style="text-align: center;">5 ชุด</td>
-            <td style="text-align: right;">2,500</td>
-            <td style="text-align: right;">12,500</td>
+            <td style="text-align: right;">4,500</td>
+            <td style="text-align: right;">22,500</td>
+            <td>อุปกรณ์ต่อพ่วง</td>
         </tr>
         <tr>
             <td style="text-align: center;">4</td>
-            <td>เครื่องสำรองไฟ UPS 1000VA</td>
+            <td>เครื่องสำรองไฟ UPS 1500VA/900W Pure Sine Wave</td>
             <td style="text-align: center;">5 เครื่อง</td>
+            <td style="text-align: right;">5,500</td>
+            <td style="text-align: right;">27,500</td>
+            <td>ป้องกันไฟกระชาก</td>
+        </tr>
+        <tr>
+            <td style="text-align: center;">5</td>
+            <td>ชุดโต๊ะทำงาน Standing Desk ปรับระดับไฟฟ้า</td>
+            <td style="text-align: center;">3 ชุด</td>
+            <td style="text-align: right;">18,000</td>
+            <td style="text-align: right;">54,000</td>
+            <td>สำหรับห้องประชุม</td>
+        </tr>
+        <tr>
+            <td style="text-align: center;">6</td>
+            <td>กล้องเว็บแคม 4K พร้อมไมโครโฟน</td>
+            <td style="text-align: center;">3 ชุด</td>
             <td style="text-align: right;">3,500</td>
-            <td style="text-align: right;">17,500</td>
+            <td style="text-align: right;">10,500</td>
+            <td>สำหรับประชุมออนไลน์</td>
         </tr>
         <tr style="font-weight: bold; background-color: #f0f0f0;">
             <td colspan="4" style="text-align: right;">รวมทั้งสิ้น</td>
-            <td style="text-align: right;">315,000 บาท</td>
+            <td style="text-align: right;">399,500</td>
+            <td></td>
         </tr>
     </tbody>
 </table>
-<p style="margin-top: 12pt;">        จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ</p>`,
-                            contentType: "html",
-                        },
-                        bookReferTo: [],
-                        attachment: [{ name: "รายละเอียดคุณสมบัติอุปกรณ์", remark: "จำนวน 1 ชุด" }],
+
+        ทั้งนี้ งบประมาณดังกล่าวอยู่ในแผนงบประมาณประจำปี 2569 ที่ได้รับอนุมัติแล้ว
+
+        จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ`;
+
+            const documentTemplates = {
+                // ============================================
+                // บันทึกข้อความ - 3 รูปแบบ
+                // ============================================
+                memoShort: {
+                    bookNameId: BOOK_NAME_IDS.officialMemo,
+                    formatPdf: "A4",
+                    documentMain: {
+                        bookName: "บันทึกข้อความ", bookTitle: "ขออนุมัติจัดซื้ออุปกรณ์", bookNo: "สผ 0101/ว 2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", divisionName: "กองพัฒนาระบบบริการ",
+                        bookContent: { subject: "ขออนุมัติจัดซื้ออุปกรณ์", content: "        ด้วยกองพัฒนาระบบบริการมีความประสงค์ขอจัดซื้ออุปกรณ์\n\n        จึงขออนุมัติ", contentType: "html" },
                     },
-                    // ผู้ลงนาม
-                    bookSigned: [{ relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", email: "prasit@etda.or.th", signatureBase64: "" }],
-                    bookSubmited: [],
-                    bookLearner: [],
+                    documentSub: {
+                        bookName: "บันทึกข้อความ", bookTitle: "[SHORT] ทดสอบเนื้อหาสั้น 1 หน้า", bookNo: "สผ 0101/2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", timeThai: "10:30 น.", department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                        divisionName: "กองพัฒนาระบบบริการ", speedLayer: "ด่วนที่สุด", speedLayerId: "3",
+                        bookContent: { subject: "", content: "        ด้วยกองพัฒนาระบบบริการมีความประสงค์ขอจัดซื้ออุปกรณ์คอมพิวเตอร์\n\n        จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ", contentType: "html" },
+                    },
+                    ...commonSigners,
+                },
+                memoLong: {
+                    bookNameId: BOOK_NAME_IDS.officialMemo,
+                    formatPdf: "A4",
+                    documentMain: {
+                        bookName: "บันทึกข้อความ", bookTitle: "ขออนุมัติโครงการพัฒนาระบบ", bookNo: "สผ 0102/ว 2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", divisionName: "กองพัฒนาระบบบริการ",
+                        bookContent: { subject: "ขออนุมัติโครงการพัฒนาระบบสารบรรณอิเล็กทรอนิกส์", content: longContent, contentType: "html" },
+                    },
+                    documentSub: {
+                        bookName: "บันทึกข้อความ", bookTitle: "[LONG] ทดสอบเนื้อหายาว 2-3 หน้า ขึ้นหน้าใหม่", bookNo: "สผ 0102/2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", timeThai: "10:30 น.", department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                        divisionName: "กองพัฒนาระบบบริการ", speedLayer: "ด่วน", speedLayerId: "2",
+                        bookContent: { subject: "", content: longContent, contentType: "html" },
+                    },
+                    ...commonSigners,
+                },
+                memoTable: {
+                    bookNameId: BOOK_NAME_IDS.officialMemo,
+                    formatPdf: "A4",
+                    documentMain: {
+                        bookName: "บันทึกข้อความ", bookTitle: "ขออนุมัติจัดซื้ออุปกรณ์คอมพิวเตอร์", bookNo: "สผ 0103/ว 2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", divisionName: "กองพัฒนาระบบบริการ",
+                        bookContent: { subject: "ขออนุมัติจัดซื้ออุปกรณ์คอมพิวเตอร์", content: tableContent, contentType: "html" },
+                    },
+                    documentSub: {
+                        bookName: "บันทึกข้อความ", bookTitle: "[TABLE] ทดสอบเนื้อหามีตาราง", bookNo: "สผ 0103/2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", timeThai: "10:30 น.", department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+                        divisionName: "กองพัฒนาระบบบริการ", speedLayer: "", speedLayerId: "",
+                        bookContent: { subject: "", content: tableContent, contentType: "html" },
+                    },
+                    ...commonSigners,
+                },
+                // ============================================
+                // หนังสือส่งออก - 3 รูปแบบ
+                // ============================================
+                outboundShort: {
+                    bookNameId: BOOK_NAME_IDS.officialDocument,
+                    formatPdf: "A4",
+                    documentMain: {
+                        bookName: "บันทึกข้อความ", bookTitle: "ขออนุมัติส่งหนังสือภายนอก", bookNo: "สพธอ. 0102/ว 2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", divisionName: "กองพัฒนาระบบบริการ",
+                        bookContent: { subject: "ขออนุมัติส่งหนังสือเชิญประชุม", content: "        ด้วยสำนักงานจะจัดการประชุม\n\n        จึงขออนุมัติ", contentType: "html" },
+                    },
+                    documentSub: {
+                        bookName: "หนังสือภายนอก", bookTitle: "[SHORT] ขอเชิญเข้าร่วมประชุม", bookNo: "สพธอ. 0102/2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", divisionName: "กองพัฒนาระบบบริการ",
+                        address: "ศูนย์ราชการเฉลิมพระเกียรติฯ (อาคารบี)\nถนนแจ้งวัฒนะ เขตหลักสี่\nกรุงเทพมหานคร ๑๐๒๑๐",
+                        contact: "โทร ๐ ๒๑๒๓ ๑๒๓๔\nอีเมล helpdesk@etda.or.th",
+                        speedLayer: "", speedLayerId: "",
+                        bookReferTo: [], attachment: [],
+                        bookContent: { subject: "ขอเชิญเข้าร่วมประชุม", content: "        ด้วยสำนักงานจะจัดประชุมในวันที่ 15 มกราคม 2569\n\n        จึงเรียนมาเพื่อโปรดพิจารณา", contentType: "html" },
+                    },
+                    ...commonSigners,
                     toRecipients: [
-                        {
-                            guid: "R001",
-                            recipientNo: "1",
-                            ministryName: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม",
-                            departmentName: "สำนักงานปลัดกระทรวง",
-                            organizeName: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม",
-                            address: "ศูนย์ราชการเฉลิมพระเกียรติฯ ถนนแจ้งวัฒนะ",
-                            postalCode: "10210",
-                            contactName: "ปลัดกระทรวง",
-                            contactEmail: "contact@mdes.go.th",
-                            salutation: "เรียน",
-                            salutationContent: "ท่านปลัดกระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม",
-                            endDoc: "ขอแสดงความนับถือ",
-                        },
+                        { guid: "R001", recipientNo: "1", ministryName: "กระทรวงดิจิทัลฯ", departmentName: "สำนักงานปลัด", organizeName: "กระทรวงดิจิทัลฯ", address: "ศูนย์ราชการฯ", postalCode: "10210", contactName: "ปลัดกระทรวง", contactEmail: "contact@mdes.go.th", salutation: "เรียน", salutationContent: "ท่านปลัดกระทรวงดิจิทัลฯ", endDoc: "ขอแสดงความนับถือ" },
                     ],
                 },
-                regulation: {
-                    bookNameId: BOOK_NAME_IDS.regulation,
+                outboundLong: {
+                    bookNameId: BOOK_NAME_IDS.officialDocument,
                     formatPdf: "A4",
-                    // documentMain สำหรับ memo detail
                     documentMain: {
-                        bookName: "บันทึกข้อความ",
-                        bookTitle: "ขออนุมัติออกระเบียบ",
-                        bookNo: "สพธอ. 0104/ว 2568",
-                        dateThai: "8 มกราคม พ.ศ. 2569",
-                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                        divisionName: "กองพัฒนาระบบบริการ",
-                        bookContent: {
-                            subject: "ขออนุมัติออกระเบียบว่าด้วยการปฏิบัติงานระบบสารบรรณอิเล็กทรอนิกส์",
-                            content: "        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์มีความประสงค์จะออกระเบียบว่าด้วยการปฏิบัติงานระบบสารบรรณอิเล็กทรอนิกส์ เพื่อให้การปฏิบัติงานเป็นไปอย่างมีประสิทธิภาพและเป็นระบบ\n\n        จึงขออนุมัติออกระเบียบดังกล่าว",
-                            contentType: "html",
-                        },
+                        bookName: "บันทึกข้อความ", bookTitle: "ขออนุมัติส่งหนังสือภายนอก", bookNo: "สพธอ. 0102/ว 2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", divisionName: "กองพัฒนาระบบบริการ",
+                        bookContent: { subject: "ขออนุมัติส่งหนังสือโครงการพัฒนาระบบ", content: longContent, contentType: "html" },
                     },
-                    // documentSub สำหรับระเบียบ
                     documentSub: {
-                        bookName: "ระเบียบ",
-                        bookTitle: "ระเบียบสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                        bookNo: "",
-                        dateThai: "8 มกราคม พ.ศ. 2569",
-                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                        divisionName: "",
-                        year: "พ.ศ. 2569",
-                        bookContent: {
-                            subject: "ว่าด้วยการปฏิบัติงานระบบสารบรรณอิเล็กทรอนิกส์",
-                            content:
-                                '        โดยที่เป็นการสมควรกำหนดระเบียบว่าด้วยการปฏิบัติงานระบบสารบรรณอิเล็กทรอนิกส์ เพื่อให้การดำเนินงานเป็นไปอย่างมีประสิทธิภาพและเป็นระบบ\n\n        อาศัยอำนาจตามความในมาตรา 8 แห่งพระราชบัญญัติว่าด้วยธุรกรรมทางอิเล็กทรอนิกส์ พ.ศ. 2544 ผู้อำนวยการสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ออกระเบียบไว้ดังต่อไปนี้\n\n        ข้อ 1 ระเบียบนี้เรียกว่า "ระเบียบสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ว่าด้วยการปฏิบัติงานระบบสารบรรณอิเล็กทรอนิกส์ พ.ศ. 2569"\n\n        ข้อ 2 ระเบียบนี้ให้ใช้บังคับตั้งแต่วันถัดจากวันประกาศเป็นต้นไป\n\n        ข้อ 3 ให้ผู้อำนวยการสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์รักษาการตามระเบียบนี้',
-                            contentType: "html",
-                        },
+                        bookName: "หนังสือภายนอก", bookTitle: "[LONG] ขอความอนุเคราะห์ข้อมูลโครงการพัฒนาระบบ", bookNo: "สพธอ. 0102/2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", divisionName: "กองพัฒนาระบบบริการ",
+                        address: "ศูนย์ราชการเฉลิมพระเกียรติฯ (อาคารบี)\nถนนแจ้งวัฒนะ เขตหลักสี่\nกรุงเทพมหานคร ๑๐๒๑๐",
+                        contact: "โทร ๐ ๒๑๒๓ ๑๒๓๔\nอีเมล helpdesk@etda.or.th",
+                        speedLayer: "ด่วนที่สุด", speedLayerId: "3",
+                        bookReferTo: [{ bookReferToNo: "ดศ 0201/1234", bookReferToName: "หนังสือกระทรวงดิจิทัลฯ", createDate: "2026-01-01" }],
+                        attachment: [{ name: "เอกสารแนบ", remark: "1 ชุด" }],
+                        bookContent: { subject: "ขอความอนุเคราะห์ข้อมูล", content: longContent, contentType: "html" },
                     },
-                    // ผู้ลงนาม - 2 คน
-                    bookSigned: [
-                        { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", email: "prasit@etda.or.th", signatureBase64: "" },
-                        { relatedNo: "2", prefixName: "นางสาว", firstname: "อัจฉรีย์", lastname: "สมุทรสาร", positionName: "ผู้ชำนาญการ", departmentName: "กองพัฒนาระบบบริการ", email: "atcharee@etda.or.th", signatureBase64: "" },
+                    ...commonSigners,
+                    toRecipients: [
+                        { guid: "R001", recipientNo: "1", ministryName: "กระทรวงดิจิทัลฯ", departmentName: "สำนักงานปลัด", organizeName: "กระทรวงดิจิทัลฯ", address: "ศูนย์ราชการฯ", postalCode: "10210", contactName: "ปลัดกระทรวง", contactEmail: "contact@mdes.go.th", salutation: "เรียน", salutationContent: "ท่านปลัดกระทรวงดิจิทัลฯ", endDoc: "ขอแสดงความนับถือ" },
+                        { guid: "R002", recipientNo: "2", ministryName: "กระทรวงการคลัง", departmentName: "สำนักงานปลัด", organizeName: "กระทรวงการคลัง", address: "ถนนพระรามที่ 6", postalCode: "10400", contactName: "ปลัดกระทรวง", contactEmail: "contact@mof.go.th", salutation: "เรียน", salutationContent: "ท่านปลัดกระทรวงการคลัง", endDoc: "ขอแสดงความนับถือ" },
                     ],
-                    // เสนอผ่าน - 2 คน
-                    bookSubmited: [
-                        { relatedNo: "1", prefixName: "นาย", firstname: "วิชัย", lastname: "เสนอผ่าน", positionName: "หัวหน้าฝ่ายบริหาร", departmentName: "กองบริหารงานทั่วไป", email: "wichai@etda.or.th" },
-                        { relatedNo: "2", prefixName: "นาง", firstname: "สมศรี", lastname: "ตรวจสอบ", positionName: "ผู้จัดการฝ่าย", departmentName: "กองพัฒนาระบบบริการ", email: "somsri@etda.or.th" },
-                    ],
-                    // ผู้เรียน/รับทราบ - 1 คน
-                    bookLearner: [{ relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "หัวหน้างานพัฒนา", departmentName: "กองพัฒนาระบบบริการ", email: "somchai@etda.or.th" }],
                 },
-                announce: {
-                    bookNameId: BOOK_NAME_IDS.announce,
+                outboundTable: {
+                    bookNameId: BOOK_NAME_IDS.officialDocument,
                     formatPdf: "A4",
-                    // documentMain สำหรับ memo detail
                     documentMain: {
-                        bookName: "บันทึกข้อความ",
-                        bookTitle: "ขออนุมัติออกประกาศรับสมัครพนักงาน",
-                        bookNo: "สพธอ. 0105/ว 2568",
-                        dateThai: "8 มกราคม พ.ศ. 2569",
-                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                        divisionName: "กองบริหารทรัพยากรบุคคล",
-                        bookContent: {
-                            subject: "ขออนุมัติออกประกาศรับสมัครพนักงาน",
-                            content: "        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์มีความประสงค์รับสมัครบุคคลเพื่อคัดเลือกเข้าเป็นพนักงาน ตำแหน่งนักพัฒนาระบบ จำนวน 2 อัตรา\n\n        จึงขออนุมัติออกประกาศรับสมัครพนักงานดังกล่าว",
-                            contentType: "html",
-                        },
+                        bookName: "บันทึกข้อความ", bookTitle: "ขออนุมัติจัดซื้ออุปกรณ์", bookNo: "สพธอ. 0102/ว 2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", divisionName: "กองพัฒนาระบบบริการ",
+                        bookContent: { subject: "ขออนุมัติจัดซื้ออุปกรณ์คอมพิวเตอร์", content: tableContent, contentType: "html" },
                     },
-                    // documentSub สำหรับประกาศ
                     documentSub: {
-                        bookName: "ประกาศ",
-                        bookTitle: "ประกาศสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                        bookNo: "",
-                        dateThai: "8 มกราคม พ.ศ. 2569",
-                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                        divisionName: "",
-                        year: "พ.ศ. 2569",
-                        bookContent: {
-                            subject: "เรื่อง รับสมัครพนักงาน",
-                            content: "        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์มีความประสงค์จะรับสมัครบุคคลเพื่อคัดเลือกเข้าเป็นพนักงาน ตำแหน่งนักพัฒนาระบบ จำนวน 2 อัตรา\n\n        <strong>1. คุณสมบัติของผู้สมัคร</strong>\n            1.1 สำเร็จการศึกษาระดับปริญญาตรีขึ้นไป สาขาวิทยาการคอมพิวเตอร์หรือสาขาที่เกี่ยวข้อง\n            1.2 มีประสบการณ์ในการพัฒนาระบบไม่น้อยกว่า 2 ปี\n            1.3 มีความรู้ด้าน Java, Spring Boot, React\n\n        <strong>2. กำหนดการรับสมัคร</strong>\n            ตั้งแต่วันที่ 8 - 31 มกราคม 2569\n\n        <strong>3. วิธีการสมัคร</strong>\n            ส่งใบสมัครพร้อมเอกสารประกอบมาที่ hr@etda.or.th",
-                            contentType: "html",
-                        },
+                        bookName: "หนังสือภายนอก", bookTitle: "[TABLE] ขออนุมัติจัดซื้ออุปกรณ์คอมพิวเตอร์", bookNo: "สพธอ. 0102/2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", divisionName: "กองพัฒนาระบบบริการ",
+                        address: "ศูนย์ราชการเฉลิมพระเกียรติฯ (อาคารบี)\nถนนแจ้งวัฒนะ เขตหลักสี่\nกรุงเทพมหานคร ๑๐๒๑๐",
+                        contact: "โทร ๐ ๒๑๒๓ ๑๒๓๔\nอีเมล helpdesk@etda.or.th",
+                        speedLayer: "", speedLayerId: "",
+                        bookReferTo: [], attachment: [{ name: "รายละเอียดอุปกรณ์", remark: "1 ชุด" }],
+                        bookContent: { subject: "ขออนุมัติจัดซื้ออุปกรณ์คอมพิวเตอร์", content: tableContent, contentType: "html" },
                     },
-                    // ผู้ลงนาม - 2 คน
-                    bookSigned: [
-                        { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", email: "prasit@etda.or.th", signatureBase64: "" },
-                        { relatedNo: "2", prefixName: "นางสาว", firstname: "อัจฉรีย์", lastname: "สมุทรสาร", positionName: "ผู้ชำนาญการ", departmentName: "กองพัฒนาระบบบริการ", email: "atcharee@etda.or.th", signatureBase64: "" },
+                    ...commonSigners,
+                    toRecipients: [
+                        { guid: "R001", recipientNo: "1", ministryName: "กระทรวงดิจิทัลฯ", departmentName: "สำนักงานปลัด", organizeName: "กระทรวงดิจิทัลฯ", address: "ศูนย์ราชการฯ", postalCode: "10210", contactName: "ปลัดกระทรวง", contactEmail: "contact@mdes.go.th", salutation: "เรียน", salutationContent: "ท่านปลัดกระทรวงดิจิทัลฯ", endDoc: "ขอแสดงความนับถือ" },
                     ],
-                    // เสนอผ่าน - 2 คน
-                    bookSubmited: [
-                        { relatedNo: "1", prefixName: "นาย", firstname: "วิชัย", lastname: "เสนอผ่าน", positionName: "หัวหน้าฝ่ายบริหาร", departmentName: "กองบริหารงานทั่วไป", email: "wichai@etda.or.th" },
-                        { relatedNo: "2", prefixName: "นาง", firstname: "สมศรี", lastname: "ตรวจสอบ", positionName: "ผู้จัดการฝ่าย", departmentName: "กองพัฒนาระบบบริการ", email: "somsri@etda.or.th" },
-                    ],
-                    // ผู้เรียน/รับทราบ - 1 คน
-                    bookLearner: [{ relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "หัวหน้างานพัฒนา", departmentName: "กองพัฒนาระบบบริการ", email: "somchai@etda.or.th" }],
                 },
-                command: {
-                    bookNameId: BOOK_NAME_IDS.command,
-                    formatPdf: "A4",
-                    // documentMain สำหรับ memo detail
-                    documentMain: {
-                        bookName: "บันทึกข้อความ",
-                        bookTitle: "ขออนุมัติออกคำสั่งแต่งตั้งคณะทำงาน",
-                        bookNo: "สพธอ. 0106/ว 2568",
-                        dateThai: "8 มกราคม พ.ศ. 2569",
-                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                        divisionName: "กองพัฒนาระบบบริการ",
-                        bookContent: {
-                            subject: "ขออนุมัติออกคำสั่งแต่งตั้งคณะทำงานพัฒนาระบบสารบรรณอิเล็กทรอนิกส์",
-                            content: "        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์มีความประสงค์แต่งตั้งคณะทำงานพัฒนาระบบสารบรรณอิเล็กทรอนิกส์ เพื่อให้การดำเนินงานเป็นไปอย่างมีประสิทธิภาพ\n\n        จึงขออนุมัติออกคำสั่งแต่งตั้งคณะทำงานดังกล่าว",
-                            contentType: "html",
-                        },
-                    },
-                    // documentSub สำหรับคำสั่ง
-                    documentSub: {
-                        bookName: "คำสั่ง",
-                        bookTitle: "คำสั่งสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                        bookNo: "ที่ 1/2569",
-                        dateThai: "8 มกราคม พ.ศ. 2569",
-                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                        divisionName: "",
-                        year: "พ.ศ. 2569",
-                        bookContent: {
-                            subject: "แต่งตั้งคณะทำงานพัฒนาระบบสารบรรณอิเล็กทรอนิกส์",
-                            content: "        เพื่อให้การพัฒนาระบบสารบรรณอิเล็กทรอนิกส์ของสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์เป็นไปอย่างมีประสิทธิภาพและเป็นระบบ จึงแต่งตั้งคณะทำงานประกอบด้วย\n\n        <strong>1. ประธานคณะทำงาน</strong>\n            - นายประสิทธิ์ พัฒนากิจ ผู้อำนวยการกองพัฒนาระบบบริการ\n\n        <strong>2. คณะทำงาน</strong>\n            - นางสาวอัจฉรีย์ สมุทรสาร หัวหน้าฝ่ายพัฒนาระบบ\n            - นายวิชัย เทคโนโลยี หัวหน้าฝ่ายวิเคราะห์\n            - นางสมศรี ดิจิทัล นักวิเคราะห์ระบบ\n\n        <strong>3. เลขานุการ</strong>\n            - นายสมชาย โปรแกรม นักพัฒนาระบบอาวุโส\n\n        ทั้งนี้ ตั้งแต่บัดนี้เป็นต้นไป",
-                            contentType: "html",
-                        },
-                    },
-                    // ผู้ลงนาม - 2 คน
-                    bookSigned: [
-                        { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", email: "prasit@etda.or.th", signatureBase64: "" },
-                        { relatedNo: "2", prefixName: "นางสาว", firstname: "อัจฉรีย์", lastname: "สมุทรสาร", positionName: "ผู้ชำนาญการ", departmentName: "กองพัฒนาระบบบริการ", email: "atcharee@etda.or.th", signatureBase64: "" },
-                    ],
-                    // เสนอผ่าน - 2 คน
-                    bookSubmited: [
-                        { relatedNo: "1", prefixName: "นาย", firstname: "วิชัย", lastname: "เสนอผ่าน", positionName: "หัวหน้าฝ่ายบริหาร", departmentName: "กองบริหารงานทั่วไป", email: "wichai@etda.or.th" },
-                        { relatedNo: "2", prefixName: "นาง", firstname: "สมศรี", lastname: "ตรวจสอบ", positionName: "ผู้จัดการฝ่าย", departmentName: "กองพัฒนาระบบบริการ", email: "somsri@etda.or.th" },
-                    ],
-                    // ผู้เรียน/รับทราบ - 1 คน
-                    bookLearner: [{ relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "หัวหน้างานพัฒนา", departmentName: "กองพัฒนาระบบบริการ", email: "somchai@etda.or.th" }],
-                },
-                rules: {
-                    bookNameId: BOOK_NAME_IDS.rules,
-                    formatPdf: "A4",
-                    // documentMain สำหรับ memo detail
-                    documentMain: {
-                        bookName: "บันทึกข้อความ",
-                        bookTitle: "ขออนุมัติออกข้อบังคับ",
-                        bookNo: "สพธอ. 0107/ว 2568",
-                        dateThai: "8 มกราคม พ.ศ. 2569",
-                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                        divisionName: "กองบริหารทรัพยากรบุคคล",
-                        bookContent: {
-                            subject: "ขออนุมัติออกข้อบังคับว่าด้วยจรรยาบรรณพนักงาน",
-                            content: "        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์มีความประสงค์ออกข้อบังคับว่าด้วยจรรยาบรรณพนักงาน เพื่อเป็นแนวทางในการปฏิบัติงานและรักษาจรรยาบรรณของพนักงาน\n\n        จึงขออนุมัติออกข้อบังคับดังกล่าว",
-                            contentType: "html",
-                        },
-                    },
-                    // documentSub สำหรับข้อบังคับ
-                    documentSub: {
-                        bookName: "ข้อบังคับ",
-                        bookTitle: "ข้อบังคับสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                        bookNo: "",
-                        dateThai: "8 มกราคม พ.ศ. 2569",
-                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                        divisionName: "",
-                        year: "พ.ศ. 2569",
-                        bookContent: {
-                            subject: "ว่าด้วยจรรยาบรรณพนักงาน",
-                            content: '        อาศัยอำนาจตามความในมาตรา 8 แห่งพระราชบัญญัติว่าด้วยธุรกรรมทางอิเล็กทรอนิกส์ พ.ศ. 2544 ผู้อำนวยการสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ออกข้อบังคับไว้ดังต่อไปนี้\n\n        <strong>ข้อ 1</strong> ข้อบังคับนี้เรียกว่า "ข้อบังคับสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ว่าด้วยจรรยาบรรณพนักงาน พ.ศ. 2569"\n\n        <strong>ข้อ 2</strong> พนักงานต้องปฏิบัติหน้าที่ด้วยความซื่อสัตย์สุจริต มีวินัย และรับผิดชอบ\n\n        <strong>ข้อ 3</strong> พนักงานต้องรักษาความลับของทางราชการและข้อมูลที่เกี่ยวข้อง\n\n        <strong>ข้อ 4</strong> พนักงานต้องปฏิบัติตามระเบียบข้อบังคับของทางราชการอย่างเคร่งครัด\n\n        <strong>ข้อ 5</strong> ให้ผู้อำนวยการสำนักงานรักษาการตามข้อบังคับนี้',
-                            contentType: "html",
-                        },
-                    },
-                    // ผู้ลงนาม - 2 คน
-                    bookSigned: [
-                        { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", email: "prasit@etda.or.th", signatureBase64: "" },
-                        { relatedNo: "2", prefixName: "นางสาว", firstname: "อัจฉรีย์", lastname: "สมุทรสาร", positionName: "ผู้ชำนาญการ", departmentName: "กองพัฒนาระบบบริการ", email: "atcharee@etda.or.th", signatureBase64: "" },
-                    ],
-                    // เสนอผ่าน - 2 คน
-                    bookSubmited: [
-                        { relatedNo: "1", prefixName: "นาย", firstname: "วิชัย", lastname: "เสนอผ่าน", positionName: "หัวหน้าฝ่ายบริหาร", departmentName: "กองบริหารงานทั่วไป", email: "wichai@etda.or.th" },
-                        { relatedNo: "2", prefixName: "นาง", firstname: "สมศรี", lastname: "ตรวจสอบ", positionName: "ผู้จัดการฝ่าย", departmentName: "กองพัฒนาระบบบริการ", email: "somsri@etda.or.th" },
-                    ],
-                    // ผู้เรียน/รับทราบ - 1 คน
-                    bookLearner: [{ relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "หัวหน้างานพัฒนา", departmentName: "กองพัฒนาระบบบริการ", email: "somchai@etda.or.th" }],
-                },
-                stamp: {
+                // ============================================
+                // หนังสือประทับตรา - 3 รูปแบบ
+                // ============================================
+                stampShort: {
                     bookNameId: BOOK_NAME_IDS.stamp,
                     formatPdf: "A4",
-                    // documentMain สำหรับ memo แนบท้าย
                     documentMain: {
-                        bookName: "บันทึกข้อความ",
-                        bookTitle: "ขออนุมัติส่งหนังสือประทับตรา",
-                        bookNo: "สพธอ. 0103/ว 2568",
-                        dateThai: "8 มกราคม พ.ศ. 2569",
-                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                        divisionName: "กองพัฒนาระบบบริการ",
-                        bookContent: {
-                            subject: "ขออนุมัติส่งสำเนาประกาศ",
-                            content: "        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ได้ออกประกาศเรื่อง การใช้งานระบบสารบรรณอิเล็กทรอนิกส์ พ.ศ. 2569 เมื่อวันที่ 5 มกราคม พ.ศ. 2569\n\n        จึงขออนุมัติส่งสำเนาประกาศดังกล่าวให้หน่วยงานที่เกี่ยวข้องทราบและถือปฏิบัติ",
-                            contentType: "html",
-                        },
+                        bookName: "บันทึกข้อความ", bookTitle: "ขออนุมัติส่งหนังสือประทับตรา", bookNo: "สพธอ. 0103/ว 2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", divisionName: "กองพัฒนาระบบบริการ",
+                        bookContent: { subject: "ขออนุมัติส่งสำเนาประกาศ", content: "        ด้วยสำนักงานได้ออกประกาศ\n\n        จึงขออนุมัติ", contentType: "html" },
                     },
-                    // documentSub สำหรับหนังสือประทับตรา
                     documentSub: {
-                        bookName: "หนังสือประทับตรา",
-                        bookTitle: "หนังสือประทับตรา",
-                        bookNo: "สพธอ. 0103/2568",
-                        dateThai: "8 มกราคม พ.ศ. 2569",
-                        department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                        contact: "เลขหมาย ๐ ๒๑๒๓ ๑๒๓๔\\nโทรสาร ๐ ๒๑๒๓ ๑๒๐๐\\nอีเมล helpdesk@etda.or.th",
-                        divisionName: "กองพัฒนาระบบบริการ",
-                        bookContent: {
-                            subject: "",
-                            content: "        ขอส่งสำเนาประกาศสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ เรื่อง <strong>การใช้งานระบบสารบรรณอิเล็กทรอนิกส์ พ.ศ. 2569</strong> ลงวันที่ 5 มกราคม พ.ศ. 2569 มาเพื่อทราบและถือปฏิบัติ\n\n        จึงเรียนมาเพื่อโปรดทราบ",
-                            contentType: "html",
-                        },
-                        bookReferTo: [],
-                        attachment: [],
+                        bookName: "หนังสือประทับตรา", bookTitle: "[SHORT] หนังสือประทับตรา", bookNo: "สพธอ. 0103/2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", divisionName: "กองพัฒนาระบบบริการ",
+                        contact: "โทร ๐ ๒๑๒๓ ๑๒๓๔\nอีเมล helpdesk@etda.or.th",
+                        bookReferTo: [], attachment: [],
+                        bookContent: { subject: "", content: "        ขอส่งสำเนาประกาศมาเพื่อทราบ", contentType: "html" },
                     },
-                    // ผู้ลงนาม - 2 คน
-                    bookSigned: [
-                        { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ผู้อำนวยการ", departmentName: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", email: "prasit@etda.or.th", signatureBase64: "" },
-                        { relatedNo: "2", prefixName: "นางสาว", firstname: "อัจฉรีย์", lastname: "สมุทรสาร", positionName: "ผู้ชำนาญการ", departmentName: "กองพัฒนาระบบบริการ", email: "atcharee@etda.or.th", signatureBase64: "" },
-                    ],
-                    // เสนอผ่าน - 2 คน
-                    bookSubmited: [
-                        { relatedNo: "1", prefixName: "นาย", firstname: "วิชัย", lastname: "เสนอผ่าน", positionName: "หัวหน้าฝ่ายบริหาร", departmentName: "กองบริหารงานทั่วไป", email: "wichai@etda.or.th" },
-                        { relatedNo: "2", prefixName: "นาง", firstname: "สมศรี", lastname: "ตรวจสอบ", positionName: "ผู้จัดการฝ่าย", departmentName: "กองพัฒนาระบบบริการ", email: "somsri@etda.or.th" },
-                    ],
-                    // ผู้เรียน/รับทราบ - 1 คน
-                    bookLearner: [{ relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "หัวหน้างานพัฒนา", departmentName: "กองพัฒนาระบบบริการ", email: "somchai@etda.or.th" }],
-                    // หน่วยงานผู้รับ - 2 กระทรวง
-                    toRecipients: [
-                        {
-                            guid: "R001",
-                            recipientNo: "1",
-                            ministryName: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม",
-                            departmentName: "สำนักงานปลัดกระทรวง",
-                            organizeName: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม",
-                            address: "ศูนย์ราชการเฉลิมพระเกียรติฯ ถนนแจ้งวัฒนะ",
-                            postalCode: "10210",
-                            contactName: "ปลัดกระทรวง",
-                            contactEmail: "contact@mdes.go.th",
-                            salutation: "ถึง",
-                            salutationContent: "หัวหน้าส่วนราชการทุกแห่ง",
-                            endDoc: "",
-                        },
-                        {
-                            guid: "R002",
-                            recipientNo: "2",
-                            ministryName: "กระทรวงการท่องเที่ยวและกีฬา",
-                            departmentName: "การท่องเที่ยวแห่งประเทศไทย",
-                            organizeName: "การท่องเที่ยวแห่งประเทศไทย",
-                            address: "1600 ถนนเพชรบุรีตัดใหม่ แขวงมักกะสัน เขตราชเทวี",
-                            postalCode: "10400",
-                            contactName: "ผู้ว่าการ",
-                            contactEmail: "info@tat.or.th",
-                            salutation: "ถึง",
-                            salutationContent: "ผู้ว่าการท่องเที่ยว",
-                            endDoc: "",
-                        },
-                    ],
+                    ...commonSigners,
+                    toRecipients: [{ guid: "R001", recipientNo: "1", ministryName: "กระทรวงดิจิทัลฯ", departmentName: "ทุกหน่วยงาน", organizeName: "ทุกหน่วยงาน", address: "", postalCode: "", contactName: "", contactEmail: "", salutation: "ถึง", salutationContent: "หัวหน้าส่วนราชการทุกแห่ง", endDoc: "" }],
                 },
-                // หนังสือภายใต้กระทรวง
-                ministry: {
+                stampLong: {
+                    bookNameId: BOOK_NAME_IDS.stamp,
+                    formatPdf: "A4",
+                    documentMain: {
+                        bookName: "บันทึกข้อความ", bookTitle: "ขออนุมัติส่งหนังสือประทับตรา", bookNo: "สพธอ. 0103/ว 2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", divisionName: "กองพัฒนาระบบบริการ",
+                        bookContent: { subject: "ขออนุมัติส่งสำเนาประกาศ", content: longContent, contentType: "html" },
+                    },
+                    documentSub: {
+                        bookName: "หนังสือประทับตรา", bookTitle: "[LONG] หนังสือประทับตรา", bookNo: "สพธอ. 0103/2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", divisionName: "กองพัฒนาระบบบริการ",
+                        contact: "โทร ๐ ๒๑๒๓ ๑๒๓๔\nอีเมล helpdesk@etda.or.th",
+                        bookReferTo: [], attachment: [],
+                        bookContent: { subject: "", content: longContent, contentType: "html" },
+                    },
+                    ...commonSigners,
+                    toRecipients: [{ guid: "R001", recipientNo: "1", ministryName: "กระทรวงดิจิทัลฯ", departmentName: "ทุกหน่วยงาน", organizeName: "ทุกหน่วยงาน", address: "", postalCode: "", contactName: "", contactEmail: "", salutation: "ถึง", salutationContent: "หัวหน้าส่วนราชการทุกแห่ง", endDoc: "" }],
+                },
+                stampTable: {
+                    bookNameId: BOOK_NAME_IDS.stamp,
+                    formatPdf: "A4",
+                    documentMain: {
+                        bookName: "บันทึกข้อความ", bookTitle: "ขออนุมัติส่งหนังสือประทับตรา", bookNo: "สพธอ. 0103/ว 2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", divisionName: "กองพัฒนาระบบบริการ",
+                        bookContent: { subject: "ขออนุมัติจัดซื้ออุปกรณ์", content: tableContent, contentType: "html" },
+                    },
+                    documentSub: {
+                        bookName: "หนังสือประทับตรา", bookTitle: "[TABLE] หนังสือประทับตรา", bookNo: "สพธอ. 0103/2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", department: "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์", divisionName: "กองพัฒนาระบบบริการ",
+                        contact: "โทร ๐ ๒๑๒๓ ๑๒๓๔\nอีเมล helpdesk@etda.or.th",
+                        bookReferTo: [], attachment: [],
+                        bookContent: { subject: "", content: tableContent, contentType: "html" },
+                    },
+                    ...commonSigners,
+                    toRecipients: [{ guid: "R001", recipientNo: "1", ministryName: "กระทรวงดิจิทัลฯ", departmentName: "ทุกหน่วยงาน", organizeName: "ทุกหน่วยงาน", address: "", postalCode: "", contactName: "", contactEmail: "", salutation: "ถึง", salutationContent: "หัวหน้าส่วนราชการทุกแห่ง", endDoc: "" }],
+                },
+                // ============================================
+                // หนังสือกระทรวง - 3 รูปแบบ
+                // ============================================
+                ministryShort: {
                     bookNameId: BOOK_NAME_IDS.ministry,
                     formatPdf: "A4",
-                    // documentMain สำหรับ memo แนบท้าย
                     documentMain: {
-                        bookName: "บันทึกข้อความ",
-                        bookTitle: "ขออนุมัติส่งหนังสือขอความอนุเคราะห์",
-                        bookNo: "ดศ 0201/ว 2568",
-                        dateThai: "8 มกราคม พ.ศ. 2569",
-                        department: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม",
-                        divisionName: "สำนักงานปลัดกระทรวง",
-                        bookContent: {
-                            subject: "ขออนุมัติส่งหนังสือขอความอนุเคราะห์ข้อมูล",
-                            content: "        ด้วยกระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคมกำลังดำเนินโครงการพัฒนาระบบสารบรรณอิเล็กทรอนิกส์แบบบูรณาการ จึงมีความประสงค์ขอความอนุเคราะห์ข้อมูลเกี่ยวกับการใช้งานระบบสารบรรณอิเล็กทรอนิกส์ในหน่วยงานของท่าน\n\n        จึงขออนุมัติส่งหนังสือขอความอนุเคราะห์ข้อมูลจากหน่วยงานที่เกี่ยวข้อง",
-                            contentType: "html",
-                        },
+                        bookName: "บันทึกข้อความ", bookTitle: "ขออนุมัติส่งหนังสือ", bookNo: "ดศ 0201/ว 2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", department: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", divisionName: "สำนักงานปลัดกระทรวง",
+                        bookContent: { subject: "ขออนุมัติส่งหนังสือ", content: "        ด้วยกระทรวงมีความประสงค์\n\n        จึงขออนุมัติ", contentType: "html" },
                     },
-                    // documentSub สำหรับหนังสือภายนอก
                     documentSub: {
-                        bookName: "หนังสือภายนอก (กระทรวง)",
-                        bookTitle: "ขอความอนุเคราะห์ข้อมูล",
-                        bookNo: "ดศ 0201/2568",
-                        dateThai: "8 มกราคม พ.ศ. 2569",
-                        department: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม",
-                        divisionName: "สำนักงานปลัดกระทรวง",
-                        address: "ศูนย์ราชการเฉลิมพระเกียรติฯ (อาคารบี)\nถนนแจ้งวัฒนะ แขวงทุ่งสองห้อง เขตหลักสี่\nกรุงเทพมหานคร ๑๐๒๑๐",
-                        bookContent: {
-                            subject: "ขอความอนุเคราะห์ข้อมูลการใช้งานระบบสารบรรณอิเล็กทรอนิกส์",
-                            content: "        ด้วยกระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคมกำลังดำเนินโครงการพัฒนาระบบสารบรรณอิเล็กทรอนิกส์แบบบูรณาการ เพื่อเพิ่มประสิทธิภาพการทำงานและลดการใช้กระดาษ จึงมีความประสงค์ขอความอนุเคราะห์ข้อมูล ดังนี้\n\n        <strong>1.</strong> รูปแบบและวิธีการใช้งานระบบสารบรรณอิเล็กทรอนิกส์ปัจจุบันของหน่วยงานท่าน\n        <strong>2.</strong> ปัญหาและอุปสรรคในการใช้งาน\n        <strong>3.</strong> ข้อเสนอแนะเพื่อการพัฒนาระบบ\n\n        จึงเรียนมาเพื่อโปรดพิจารณาให้ความอนุเคราะห์ข้อมูลดังกล่าว จะขอบพระคุณยิ่ง",
-                            contentType: "html",
-                        },
-                        bookReferTo: [],
-                        attachment: [],
+                        bookName: "หนังสือภายนอก (กระทรวง)", bookTitle: "[SHORT] ขอความอนุเคราะห์", bookNo: "ดศ 0201/2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", department: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", divisionName: "สำนักงานปลัดกระทรวง",
+                        address: "ศูนย์ราชการเฉลิมพระเกียรติฯ\nถนนแจ้งวัฒนะ กรุงเทพฯ ๑๐๒๑๐",
+                        bookReferTo: [], attachment: [],
+                        bookContent: { subject: "ขอความอนุเคราะห์ข้อมูล", content: "        ด้วยกระทรวงมีความประสงค์ขอความอนุเคราะห์\n\n        จึงเรียนมาเพื่อโปรดพิจารณา", contentType: "html" },
                     },
-                    // ผู้ลงนาม - 2 คน
-                    bookSigned: [
-                        { relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ปลัดกระทรวง", departmentName: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", email: "prasit@mdes.go.th", signatureBase64: "" },
-                        { relatedNo: "2", prefixName: "นางสาว", firstname: "อัจฉรีย์", lastname: "สมุทรสาร", positionName: "รองปลัดกระทรวง", departmentName: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", email: "atcharee@mdes.go.th", signatureBase64: "" },
-                    ],
-                    // เสนอผ่าน - 2 คน
-                    bookSubmited: [
-                        { relatedNo: "1", prefixName: "นาย", firstname: "วิชัย", lastname: "เสนอผ่าน", positionName: "ผู้อำนวยการกอง", departmentName: "กองกลาง", email: "wichai@mdes.go.th" },
-                        { relatedNo: "2", prefixName: "นาง", firstname: "สมศรี", lastname: "ตรวจสอบ", positionName: "หัวหน้าฝ่าย", departmentName: "กองกลาง", email: "somsri@mdes.go.th" },
-                    ],
-                    // ผู้เรียน/รับทราบ - 1 คน
-                    bookLearner: [{ relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "หัวหน้างานพัฒนา", departmentName: "กองกลาง", email: "somchai@mdes.go.th" }],
-                    // หน่วยงานผู้รับ - 2 กระทรวง
-                    toRecipients: [
-                        {
-                            guid: "R001",
-                            recipientNo: "1",
-                            ministryName: "กระทรวงการคลัง",
-                            departmentName: "สำนักงานปลัดกระทรวง",
-                            organizeName: "กระทรวงการคลัง",
-                            address: "ถนนพระรามที่ 6 แขวงพญาไท เขตพญาไท",
-                            postalCode: "10400",
-                            contactName: "ปลัดกระทรวง",
-                            contactEmail: "contact@mof.go.th",
-                            salutation: "เรียน",
-                            salutationContent: "ผู้อำนวยการสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-                            endDoc: "ขอแสดงความนับถือ",
-                        },
-                        {
-                            guid: "R002",
-                            recipientNo: "2",
-                            ministryName: "กระทรวงมหาดไทย",
-                            departmentName: "สำนักงานปลัดกระทรวง",
-                            organizeName: "กระทรวงมหาดไทย",
-                            address: "ถนนอัษฎางค์ แขวงราชบพิธ เขตพระนคร",
-                            postalCode: "10200",
-                            contactName: "ปลัดกระทรวง",
-                            contactEmail: "contact@moi.go.th",
-                            salutation: "เรียน",
-                            salutationContent: "อธิบดีกรมการปกครอง",
-                            endDoc: "ขอแสดงความนับถือ",
-                        },
-                    ],
+                    bookSigned: [{ relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ปลัดกระทรวง", departmentName: "กระทรวงดิจิทัลฯ", email: "prasit@mdes.go.th", signatureBase64: "" }],
+                    bookSubmited: commonSigners.bookSubmited, bookLearner: commonSigners.bookLearner,
+                    toRecipients: [{ guid: "R001", recipientNo: "1", ministryName: "กระทรวงการคลัง", departmentName: "สำนักงานปลัด", organizeName: "กระทรวงการคลัง", address: "ถนนพระรามที่ 6", postalCode: "10400", contactName: "ปลัดกระทรวง", contactEmail: "contact@mof.go.th", salutation: "เรียน", salutationContent: "ท่านปลัดกระทรวงการคลัง", endDoc: "ขอแสดงความนับถือ" }],
+                },
+                ministryLong: {
+                    bookNameId: BOOK_NAME_IDS.ministry,
+                    formatPdf: "A4",
+                    documentMain: {
+                        bookName: "บันทึกข้อความ", bookTitle: "ขออนุมัติส่งหนังสือ", bookNo: "ดศ 0201/ว 2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", department: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", divisionName: "สำนักงานปลัดกระทรวง",
+                        bookContent: { subject: "ขออนุมัติโครงการพัฒนาระบบ", content: longContent, contentType: "html" },
+                    },
+                    documentSub: {
+                        bookName: "หนังสือภายนอก (กระทรวง)", bookTitle: "[LONG] ขอความอนุเคราะห์ข้อมูลโครงการ", bookNo: "ดศ 0201/2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", department: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", divisionName: "สำนักงานปลัดกระทรวง",
+                        address: "ศูนย์ราชการเฉลิมพระเกียรติฯ\nถนนแจ้งวัฒนะ กรุงเทพฯ ๑๐๒๑๐",
+                        bookReferTo: [], attachment: [],
+                        bookContent: { subject: "ขอความอนุเคราะห์ข้อมูล", content: longContent, contentType: "html" },
+                    },
+                    bookSigned: [{ relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ปลัดกระทรวง", departmentName: "กระทรวงดิจิทัลฯ", email: "prasit@mdes.go.th", signatureBase64: "" }],
+                    bookSubmited: commonSigners.bookSubmited, bookLearner: commonSigners.bookLearner,
+                    toRecipients: [{ guid: "R001", recipientNo: "1", ministryName: "กระทรวงการคลัง", departmentName: "สำนักงานปลัด", organizeName: "กระทรวงการคลัง", address: "ถนนพระรามที่ 6", postalCode: "10400", contactName: "ปลัดกระทรวง", contactEmail: "contact@mof.go.th", salutation: "เรียน", salutationContent: "ท่านปลัดกระทรวงการคลัง", endDoc: "ขอแสดงความนับถือ" }],
+                },
+                ministryTable: {
+                    bookNameId: BOOK_NAME_IDS.ministry,
+                    formatPdf: "A4",
+                    documentMain: {
+                        bookName: "บันทึกข้อความ", bookTitle: "ขออนุมัติจัดซื้อ", bookNo: "ดศ 0201/ว 2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", department: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", divisionName: "สำนักงานปลัดกระทรวง",
+                        bookContent: { subject: "ขออนุมัติจัดซื้อ", content: tableContent, contentType: "html" },
+                    },
+                    documentSub: {
+                        bookName: "หนังสือภายนอก (กระทรวง)", bookTitle: "[TABLE] ขออนุมัติจัดซื้ออุปกรณ์", bookNo: "ดศ 0201/2568",
+                        dateThai: "8 มกราคม พ.ศ. 2569", department: "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม", divisionName: "สำนักงานปลัดกระทรวง",
+                        address: "ศูนย์ราชการเฉลิมพระเกียรติฯ\nถนนแจ้งวัฒนะ กรุงเทพฯ ๑๐๒๑๐",
+                        bookReferTo: [], attachment: [],
+                        bookContent: { subject: "ขออนุมัติจัดซื้ออุปกรณ์", content: tableContent, contentType: "html" },
+                    },
+                    bookSigned: [{ relatedNo: "1", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนากิจ", positionName: "ปลัดกระทรวง", departmentName: "กระทรวงดิจิทัลฯ", email: "prasit@mdes.go.th", signatureBase64: "" }],
+                    bookSubmited: commonSigners.bookSubmited, bookLearner: commonSigners.bookLearner,
+                    toRecipients: [{ guid: "R001", recipientNo: "1", ministryName: "กระทรวงการคลัง", departmentName: "สำนักงานปลัด", organizeName: "กระทรวงการคลัง", address: "ถนนพระรามที่ 6", postalCode: "10400", contactName: "ปลัดกระทรวง", contactEmail: "contact@mof.go.th", salutation: "เรียน", salutationContent: "ท่านปลัดกระทรวงการคลัง", endDoc: "ขอแสดงความนับถือ" }],
+                },
+                // ============================================
+                // ประกาศ/ระเบียบ/คำสั่ง/ข้อบังคับ - 2 รูปแบบ (Short, Long)
+                // ============================================
+                announceShort: {
+                    bookNameId: BOOK_NAME_IDS.announce, formatPdf: "A4",
+                    documentMain: { bookName: "บันทึกข้อความ", bookTitle: "ขออนุมัติออกประกาศ", bookNo: "สพธอ. 0105/ว 2568", dateThai: "8 มกราคม พ.ศ. 2569", department: "สพธอ.", divisionName: "กองบริหาร", bookContent: { subject: "ขออนุมัติออกประกาศ", content: "        ด้วยสำนักงานมีความประสงค์\n\n        จึงขออนุมัติ", contentType: "html" } },
+                    documentSub: { bookName: "ประกาศ", bookTitle: "[SHORT] ประกาศสำนักงานพัฒนาธุรกรรมฯ", bookNo: "", dateThai: "8 มกราคม พ.ศ. 2569", department: "สพธอ.", divisionName: "", year: "พ.ศ. 2569", bookContent: { subject: "เรื่อง รับสมัครพนักงาน", content: "        ด้วยสำนักงานมีความประสงค์จะรับสมัครพนักงาน จำนวน 2 อัตรา", contentType: "html" } },
+                    ...commonSigners,
+                },
+                announceLong: {
+                    bookNameId: BOOK_NAME_IDS.announce, formatPdf: "A4",
+                    documentMain: { bookName: "บันทึกข้อความ", bookTitle: "ขออนุมัติออกประกาศ", bookNo: "สพธอ. 0105/ว 2568", dateThai: "8 มกราคม พ.ศ. 2569", department: "สพธอ.", divisionName: "กองบริหาร", bookContent: { subject: "ขออนุมัติออกประกาศ", content: longContent, contentType: "html" } },
+                    documentSub: { bookName: "ประกาศ", bookTitle: "[LONG] ประกาศสำนักงานพัฒนาธุรกรรมฯ", bookNo: "", dateThai: "8 มกราคม พ.ศ. 2569", department: "สพธอ.", divisionName: "", year: "พ.ศ. 2569", bookContent: { subject: "เรื่อง รับสมัครพนักงาน", content: longContent, contentType: "html" } },
+                    ...commonSigners,
+                },
+                regulationShort: {
+                    bookNameId: BOOK_NAME_IDS.regulation, formatPdf: "A4",
+                    documentMain: { bookName: "บันทึกข้อความ", bookTitle: "ขออนุมัติออกระเบียบ", bookNo: "สพธอ. 0104/ว 2568", dateThai: "8 มกราคม พ.ศ. 2569", department: "สพธอ.", divisionName: "กองพัฒนา", bookContent: { subject: "ขออนุมัติออกระเบียบ", content: "        ด้วยสำนักงานมีความประสงค์\n\n        จึงขออนุมัติ", contentType: "html" } },
+                    documentSub: { bookName: "ระเบียบ", bookTitle: "[SHORT] ระเบียบสำนักงานพัฒนาธุรกรรมฯ", bookNo: "", dateThai: "8 มกราคม พ.ศ. 2569", department: "สพธอ.", divisionName: "", year: "พ.ศ. 2569", bookContent: { subject: "ว่าด้วยการปฏิบัติงาน", content: '        โดยที่เป็นการสมควรกำหนดระเบียบว่าด้วยการปฏิบัติงาน\n\n        ข้อ 1 ระเบียบนี้เรียกว่า "ระเบียบสำนักงานฯ พ.ศ. 2569"', contentType: "html" } },
+                    ...commonSigners,
+                },
+                regulationLong: {
+                    bookNameId: BOOK_NAME_IDS.regulation, formatPdf: "A4",
+                    documentMain: { bookName: "บันทึกข้อความ", bookTitle: "ขออนุมัติออกระเบียบ", bookNo: "สพธอ. 0104/ว 2568", dateThai: "8 มกราคม พ.ศ. 2569", department: "สพธอ.", divisionName: "กองพัฒนา", bookContent: { subject: "ขออนุมัติออกระเบียบ", content: longContent, contentType: "html" } },
+                    documentSub: { bookName: "ระเบียบ", bookTitle: "[LONG] ระเบียบสำนักงานพัฒนาธุรกรรมฯ", bookNo: "", dateThai: "8 มกราคม พ.ศ. 2569", department: "สพธอ.", divisionName: "", year: "พ.ศ. 2569", bookContent: { subject: "ว่าด้วยการปฏิบัติงาน", content: longContent, contentType: "html" } },
+                    ...commonSigners,
+                },
+                commandShort: {
+                    bookNameId: BOOK_NAME_IDS.command, formatPdf: "A4",
+                    documentMain: { bookName: "บันทึกข้อความ", bookTitle: "ขออนุมัติออกคำสั่ง", bookNo: "สพธอ. 0106/ว 2568", dateThai: "8 มกราคม พ.ศ. 2569", department: "สพธอ.", divisionName: "กองพัฒนา", bookContent: { subject: "ขออนุมัติออกคำสั่ง", content: "        ด้วยสำนักงานมีความประสงค์\n\n        จึงขออนุมัติ", contentType: "html" } },
+                    documentSub: { bookName: "คำสั่ง", bookTitle: "[SHORT] คำสั่งสำนักงานพัฒนาธุรกรรมฯ", bookNo: "ที่ 1/2569", dateThai: "8 มกราคม พ.ศ. 2569", department: "สพธอ.", divisionName: "", year: "พ.ศ. 2569", bookContent: { subject: "แต่งตั้งคณะทำงาน", content: "        เพื่อให้การพัฒนาระบบเป็นไปอย่างมีประสิทธิภาพ จึงแต่งตั้งคณะทำงาน", contentType: "html" } },
+                    ...commonSigners,
+                },
+                commandLong: {
+                    bookNameId: BOOK_NAME_IDS.command, formatPdf: "A4",
+                    documentMain: { bookName: "บันทึกข้อความ", bookTitle: "ขออนุมัติออกคำสั่ง", bookNo: "สพธอ. 0106/ว 2568", dateThai: "8 มกราคม พ.ศ. 2569", department: "สพธอ.", divisionName: "กองพัฒนา", bookContent: { subject: "ขออนุมัติออกคำสั่ง", content: longContent, contentType: "html" } },
+                    documentSub: { bookName: "คำสั่ง", bookTitle: "[LONG] คำสั่งสำนักงานพัฒนาธุรกรรมฯ", bookNo: "ที่ 1/2569", dateThai: "8 มกราคม พ.ศ. 2569", department: "สพธอ.", divisionName: "", year: "พ.ศ. 2569", bookContent: { subject: "แต่งตั้งคณะทำงาน", content: longContent, contentType: "html" } },
+                    ...commonSigners,
+                },
+                rulesShort: {
+                    bookNameId: BOOK_NAME_IDS.rules, formatPdf: "A4",
+                    documentMain: { bookName: "บันทึกข้อความ", bookTitle: "ขออนุมัติออกข้อบังคับ", bookNo: "สพธอ. 0107/ว 2568", dateThai: "8 มกราคม พ.ศ. 2569", department: "สพธอ.", divisionName: "กองบริหาร", bookContent: { subject: "ขออนุมัติออกข้อบังคับ", content: "        ด้วยสำนักงานมีความประสงค์\n\n        จึงขออนุมัติ", contentType: "html" } },
+                    documentSub: { bookName: "ข้อบังคับ", bookTitle: "[SHORT] ข้อบังคับสำนักงานพัฒนาธุรกรรมฯ", bookNo: "", dateThai: "8 มกราคม พ.ศ. 2569", department: "สพธอ.", divisionName: "", year: "พ.ศ. 2569", bookContent: { subject: "ว่าด้วยจรรยาบรรณพนักงาน", content: "        ข้อ 1 พนักงานต้องปฏิบัติหน้าที่ด้วยความซื่อสัตย์", contentType: "html" } },
+                    ...commonSigners,
+                },
+                rulesLong: {
+                    bookNameId: BOOK_NAME_IDS.rules, formatPdf: "A4",
+                    documentMain: { bookName: "บันทึกข้อความ", bookTitle: "ขออนุมัติออกข้อบังคับ", bookNo: "สพธอ. 0107/ว 2568", dateThai: "8 มกราคม พ.ศ. 2569", department: "สพธอ.", divisionName: "กองบริหาร", bookContent: { subject: "ขออนุมัติออกข้อบังคับ", content: longContent, contentType: "html" } },
+                    documentSub: { bookName: "ข้อบังคับ", bookTitle: "[LONG] ข้อบังคับสำนักงานพัฒนาธุรกรรมฯ", bookNo: "", dateThai: "8 มกราคม พ.ศ. 2569", department: "สพธอ.", divisionName: "", year: "พ.ศ. 2569", bookContent: { subject: "ว่าด้วยจรรยาบรรณพนักงาน", content: longContent, contentType: "html" } },
+                    ...commonSigners,
                 },
             };
 
@@ -1152,7 +1000,7 @@
                 }
             }
 
-            // Get base URL from current location (supports any port)
+            // Get base URL from current location
             function getBaseUrl() {
                 return window.location.origin;
             }
@@ -1178,9 +1026,61 @@
                 }
             }
 
+            // Update JSON preview
+            function updateJsonPreview() {
+                const textarea = document.getElementById("requestBody");
+                const preview = document.getElementById("jsonPreview");
+                const status = document.getElementById("jsonStatus");
+
+                try {
+                    const parsed = JSON.parse(textarea.value);
+                    preview.innerHTML = syntaxHighlight(JSON.stringify(parsed, null, 2));
+                    status.textContent = "✓ Valid";
+                    status.style.color = "#68d391";
+                } catch (e) {
+                    preview.innerHTML = `<span style="color: #fc8181">Invalid JSON: ${e.message}</span>`;
+                    status.textContent = "✗ Invalid";
+                    status.style.color = "#fc8181";
+                }
+            }
+
+            // Syntax highlight
+            function syntaxHighlight(json) {
+                json = json.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                    let cls = "json-number";
+                    if (/^"/.test(match)) {
+                        if (/:$/.test(match)) {
+                            cls = "json-key";
+                        } else {
+                            cls = "json-string";
+                        }
+                    } else if (/true|false/.test(match)) {
+                        cls = "json-boolean";
+                    } else if (/null/.test(match)) {
+                        cls = "json-null";
+                    }
+                    return '<span class="' + cls + '">' + match + "</span>";
+                });
+            }
+
+            // Switch JSON tabs
+            function switchJsonTab(tabName) {
+                document.querySelectorAll(".json-tab").forEach((tab) => tab.classList.remove("active"));
+                document.querySelectorAll(".json-tab-content").forEach((content) => content.classList.remove("active"));
+
+                if (tabName === "request") {
+                    document.querySelector('.json-tab[onclick*="request"]').classList.add("active");
+                    document.getElementById("requestPreviewTab").classList.add("active");
+                } else {
+                    document.querySelector('.json-tab[onclick*="response"]').classList.add("active");
+                    document.getElementById("responseTab").classList.add("active");
+                }
+            }
+
             // Clear all
             function clearAll() {
-                document.getElementById("requestBody").value = "{}";
+                document.getElementById("requestBody").value = "";
                 document.getElementById("jsonResponse").value = "";
                 document.getElementById("pdfViewer").src = "";
                 document.getElementById("pdfViewer").style.display = "none";
@@ -1305,67 +1205,6 @@
                 }
             }
 
-            // JSON Preview - Syntax highlighting function
-            function syntaxHighlightJson(json) {
-                if (typeof json !== "string") {
-                    json = JSON.stringify(json, null, 2);
-                }
-                // Escape HTML
-                json = json.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-                // Add syntax highlighting
-                return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
-                    let cls = "json-number";
-                    if (/^"/.test(match)) {
-                        if (/:$/.test(match)) {
-                            cls = "json-key";
-                        } else {
-                            cls = "json-string";
-                        }
-                    } else if (/true|false/.test(match)) {
-                        cls = "json-boolean";
-                    } else if (/null/.test(match)) {
-                        cls = "json-null";
-                    }
-                    return '<span class="' + cls + '">' + match + "</span>";
-                });
-            }
-
-            // Update JSON Preview
-            function updateJsonPreview() {
-                const textarea = document.getElementById("requestBody");
-                const preview = document.getElementById("jsonPreview");
-                const status = document.getElementById("jsonStatus");
-
-                try {
-                    const json = JSON.parse(textarea.value);
-                    const formatted = JSON.stringify(json, null, 2);
-                    preview.innerHTML = '<pre style="margin:0;white-space:pre-wrap;word-break:break-word;">' + syntaxHighlightJson(formatted) + "</pre>";
-                    status.innerHTML = '<span style="color:#48bb78;">✓ Valid JSON</span>';
-                } catch (e) {
-                    preview.innerHTML = '<pre style="margin:0;color:#fc8181;">❌ Invalid JSON\n\n' + e.message + "</pre>";
-                    status.innerHTML = '<span style="color:#fc8181;">✗ Invalid</span>';
-                }
-            }
-
-            // Switch JSON Tab
-            function switchJsonTab(tab) {
-                const tabs = document.querySelectorAll(".json-tab");
-                const contents = document.querySelectorAll(".json-tab-content");
-
-                tabs.forEach((t) => t.classList.remove("active"));
-                contents.forEach((c) => c.classList.remove("active"));
-
-                if (tab === "request") {
-                    tabs[0].classList.add("active");
-                    document.getElementById("requestPreviewTab").classList.add("active");
-                } else {
-                    tabs[1].classList.add("active");
-                    document.getElementById("responseTab").classList.add("active");
-                }
-            }
-
-            // Initialize on page load
             document.addEventListener("DOMContentLoaded", function () {
                 // Update endpoint display with current URL
                 const endpoint = document.getElementById("endpoint").value;

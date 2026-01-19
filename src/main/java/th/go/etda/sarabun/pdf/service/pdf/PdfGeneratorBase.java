@@ -106,13 +106,37 @@ public abstract class PdfGeneratorBase {
     // ============================================
     // Multi-page Settings
     // ============================================
-    protected static final float MIN_Y_POSITION = MARGIN_BOTTOM + 100;
-    protected static final float PAGE_NUMBER_Y_OFFSET = 15f;
+    /**
+     * MIN_Y_POSITION: ตำแหน่ง Y ต่ำสุดก่อนขึ้นหน้าใหม่
+     * - ค่ายิ่งสูง = ขึ้นหน้าใหม่เร็วขึ้น (เหลือพื้นที่ด้านล่างมากขึ้น)
+     * - ค่าเดิม: MARGIN_BOTTOM + 100 = 170pt
+     * - ค่าใหม่: MARGIN_BOTTOM + 150 = 220pt (เผื่อพื้นที่ลายเซ็น)
+     */
+    protected static final float MIN_Y_POSITION = MARGIN_BOTTOM + 150;
+    
+    /**
+     * PAGE_NUMBER_Y_OFFSET: ระยะห่างของเลขหน้าจาก margin top ขึ้นไป
+     * - ค่ายิ่งสูง = เลขหน้าชิดขอบบนมากขึ้น
+     * - ค่าเดิม: 15f (ห่างจากขอบบน 55pt)
+     * - ค่าใหม่: 40f (ห่างจากขอบบน 30pt)
+     */
+    protected static final float PAGE_NUMBER_Y_OFFSET = 40f;
+    
+    /**
+     * SIGNATURE_RESERVE_HEIGHT: พื้นที่สำรองสำหรับช่องลงนาม
+     * ใช้ตรวจสอบก่อนวาด content ว่าจะพอสำหรับลายเซ็นหรือไม่
+     */
+    protected static final float SIGNATURE_RESERVE_HEIGHT = 200f;
     
     // ============================================
     // Debug Mode
     // ============================================
-    protected static final boolean ENABLE_DEBUG_BORDERS = false;
+    /**
+     * ENABLE_DEBUG_BORDERS: เปิด/ปิดการวาดกรอบแดงแสดงขอบเขตพื้นที่
+     * - true: แสดงกรอบสีแดงรอบ content area (สำหรับ dev)
+     * - false: ไม่แสดง (สำหรับ production)
+     */
+    protected static final boolean ENABLE_DEBUG_BORDERS = true;
     
     // ============================================
     // Field Positions
@@ -563,12 +587,16 @@ public abstract class PdfGeneratorBase {
     
     /**
      * วาด debug borders (ถ้าเปิด)
+     * - กรอบแดง: ขอบเขต content area (margins)
+     * - เส้นแดงประ: MIN_Y_POSITION (ตำแหน่งตัดหน้า)
+     * - เส้นน้ำเงิน: ตำแหน่งเลขหน้า
      */
     protected void drawDebugBorders(PDPageContentStream stream) throws IOException {
         if (!ENABLE_DEBUG_BORDERS) {
             return;
         }
         
+        // กรอบแดง: Content area (margins)
         stream.setStrokingColor(java.awt.Color.RED);
         stream.setLineWidth(0.5f);
         stream.addRect(
@@ -577,6 +605,23 @@ public abstract class PdfGeneratorBase {
             PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT,
             PAGE_HEIGHT - MARGIN_TOP - MARGIN_BOTTOM
         );
+        stream.stroke();
+        
+        // เส้นแดงประ: MIN_Y_POSITION (ตำแหน่งตัดหน้า)
+        stream.setStrokingColor(java.awt.Color.ORANGE);
+        stream.setLineWidth(0.5f);
+        stream.setLineDashPattern(new float[]{5, 3}, 0);
+        stream.moveTo(MARGIN_LEFT, MIN_Y_POSITION);
+        stream.lineTo(PAGE_WIDTH - MARGIN_RIGHT, MIN_Y_POSITION);
+        stream.stroke();
+        stream.setLineDashPattern(new float[]{}, 0); // reset
+        
+        // เส้นน้ำเงิน: ตำแหน่งเลขหน้า
+        float pageNumY = PAGE_HEIGHT - MARGIN_TOP + PAGE_NUMBER_Y_OFFSET;
+        stream.setStrokingColor(java.awt.Color.BLUE);
+        stream.setLineWidth(0.5f);
+        stream.moveTo(PAGE_WIDTH / 2 - 50, pageNumY - 5);
+        stream.lineTo(PAGE_WIDTH / 2 + 50, pageNumY - 5);
         stream.stroke();
     }
     
@@ -1133,15 +1178,17 @@ public abstract class PdfGeneratorBase {
             try {
                 float yPosition = PAGE_HEIGHT - MARGIN_TOP;
                 
+                // วาด debug borders
+                drawDebugBorders(contentStream);
+                
                 // วาดเลขที่หนังสือ (ขอบล่างซ้าย)
                 drawBookNumber(contentStream, bookNo, fontRegular);
                 
-                // วาดเลขหน้า (ต่อจากหน้าเดิม)
-                String pageNumThai = "- " + convertToThaiNumber(currentPageNumber) + " -";
-                drawCenteredText(contentStream, pageNumThai, fontRegular, 16, yPosition);
-                yPosition -= 50;
+                // วาดเลขหน้า (ใช้ drawPageNumber เพื่อให้ตำแหน่งตรงกันทุกหน้า)
+                drawPageNumber(contentStream, currentPageNumber, fontRegular);
                 
                 // วาดหัวข้อ "เสนอผ่าน"
+                yPosition -= 30; // เว้นที่สำหรับเลขหน้า
                 drawCenteredText(contentStream, SignBoxType.SUBMIT, fontBold, 28, yPosition);
                 yPosition -= 80;
                 
@@ -1159,15 +1206,16 @@ public abstract class PdfGeneratorBase {
                         currentPageNumber++;
                         
                         contentStream = new PDPageContentStream(document, nextPage);
-                        yPosition = PAGE_HEIGHT - MARGIN_TOP;
+                        yPosition = PAGE_HEIGHT - MARGIN_TOP - 30; // เว้นที่สำหรับเลขหน้า
+                        
+                        // วาด debug borders
+                        drawDebugBorders(contentStream);
                         
                         // วาดเลขที่หนังสือ (ขอบล่างซ้าย)
                         drawBookNumber(contentStream, bookNo, fontRegular);
                         
-                        // วาดเลขหน้า
-                        String nextPageNum = "- " + convertToThaiNumber(currentPageNumber) + " -";
-                        drawCenteredText(contentStream, nextPageNum, fontRegular, 16, yPosition);
-                        yPosition -= 50;
+                        // วาดเลขหน้า (ใช้ drawPageNumber เพื่อให้ตำแหน่งตรงกันทุกหน้า)
+                        drawPageNumber(contentStream, currentPageNumber, fontRegular);
                     }
                     
                     // วาดลายเซ็น
@@ -1234,15 +1282,17 @@ public abstract class PdfGeneratorBase {
             try {
                 float yPosition = PAGE_HEIGHT - MARGIN_TOP;
                 
+                // วาด debug borders
+                drawDebugBorders(contentStream);
+                
                 // วาดเลขที่หนังสือ (ขอบล่างซ้าย)
                 drawBookNumber(contentStream, bookNo, fontRegular);
                 
-                // วาดเลขหน้า
-                String pageNumThai = "- " + convertToThaiNumber(currentPageNumber) + " -";
-                drawCenteredText(contentStream, pageNumThai, fontRegular, 16, yPosition);
-                yPosition -= 50;
+                // วาดเลขหน้า (ใช้ drawPageNumber เพื่อให้ตำแหน่งตรงกันทุกหน้า)
+                drawPageNumber(contentStream, currentPageNumber, fontRegular);
                 
                 // วาด "เรียน ชื่อผู้ลงนาม1, ชื่อผู้ลงนาม2, ..." ที่ด้านบน
+                yPosition -= 20; // เว้นที่สำหรับเลขหน้า
                 StringBuilder namesBuilder = new StringBuilder("เรียน ");
                 List<SignerInfo> displayNames = (signers != null && !signers.isEmpty()) ? signers : learners;
                 for (int i = 0; i < displayNames.size(); i++) {
@@ -1274,15 +1324,16 @@ public abstract class PdfGeneratorBase {
                         currentPageNumber++;
                         
                         contentStream = new PDPageContentStream(document, nextPage);
-                        yPosition = PAGE_HEIGHT - MARGIN_TOP;
+                        yPosition = PAGE_HEIGHT - MARGIN_TOP - 30; // เว้นที่สำหรับเลขหน้า
+                        
+                        // วาด debug borders
+                        drawDebugBorders(contentStream);
                         
                         // วาดเลขที่หนังสือ (ขอบล่างซ้าย)
                         drawBookNumber(contentStream, bookNo, fontRegular);
                         
-                        // วาดเลขหน้า
-                        String nextPageNum = "- " + convertToThaiNumber(currentPageNumber) + " -";
-                        drawCenteredText(contentStream, nextPageNum, fontRegular, 16, yPosition);
-                        yPosition -= 50;
+                        // วาดเลขหน้า (ใช้ drawPageNumber เพื่อให้ตำแหน่งตรงกัน)
+                        drawPageNumber(contentStream, currentPageNumber, fontRegular);
                     }
                     
                     // วาดลายเซ็น

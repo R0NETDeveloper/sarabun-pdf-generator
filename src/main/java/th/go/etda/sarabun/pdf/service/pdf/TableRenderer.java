@@ -363,7 +363,12 @@ public class TableRenderer {
     
     /**
      * วาดหมายเลขหน้า
+     * ตำแหน่ง Y = PAGE_HEIGHT - MARGIN_TOP + PAGE_NUMBER_Y_OFFSET
+     * ซิงค์กับ PdfGeneratorBase.drawPageNumber()
      */
+    private static final float PAGE_NUMBER_Y_OFFSET = 40f;  // ซิงค์กับ PdfGeneratorBase
+    private static final float MARGIN_TOP = 70f;  // ซิงค์กับ PdfGeneratorBase
+    
     private void drawPageNumber(PDPageContentStream stream, int pageNumber, PDFont font) throws IOException {
         // แปลงเป็นเลขไทย
         String thaiNum = convertToThaiNumber(pageNumber);
@@ -372,7 +377,7 @@ public class TableRenderer {
         float fontSize = 16f;
         float textWidth = font.getStringWidth(pageText) / 1000 * fontSize;
         float x = (PDRectangle.A4.getWidth() - textWidth) / 2;
-        float y = PDRectangle.A4.getHeight() - 55; // ตำแหน่ง y ของเลขหน้า
+        float y = PDRectangle.A4.getHeight() - MARGIN_TOP + PAGE_NUMBER_Y_OFFSET; // ซิงค์กับ PdfGeneratorBase
         
         stream.beginText();
         stream.setFont(font, fontSize);
