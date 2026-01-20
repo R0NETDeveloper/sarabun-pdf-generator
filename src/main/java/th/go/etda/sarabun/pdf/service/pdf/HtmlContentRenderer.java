@@ -206,6 +206,10 @@ public class HtmlContentRenderer {
                         margin: 0;
                         padding: 0;
                         color: #000;
+                        /* Word-wrap สำหรับข้อความยาว/ภาษาไทย */
+                        word-break: break-word;
+                        overflow-wrap: break-word;
+                        word-wrap: break-word;
                     }
                     
                     .content-wrapper {
@@ -218,6 +222,8 @@ public class HtmlContentRenderer {
                     p {
                         margin: 0 0 8pt 0;
                         text-align: justify;
+                        word-break: break-word;
+                        overflow-wrap: break-word;
                     }
                     
                     /* Table styles */
@@ -226,6 +232,7 @@ public class HtmlContentRenderer {
                         border-collapse: collapse;
                         margin: 10pt 0;
                         font-size: 14pt;
+                        table-layout: fixed;
                     }
                     
                     th, td {
@@ -233,6 +240,8 @@ public class HtmlContentRenderer {
                         padding: 6pt 8pt;
                         text-align: left;
                         vertical-align: top;
+                        word-break: break-word;
+                        overflow-wrap: break-word;
                     }
                     
                     th {
@@ -249,6 +258,7 @@ public class HtmlContentRenderer {
                     
                     li {
                         margin-bottom: 4pt;
+                        word-break: break-word;
                     }
                     
                     /* Heading styles */

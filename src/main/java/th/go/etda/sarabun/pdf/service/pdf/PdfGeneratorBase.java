@@ -486,6 +486,7 @@ public abstract class PdfGeneratorBase {
     
     /**
      * แบ่งข้อความเป็นบรรทัดตามความกว้าง
+     * รองรับการตัดคำยาวๆ (ภาษาไทยไม่มี space) ทีละตัวอักษร
      */
     protected List<String> splitTextToLines(String text, PDFont font, float fontSize, float maxWidth) 
             throws IOException {
@@ -503,6 +504,7 @@ public abstract class PdfGeneratorBase {
                 continue;
             }
             
+            // เก็บ leading spaces (indent) สำหรับย่อหน้า
             int leadingSpaces = 0;
             while (leadingSpaces < paragraph.length() && paragraph.charAt(leadingSpaces) == ' ') {
                 leadingSpaces++;
@@ -510,6 +512,7 @@ public abstract class PdfGeneratorBase {
             String indent = leadingSpaces > 0 ? paragraph.substring(0, leadingSpaces) : "";
             String content = paragraph.substring(leadingSpaces);
             
+            // แบ่งคำด้วย space
             String[] words = content.split(" ");
             StringBuilder currentLine = new StringBuilder();
             boolean isFirstLine = true;
@@ -517,6 +520,7 @@ public abstract class PdfGeneratorBase {
             for (String word : words) {
                 if (word.isEmpty()) continue;
                 
+                // เตรียม testLine สำหรับทดสอบความกว้าง
                 String testLine = currentLine.length() == 0 ? word : currentLine + " " + word;
                 if (isFirstLine && !indent.isEmpty()) {
                     testLine = indent + testLine;
@@ -524,12 +528,51 @@ public abstract class PdfGeneratorBase {
                 
                 float width = font.getStringWidth(testLine) / 1000 * fontSize;
                 
-                if (width > maxWidth && currentLine.length() > 0) {
-                    String lineToAdd = isFirstLine && !indent.isEmpty() ? indent + currentLine.toString() : currentLine.toString();
-                    lines.add(lineToAdd);
-                    currentLine = new StringBuilder(word);
-                    isFirstLine = false;
+                if (width > maxWidth) {
+                    // กรณีคำยาวเกินบรรทัด
+                    if (currentLine.length() > 0) {
+                        // บันทึกบรรทัดปัจจุบันก่อน
+                        String lineToAdd = isFirstLine && !indent.isEmpty() 
+                                ? indent + currentLine.toString() 
+                                : currentLine.toString();
+                        lines.add(lineToAdd);
+                        currentLine = new StringBuilder();
+                        isFirstLine = false;
+                    }
+                    
+                    // ตัดคำยาวๆ ทีละตัวอักษร (สำหรับภาษาไทยที่ไม่มี space)
+                    String wordToProcess = word;
+                    while (!wordToProcess.isEmpty()) {
+                        String linePrefix = (isFirstLine && !indent.isEmpty()) ? indent : "";
+                        float prefixWidth = font.getStringWidth(linePrefix) / 1000 * fontSize;
+                        float availableWidth = maxWidth - prefixWidth;
+                        
+                        // หาจำนวนตัวอักษรที่ใส่ได้ในบรรทัด
+                        int charCount = 0;
+                        float charWidth = 0;
+                        for (int i = 0; i < wordToProcess.length(); i++) {
+                            String testPart = wordToProcess.substring(0, i + 1);
+                            charWidth = font.getStringWidth(testPart) / 1000 * fontSize;
+                            if (charWidth > availableWidth && i > 0) {
+                                break;
+                            }
+                            charCount = i + 1;
+                        }
+                        
+                        // ถ้าใส่ได้หมดทั้งคำ
+                        if (charCount >= wordToProcess.length()) {
+                            currentLine = new StringBuilder(wordToProcess);
+                            wordToProcess = "";
+                        } else {
+                            // ตัดส่วนที่ใส่ได้ และเก็บส่วนที่เหลือ
+                            String partToAdd = wordToProcess.substring(0, charCount);
+                            lines.add(linePrefix + partToAdd);
+                            wordToProcess = wordToProcess.substring(charCount);
+                            isFirstLine = false;
+                        }
+                    }
                 } else {
+                    // คำพอดีหรือเล็กกว่า maxWidth
                     currentLine = new StringBuilder(testLine);
                     if (isFirstLine && !indent.isEmpty()) {
                         currentLine = new StringBuilder(testLine.substring(indent.length()));
@@ -537,8 +580,11 @@ public abstract class PdfGeneratorBase {
                 }
             }
             
+            // บันทึกบรรทัดสุดท้าย
             if (currentLine.length() > 0) {
-                String lineToAdd = isFirstLine && !indent.isEmpty() ? indent + currentLine.toString() : currentLine.toString();
+                String lineToAdd = isFirstLine && !indent.isEmpty() 
+                        ? indent + currentLine.toString() 
+                        : currentLine.toString();
                 lines.add(lineToAdd);
             }
         }

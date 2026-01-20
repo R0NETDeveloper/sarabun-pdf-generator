@@ -326,6 +326,7 @@ public class TableRenderer {
     
     /**
      * Wrap text ให้พอดีกับความกว้าง
+     * รองรับการตัดคำยาวๆ (ภาษาไทยไม่มี space) ทีละตัวอักษร
      */
     private List<String> wrapText(String text, PDFont font, float fontSize, float maxWidth) throws IOException {
         List<String> lines = new ArrayList<>();
@@ -339,12 +340,43 @@ public class TableRenderer {
         String[] words = text.split(" ");
         
         for (String word : words) {
+            if (word.isEmpty()) continue;
+            
             String testLine = currentLine.length() == 0 ? word : currentLine + " " + word;
             float testWidth = font.getStringWidth(testLine) / 1000 * fontSize;
             
-            if (testWidth > maxWidth && currentLine.length() > 0) {
-                lines.add(currentLine.toString());
-                currentLine = new StringBuilder(word);
+            if (testWidth > maxWidth) {
+                // กรณีคำยาวเกินบรรทัด
+                if (currentLine.length() > 0) {
+                    lines.add(currentLine.toString());
+                    currentLine = new StringBuilder();
+                }
+                
+                // ตัดคำยาวๆ ทีละตัวอักษร (สำหรับภาษาไทยที่ไม่มี space)
+                String wordToProcess = word;
+                while (!wordToProcess.isEmpty()) {
+                    // หาจำนวนตัวอักษรที่ใส่ได้ในบรรทัด
+                    int charCount = 0;
+                    for (int i = 0; i < wordToProcess.length(); i++) {
+                        String testPart = wordToProcess.substring(0, i + 1);
+                        float charWidth = font.getStringWidth(testPart) / 1000 * fontSize;
+                        if (charWidth > maxWidth && i > 0) {
+                            break;
+                        }
+                        charCount = i + 1;
+                    }
+                    
+                    // ถ้าใส่ได้หมดทั้งคำ
+                    if (charCount >= wordToProcess.length()) {
+                        currentLine = new StringBuilder(wordToProcess);
+                        wordToProcess = "";
+                    } else {
+                        // ตัดส่วนที่ใส่ได้ และเก็บส่วนที่เหลือ
+                        String partToAdd = wordToProcess.substring(0, charCount);
+                        lines.add(partToAdd);
+                        wordToProcess = wordToProcess.substring(charCount);
+                    }
+                }
             } else {
                 currentLine = new StringBuilder(testLine);
             }
