@@ -456,9 +456,10 @@
                         <table id="testResultsTable" style="width: 100%; border-collapse: collapse; font-size: 13px">
                             <thead>
                                 <tr style="background: #5a67d8; color: white">
-                                    <th style="padding: 10px; text-align: left; width: 25%">ประเภทเอกสาร</th>
-                                    <th style="padding: 10px; text-align: center; width: 15%">Preview</th>
-                                    <th style="padding: 10px; text-align: center; width: 15%">Generate</th>
+                                    <th style="padding: 10px; text-align: left; width: 22%">ประเภทเอกสาร</th>
+                                    <th style="padding: 10px; text-align: center; width: 12%">Preview</th>
+                                    <th style="padding: 10px; text-align: center; width: 12%">Generate</th>
+                                    <th style="padding: 10px; text-align: center; width: 20%">📥 Download</th>
                                     <th style="padding: 10px; text-align: left">รายละเอียด</th>
                                 </tr>
                             </thead>
@@ -618,14 +619,14 @@
         <script>
             // BookNameId ตามประเภทเอกสาร
             const BOOK_NAME_IDS = {
-                officialMemo: "4B3EB169-6203-4A71-A3BD-A442FEAAA91F", // บันทึกข้อความ
+                officialMemo: "BB4A2F11-722D-449A-BCC5-22208C7A4DEC", // บันทึกข้อความ (Memo)
                 officialDocument: "90F72F0E-528D-4992-907A-F2C6B37AD9A5", // หนังสือภายนอก (ส่งออก)
                 regulation: "50792880-F85A-4343-9672-7B61AF828A5B", // หนังสือระเบียบ
                 announce: "23065068-BB18-49EA-8CE7-22945E16CB6D", // หนังสือประกาศ
                 command: "3FEDE42B-078A-4D2C-9B21-3EAD3E418F3D", // หนังสือคำสั่ง
                 rules: "4AB1EC00-9E5E-4113-B577-D8ED46BA7728", // หนังสือข้อบังคับ
                 stamp: "AF3E7697-6F7E-4AD8-B76C-E2134DB98747", // หนังสือประทับตรา
-                ministry: "4B3EB169-6203-4A71-A3BD-A442FEAAA91F", // หนังสือภายใต้กระทรวง
+                ministry: "4B3EB169-6203-4A71-A3BD-A442FEAAA91F", // หนังสือภายใต้กระทรวง (Ministry)
             };
 
             // Template ตามประเภทเอกสาร - แบ่งเป็น 3 รูปแบบ (Short, Long, Table)
@@ -1534,20 +1535,20 @@
                 outboundShort: "📤 หนังสือส่งออก - สั้น",
                 outboundLong: "📤 หนังสือส่งออก - ยาว",
                 outboundTable: "📤 หนังสือส่งออก - ตาราง",
-                stampShort: "📋 ประทับตรา - สั้น",
-                stampLong: "📋 ประทับตรา - ยาว",
-                stampTable: "📋 ประทับตรา - ตาราง",
-                ministryShort: "🏛️ กระทรวง - สั้น",
-                ministryLong: "🏛️ กระทรวง - ยาว",
-                ministryTable: "🏛️ กระทรวง - ตาราง",
-                announceShort: "📜 ประกาศ - สั้น",
-                announceLong: "📜 ประกาศ - ยาว",
-                regulationShort: "📜 ระเบียบ - สั้น",
-                regulationLong: "📜 ระเบียบ - ยาว",
-                commandShort: "📜 คำสั่ง - สั้น",
-                commandLong: "📜 คำสั่ง - ยาว",
-                rulesShort: "📜 ข้อบังคับ - สั้น",
-                rulesLong: "📜 ข้อบังคับ - ยาว",
+                stampShort: "📋 หนังสือประทับตรา - สั้น",
+                stampLong: "📋 หนังสือประทับตรา - ยาว",
+                stampTable: "📋 หนังสือประทับตรา - ตาราง",
+                ministryShort: "🏛️ หนังสือกระทรวง - สั้น",
+                ministryLong: "🏛️ หนังสือกระทรวง - ยาว",
+                ministryTable: "🏛️ หนังสือกระทรวง - ตาราง",
+                announceShort: "📜 หนังสือประกาศ - สั้น",
+                announceLong: "📜 หนังสือประกาศ - ยาว",
+                regulationShort: "📜 หนังสือระเบียบ - สั้น",
+                regulationLong: "📜 หนังสือระเบียบ - ยาว",
+                commandShort: "📜 หนังสือคำสั่ง - สั้น",
+                commandLong: "📜 หนังสือคำสั่ง - ยาว",
+                rulesShort: "📜 หนังสือข้อบังคับ - สั้น",
+                rulesLong: "📜 หนังสือข้อบังคับ - ยาว",
             };
 
             let isTestingAll = false;
@@ -1582,6 +1583,7 @@
                         <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${documentTypeNames[docType] || docType}</td>
                         <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: center;" id="preview-${docType}">⏳</td>
                         <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: center;" id="generate-${docType}">⏳</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: center;" id="download-${docType}">-</td>
                         <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px;" id="detail-${docType}"></td>
                     `;
                     document.getElementById("testResultsBody").appendChild(row);
@@ -1622,6 +1624,9 @@
                         generate: generateResult,
                     });
 
+                    // Update download buttons
+                    updateDownloadButtons(docType, previewResult, generateResult);
+
                     // Small delay between document types
                     await sleep(200);
                 }
@@ -1649,6 +1654,8 @@
                         time: elapsed,
                         fileCount: Array.isArray(data.data) ? data.data.length : data.data ? 1 : 0,
                         error: data.message || null,
+                        pdfData: data.data, // Store PDF data for download
+                        endpoint: endpoint,
                     };
                 } catch (error) {
                     return {
@@ -1656,6 +1663,8 @@
                         statusCode: 0,
                         time: Date.now() - startTime,
                         error: error.message,
+                        pdfData: null,
+                        endpoint: endpoint,
                     };
                 }
             }
@@ -1709,6 +1718,104 @@
 
             function sleep(ms) {
                 return new Promise((resolve) => setTimeout(resolve, ms));
+            }
+
+            // Store PDF data globally for downloads
+            window.testPdfData = {};
+
+            function updateDownloadButtons(docType, previewResult, generateResult) {
+                const downloadCell = document.getElementById(`download-${docType}`);
+                let buttons = [];
+
+                // Store PDF data
+                window.testPdfData[docType] = {
+                    preview: previewResult.pdfData,
+                    generate: generateResult.pdfData,
+                };
+
+                // Preview download button
+                if (previewResult.success && previewResult.pdfData) {
+                    buttons.push(`<button onclick="downloadTestPdf('${docType}', 'preview')" style="background: #667eea; color: white; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; margin: 2px;" title="Download Preview PDF">📄 Preview</button>`);
+                }
+
+                // Generate download buttons
+                if (generateResult.success && generateResult.pdfData) {
+                    if (Array.isArray(generateResult.pdfData)) {
+                        // Multiple files
+                        buttons.push(`<button onclick="downloadTestPdf('${docType}', 'generate')" style="background: #48bb78; color: white; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; margin: 2px;" title="Download all ${generateResult.pdfData.length} files">📦 ${generateResult.pdfData.length} ไฟล์</button>`);
+                    } else {
+                        buttons.push(`<button onclick="downloadTestPdf('${docType}', 'generate')" style="background: #48bb78; color: white; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; margin: 2px;" title="Download Generate PDF">📄 Generate</button>`);
+                    }
+                }
+
+                downloadCell.innerHTML = buttons.length > 0 ? buttons.join(" ") : '<span style="color: #a0aec0">-</span>';
+            }
+
+            function downloadTestPdf(docType, type) {
+                const data = window.testPdfData[docType];
+                if (!data) {
+                    alert("ไม่พบข้อมูล PDF");
+                    return;
+                }
+
+                const pdfData = data[type];
+                if (!pdfData) {
+                    alert("ไม่พบข้อมูล PDF");
+                    return;
+                }
+
+                const docName = documentTypeNames[docType]?.replace(/[^a-zA-Z0-9ก-๙]/g, "_") || docType;
+
+                if (type === "preview") {
+                    // Single PDF from preview
+                    downloadBase64Pdf(pdfData.pdfBase64 || pdfData, `${docName}_preview.pdf`);
+                } else if (type === "generate") {
+                    // Could be array or single
+                    if (Array.isArray(pdfData)) {
+                        // Download all files
+                        pdfData.forEach((pdf, index) => {
+                            setTimeout(() => {
+                                const filename = pdf.filename || `${docName}_${index + 1}.pdf`;
+                                downloadBase64Pdf(pdf.pdfBase64, filename);
+                            }, index * 300);
+                        });
+                    } else {
+                        downloadBase64Pdf(pdfData.pdfBase64 || pdfData, `${docName}_generate.pdf`);
+                    }
+                }
+            }
+
+            function downloadBase64Pdf(base64Data, filename) {
+                if (!base64Data) {
+                    alert("ไม่พบข้อมูล PDF");
+                    return;
+                }
+
+                // Remove data URL prefix if present
+                let pdfData = base64Data;
+                const base64Prefix = "data:application/pdf;base64,";
+                if (pdfData.startsWith(base64Prefix)) {
+                    pdfData = pdfData.substring(base64Prefix.length);
+                }
+
+                try {
+                    const byteCharacters = atob(pdfData);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const blob = new Blob([byteArray], { type: "application/pdf" });
+
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(blob);
+                    link.download = filename;
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                } catch (e) {
+                    console.error("Error downloading PDF:", e);
+                    alert("ไม่สามารถดาวน์โหลด PDF ได้: " + e.message);
+                }
             }
         </script>
     </body>
