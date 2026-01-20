@@ -290,7 +290,8 @@ public class OrderPdfGenerator extends PdfGeneratorBase {
         
         StringBuilder result = new StringBuilder();
         for (char c : dateThai.toCharArray()) {
-            if (Character.isDigit(c)) {
+            // ตรวจสอบเฉพาะเลขอารบิก 0-9 เท่านั้น (ไม่รวมเลขไทยหรือเลขอื่น)
+            if (c >= '0' && c <= '9') {
                 // แปลงตัวเลขอารบิกเป็นตัวเลขไทย
                 result.append((char) ('๐' + (c - '0')));
             } else {

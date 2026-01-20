@@ -135,6 +135,19 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
     }
     
     /**
+     * สร้าง PDF หนังสือส่งออกสำหรับผู้รับเฉพาะราย (Public method สำหรับ GeneratePdfService)
+     * @param request Request ข้อมูล
+     * @param recipient ผู้รับ
+     * @param documentIndex ลำดับเอกสาร
+     * @return PDF Base64
+     */
+    public String generateOutboundPdfForRecipientPublic(GeneratePdfRequest request, 
+                                                         GeneratePdfRequest.BookRecipient recipient,
+                                                         int documentIndex) throws Exception {
+        return generateOutboundPdfForRecipient(request, recipient, documentIndex);
+    }
+    
+    /**
      * สร้าง PDF หนังสือส่งออกสำหรับผู้รับเฉพาะราย (หน่วยงานภายนอก)
      * อ่านข้อมูลจาก documentSub (New Format)
      * @param documentIndex ลำดับเอกสาร (1, 2, 3...) สำหรับสร้าง unique field name

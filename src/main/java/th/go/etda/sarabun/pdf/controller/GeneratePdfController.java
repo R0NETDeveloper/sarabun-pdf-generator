@@ -113,6 +113,65 @@ public class GeneratePdfController {
     }
     
     /**
+     * สร้าง PDF แยกไฟล์ (ไม่รวมเป็น 1 PDF)
+     * 
+     * แต่ละประเภทเอกสารจะแยกเป็นไฟล์:
+     * - หนังสือส่งออก → outbound_1.pdf, outbound_2.pdf (ตามจำนวนผู้รับ)
+     * - บันทึกข้อความ → memo.pdf
+     * - เสนอผ่าน → submit.pdf
+     * - ผู้เรียน → learner.pdf
+     * 
+     * @param request ข้อมูลสำหรับสร้าง PDF
+     * @param httpRequest HTTP request สำหรับดึง client IP
+     * @return ApiResponse ที่มี List<PdfResult> แยกไฟล์
+     */
+    @PostMapping("/generate")
+    public ResponseEntity<ApiResponse<java.util.List<th.go.etda.sarabun.pdf.model.PdfResult>>> generatePdf(
+            @RequestBody GeneratePdfRequest request,
+            HttpServletRequest httpRequest) {
+        
+        String clientIp = getClientIp(httpRequest);
+        log.info("============ PDF GENERATE (SEPARATE FILES) REQUEST from {} ============", clientIp);
+        
+        try {
+            // 1. ตรวจสอบ Rate Limit
+            if (!rateLimitConfig.tryConsume(clientIp)) {
+                log.warn("Rate limit exceeded for IP: {}", clientIp);
+                return ResponseEntity
+                    .status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(ApiResponse.error("คำขอมากเกินไป กรุณารอสักครู่แล้วลองใหม่ (Rate limit exceeded)"));
+            }
+            
+            // 2. ตรวจสอบ Input Validation
+            RequestValidator.ValidationResult validationResult = requestValidator.validate(request);
+            if (!validationResult.isValid()) {
+                log.warn("Validation failed: {}", validationResult.getErrorMessage());
+                return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("ข้อมูลไม่ถูกต้อง: " + validationResult.getErrorMessage()));
+            }
+            
+            // 3. สร้าง PDF แยกไฟล์
+            ApiResponse<java.util.List<th.go.etda.sarabun.pdf.model.PdfResult>> response = generatePdfService.generatePdf(request);
+            
+            if (response.getIsOk()) {
+                log.info("Generated {} separate PDF files", response.getData().size());
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(response);
+            }
+            
+        } catch (Exception e) {
+            log.error("Error in generatePdf endpoint: ", e);
+            return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("เกิดข้อผิดพลาดภายในระบบ: " + e.getMessage()));
+        }
+    }
+    
+    /**
      * ดึง Client IP จาก request (รองรับ proxy/load balancer)
      */
     private String getClientIp(HttpServletRequest request) {

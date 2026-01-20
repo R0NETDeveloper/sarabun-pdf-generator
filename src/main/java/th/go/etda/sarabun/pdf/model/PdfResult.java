@@ -48,4 +48,10 @@ public class PdfResult {
      * เช่น "กระทรวงการต่างประเทศ", "สำนักงานรัฐมนตรี"
      */
     private String recipientName;
+    
+    /**
+     * ชื่อไฟล์ที่แนะนำสำหรับ download
+     * เช่น "outbound_1.pdf", "memo.pdf"
+     */
+    private String filename;
 }

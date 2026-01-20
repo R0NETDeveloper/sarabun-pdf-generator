@@ -437,10 +437,58 @@
             <h1>🔧 PDF API Tester</h1>
 
             <!-- Request Panel -->
+            <!-- Test All Panel -->
+            <div class="panel" id="testAllPanel" style="display: none">
+                <div class="panel-header">
+                    <span>🧪 ทดสอบทุกประเภทเอกสาร</span>
+                    <button class="btn btn-secondary" onclick="closeTestAll()" style="padding: 5px 10px">✕ ปิด</button>
+                </div>
+                <div class="panel-body">
+                    <div id="testProgress" style="margin-bottom: 15px">
+                        <div style="display: flex; align-items: center; gap: 10px">
+                            <div id="progressBar" style="flex: 1; height: 20px; background: #e2e8f0; border-radius: 10px; overflow: hidden">
+                                <div id="progressFill" style="width: 0%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); transition: width 0.3s"></div>
+                            </div>
+                            <span id="progressText">0 / 0</span>
+                        </div>
+                    </div>
+                    <div id="testResultsContainer" style="max-height: 400px; overflow-y: auto">
+                        <table id="testResultsTable" style="width: 100%; border-collapse: collapse; font-size: 13px">
+                            <thead>
+                                <tr style="background: #5a67d8; color: white">
+                                    <th style="padding: 10px; text-align: left; width: 25%">ประเภทเอกสาร</th>
+                                    <th style="padding: 10px; text-align: center; width: 15%">Preview</th>
+                                    <th style="padding: 10px; text-align: center; width: 15%">Generate</th>
+                                    <th style="padding: 10px; text-align: left">รายละเอียด</th>
+                                </tr>
+                            </thead>
+                            <tbody id="testResultsBody"></tbody>
+                        </table>
+                    </div>
+                    <div id="testSummary" style="margin-top: 15px; padding: 15px; background: #f7fafc; border-radius: 8px; display: none">
+                        <div style="display: flex; gap: 20px; justify-content: center">
+                            <div style="text-align: center">
+                                <div style="font-size: 24px; font-weight: bold; color: #48bb78" id="summarySuccess">0</div>
+                                <div style="font-size: 12px; color: #718096">✅ สำเร็จ</div>
+                            </div>
+                            <div style="text-align: center">
+                                <div style="font-size: 24px; font-weight: bold; color: #f56565" id="summaryFailed">0</div>
+                                <div style="font-size: 12px; color: #718096">❌ ล้มเหลว</div>
+                            </div>
+                            <div style="text-align: center">
+                                <div style="font-size: 24px; font-weight: bold; color: #5a67d8" id="summaryTotal">0</div>
+                                <div style="font-size: 12px; color: #718096">📊 ทั้งหมด</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="panel">
                 <div class="panel-header">
                     <span>📤 Request</span>
                     <div class="btn-group">
+                        <button class="btn btn-primary" onclick="testAllDocuments()" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%)">🧪 Test All</button>
                         <button class="btn btn-primary" onclick="sendRequest()">🚀 ส่ง Request</button>
                         <button class="btn btn-secondary" onclick="formatJson()">📝 Format</button>
                         <button class="btn btn-secondary" onclick="clearAll()">🗑️ Clear</button>
@@ -1203,6 +1251,7 @@
                 document.getElementById("pdfViewer").src = "";
                 document.getElementById("pdfViewer").style.display = "none";
                 document.getElementById("noPdf").style.display = "flex";
+                document.getElementById("noPdf").innerHTML = '<div class="no-pdf-icon">📄</div><div>ยังไม่มี PDF</div>';
                 document.getElementById("statusBar").className = "status-bar";
                 document.getElementById("statusMessage").textContent = "พร้อมใช้งาน - กรุณาส่ง Request";
                 document.getElementById("statusText").textContent = "พร้อมใช้งาน";
@@ -1210,6 +1259,174 @@
                 document.getElementById("documentType").value = "";
                 currentTemplate = null;
                 updateJsonPreview();
+            }
+
+            // Display single PDF (from /preview)
+            function displaySinglePdf(pdfData) {
+                const pdfViewer = document.getElementById("pdfViewer");
+                const noPdf = document.getElementById("noPdf");
+
+                // Remove data URL prefix if present
+                const base64Prefix = "data:application/pdf;base64,";
+                if (pdfData.startsWith(base64Prefix)) {
+                    pdfData = pdfData.substring(base64Prefix.length);
+                }
+
+                try {
+                    const byteCharacters = atob(pdfData);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const blob = new Blob([byteArray], { type: "application/pdf" });
+                    const blobUrl = URL.createObjectURL(blob);
+
+                    pdfViewer.src = blobUrl;
+                    pdfViewer.style.display = "block";
+                    noPdf.style.display = "none";
+                } catch (e) {
+                    console.error("Error creating PDF blob:", e);
+                    pdfViewer.src = "data:application/pdf;base64," + pdfData;
+                    pdfViewer.style.display = "block";
+                    noPdf.style.display = "none";
+                }
+            }
+
+            // Display multiple PDFs (from /generate) with download buttons
+            function displayMultiplePdfs(pdfArray) {
+                const pdfViewer = document.getElementById("pdfViewer");
+                const noPdf = document.getElementById("noPdf");
+
+                // Hide iframe viewer
+                pdfViewer.style.display = "none";
+
+                // Build HTML for multiple PDFs
+                let html = '<div style="text-align: left; width: 100%; padding: 20px;">';
+                html += '<h3 style="color: #5a67d8; margin-bottom: 15px;">📦 สร้าง PDF สำเร็จ ' + pdfArray.length + " ไฟล์</h3>";
+                html += '<div style="display: flex; flex-direction: column; gap: 10px;">';
+
+                pdfArray.forEach((pdf, index) => {
+                    const typeIcon = getTypeIcon(pdf.type);
+                    const filename = pdf.filename || `file_${index + 1}.pdf`;
+                    const description = pdf.description || pdf.type;
+
+                    html += `
+                        <div style="background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 24px;">${typeIcon}</span>
+                                <div>
+                                    <div style="font-weight: 600; color: #2d3748;">${filename}</div>
+                                    <div style="font-size: 12px; color: #718096;">${description}</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button onclick="previewPdfItem(${index})" style="background: #5a67d8; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">👁️ ดู</button>
+                                <button onclick="downloadPdfItem(${index})" style="background: #48bb78; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">⬇️ Download</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += "</div>";
+                html += '<div style="margin-top: 15px;"><button onclick="downloadAllPdfs()" style="background: #6b46c1; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px;">📥 Download ทั้งหมด</button></div>';
+                html += "</div>";
+
+                noPdf.innerHTML = html;
+                noPdf.style.display = "flex";
+                noPdf.style.alignItems = "flex-start";
+
+                // Store pdf array globally for download/preview functions
+                window.currentPdfArray = pdfArray;
+            }
+
+            function getTypeIcon(type) {
+                switch (type) {
+                    case "Main":
+                        return "📤";
+                    case "Memo":
+                        return "📝";
+                    case "Submit":
+                        return "✍️";
+                    case "Learner":
+                        return "📚";
+                    default:
+                        return "📄";
+                }
+            }
+
+            function previewPdfItem(index) {
+                if (!window.currentPdfArray || !window.currentPdfArray[index]) return;
+
+                const pdf = window.currentPdfArray[index];
+                let pdfData = pdf.pdfBase64;
+
+                // Remove prefix if present
+                const base64Prefix = "data:application/pdf;base64,";
+                if (pdfData.startsWith(base64Prefix)) {
+                    pdfData = pdfData.substring(base64Prefix.length);
+                }
+
+                try {
+                    const byteCharacters = atob(pdfData);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const blob = new Blob([byteArray], { type: "application/pdf" });
+                    const blobUrl = URL.createObjectURL(blob);
+
+                    // Open in new tab
+                    window.open(blobUrl, "_blank");
+                } catch (e) {
+                    console.error("Error previewing PDF:", e);
+                    alert("ไม่สามารถเปิด PDF ได้: " + e.message);
+                }
+            }
+
+            function downloadPdfItem(index) {
+                if (!window.currentPdfArray || !window.currentPdfArray[index]) return;
+
+                const pdf = window.currentPdfArray[index];
+                const filename = pdf.filename || `file_${index + 1}.pdf`;
+                let pdfData = pdf.pdfBase64;
+
+                // Remove prefix if present
+                const base64Prefix = "data:application/pdf;base64,";
+                if (pdfData.startsWith(base64Prefix)) {
+                    pdfData = pdfData.substring(base64Prefix.length);
+                }
+
+                try {
+                    const byteCharacters = atob(pdfData);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const blob = new Blob([byteArray], { type: "application/pdf" });
+
+                    // Download
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(blob);
+                    link.download = filename;
+                    link.click();
+                } catch (e) {
+                    console.error("Error downloading PDF:", e);
+                    alert("ไม่สามารถดาวน์โหลด PDF ได้: " + e.message);
+                }
+            }
+
+            function downloadAllPdfs() {
+                if (!window.currentPdfArray || window.currentPdfArray.length === 0) return;
+
+                // Download each file with a small delay
+                window.currentPdfArray.forEach((pdf, index) => {
+                    setTimeout(() => {
+                        downloadPdfItem(index);
+                    }, index * 500); // 500ms delay between downloads
+                });
             }
 
             // Send request
@@ -1263,40 +1480,15 @@
                         document.getElementById("statusMessage").textContent = `✅ สำเร็จ! Status: ${response.status}`;
                         document.getElementById("statusText").textContent = "✅ สำเร็จ";
 
-                        // Try to display PDF if available
+                        // Check if data is array (from /generate) or string (from /preview)
                         let pdfData = data.data;
-                        console.log("PDF data length:", pdfData ? pdfData.length : 0);
 
-                        if (pdfData && typeof pdfData === "string" && pdfData.length > 100) {
-                            // Remove data URL prefix if present (handles both cases: with and without prefix)
-                            const base64Prefix = "data:application/pdf;base64,";
-                            if (pdfData.startsWith(base64Prefix)) {
-                                pdfData = pdfData.substring(base64Prefix.length);
-                                console.log("Removed base64 prefix from PDF data");
-                            }
-
-                            // Create blob from base64 for better browser compatibility
-                            try {
-                                const byteCharacters = atob(pdfData);
-                                const byteNumbers = new Array(byteCharacters.length);
-                                for (let i = 0; i < byteCharacters.length; i++) {
-                                    byteNumbers[i] = byteCharacters.charCodeAt(i);
-                                }
-                                const byteArray = new Uint8Array(byteNumbers);
-                                const blob = new Blob([byteArray], { type: "application/pdf" });
-                                const blobUrl = URL.createObjectURL(blob);
-
-                                pdfViewer.src = blobUrl;
-                                pdfViewer.style.display = "block";
-                                noPdf.style.display = "none";
-                                console.log("PDF blob URL created:", blobUrl);
-                            } catch (e) {
-                                console.error("Error creating PDF blob:", e);
-                                // Fallback to data URL
-                                pdfViewer.src = "data:application/pdf;base64," + pdfData;
-                                pdfViewer.style.display = "block";
-                                noPdf.style.display = "none";
-                            }
+                        if (Array.isArray(pdfData) && pdfData.length > 0) {
+                            // Handle /api/pdf/generate response (array of PDF files)
+                            displayMultiplePdfs(pdfData);
+                        } else if (pdfData && typeof pdfData === "string" && pdfData.length > 100) {
+                            // Handle /api/pdf/preview response (single PDF)
+                            displaySinglePdf(pdfData);
                         } else {
                             noPdf.innerHTML = '<div class="no-pdf-icon">📋</div><div>Response ไม่มี PDF data</div>';
                             noPdf.style.display = "flex";
@@ -1329,6 +1521,195 @@
                 document.getElementById("fullEndpoint").textContent = getBaseUrl() + endpoint;
                 updateJsonPreview();
             });
+
+            // ============================================
+            // Test All Documents Functions
+            // ============================================
+
+            // Document type names for display
+            const documentTypeNames = {
+                memoShort: "📝 บันทึกข้อความ - สั้น",
+                memoLong: "📝 บันทึกข้อความ - ยาว",
+                memoTable: "📝 บันทึกข้อความ - ตาราง",
+                outboundShort: "📤 หนังสือส่งออก - สั้น",
+                outboundLong: "📤 หนังสือส่งออก - ยาว",
+                outboundTable: "📤 หนังสือส่งออก - ตาราง",
+                stampShort: "📋 ประทับตรา - สั้น",
+                stampLong: "📋 ประทับตรา - ยาว",
+                stampTable: "📋 ประทับตรา - ตาราง",
+                ministryShort: "🏛️ กระทรวง - สั้น",
+                ministryLong: "🏛️ กระทรวง - ยาว",
+                ministryTable: "🏛️ กระทรวง - ตาราง",
+                announceShort: "📜 ประกาศ - สั้น",
+                announceLong: "📜 ประกาศ - ยาว",
+                regulationShort: "📜 ระเบียบ - สั้น",
+                regulationLong: "📜 ระเบียบ - ยาว",
+                commandShort: "📜 คำสั่ง - สั้น",
+                commandLong: "📜 คำสั่ง - ยาว",
+                rulesShort: "📜 ข้อบังคับ - สั้น",
+                rulesLong: "📜 ข้อบังคับ - ยาว",
+            };
+
+            let isTestingAll = false;
+            let testResults = [];
+
+            async function testAllDocuments() {
+                if (isTestingAll) {
+                    alert("กำลังทดสอบอยู่ กรุณารอสักครู่...");
+                    return;
+                }
+
+                isTestingAll = true;
+                testResults = [];
+
+                // Show test panel
+                document.getElementById("testAllPanel").style.display = "block";
+                document.getElementById("testSummary").style.display = "none";
+                document.getElementById("testResultsBody").innerHTML = "";
+                document.getElementById("progressFill").style.width = "0%";
+
+                const docTypes = Object.keys(documentTemplates);
+                const totalTests = docTypes.length * 2; // preview + generate for each
+                let completedTests = 0;
+
+                document.getElementById("progressText").textContent = `0 / ${totalTests}`;
+
+                // Add all rows first
+                docTypes.forEach((docType) => {
+                    const row = document.createElement("tr");
+                    row.id = `row-${docType}`;
+                    row.innerHTML = `
+                        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${documentTypeNames[docType] || docType}</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: center;" id="preview-${docType}">⏳</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: center;" id="generate-${docType}">⏳</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px;" id="detail-${docType}"></td>
+                    `;
+                    document.getElementById("testResultsBody").appendChild(row);
+                });
+
+                // Test each document type
+                for (const docType of docTypes) {
+                    const template = documentTemplates[docType];
+                    const body = JSON.stringify(template);
+
+                    // Test Preview
+                    const previewResult = await testEndpoint("/api/pdf/preview", body);
+                    completedTests++;
+                    updateTestProgress(completedTests, totalTests);
+                    updateTestCell(`preview-${docType}`, previewResult);
+
+                    // Small delay to prevent overloading
+                    await sleep(100);
+
+                    // Test Generate
+                    const generateResult = await testEndpoint("/api/pdf/generate", body);
+                    completedTests++;
+                    updateTestProgress(completedTests, totalTests);
+                    updateTestCell(`generate-${docType}`, generateResult);
+
+                    // Update detail
+                    const detailCell = document.getElementById(`detail-${docType}`);
+                    let details = [];
+                    if (previewResult.success) details.push(`Preview: ${previewResult.time}ms`);
+                    if (generateResult.success) details.push(`Generate: ${generateResult.time}ms, ${generateResult.fileCount || 0} files`);
+                    if (!previewResult.success) details.push(`Preview: ${previewResult.error}`);
+                    if (!generateResult.success) details.push(`Generate: ${generateResult.error}`);
+                    detailCell.textContent = details.join(" | ");
+
+                    testResults.push({
+                        docType,
+                        preview: previewResult,
+                        generate: generateResult,
+                    });
+
+                    // Small delay between document types
+                    await sleep(200);
+                }
+
+                // Show summary
+                showTestSummary();
+                isTestingAll = false;
+            }
+
+            async function testEndpoint(endpoint, body) {
+                const startTime = Date.now();
+                try {
+                    const response = await fetch(getBaseUrl() + endpoint, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: body,
+                    });
+
+                    const elapsed = Date.now() - startTime;
+                    const data = await response.json();
+
+                    return {
+                        success: response.ok && data.isOK,
+                        statusCode: data.statusCode || response.status,
+                        time: elapsed,
+                        fileCount: Array.isArray(data.data) ? data.data.length : data.data ? 1 : 0,
+                        error: data.message || null,
+                    };
+                } catch (error) {
+                    return {
+                        success: false,
+                        statusCode: 0,
+                        time: Date.now() - startTime,
+                        error: error.message,
+                    };
+                }
+            }
+
+            function updateTestProgress(completed, total) {
+                const percent = Math.round((completed / total) * 100);
+                document.getElementById("progressFill").style.width = `${percent}%`;
+                document.getElementById("progressText").textContent = `${completed} / ${total}`;
+            }
+
+            function updateTestCell(cellId, result) {
+                const cell = document.getElementById(cellId);
+                if (result.success) {
+                    cell.innerHTML = `<span style="color: #48bb78; font-weight: bold;">✅ ${result.statusCode}</span>`;
+                } else {
+                    cell.innerHTML = `<span style="color: #f56565; font-weight: bold;">❌ ${result.statusCode || "ERR"}</span>`;
+                }
+            }
+
+            function showTestSummary() {
+                let successCount = 0;
+                let failedCount = 0;
+
+                testResults.forEach((result) => {
+                    if (result.preview.success) successCount++;
+                    else failedCount++;
+
+                    if (result.generate.success) successCount++;
+                    else failedCount++;
+                });
+
+                document.getElementById("summarySuccess").textContent = successCount;
+                document.getElementById("summaryFailed").textContent = failedCount;
+                document.getElementById("summaryTotal").textContent = successCount + failedCount;
+                document.getElementById("testSummary").style.display = "block";
+
+                // Update summary colors based on result
+                const summaryEl = document.getElementById("testSummary");
+                if (failedCount === 0) {
+                    summaryEl.style.background = "#c6f6d5";
+                } else if (successCount === 0) {
+                    summaryEl.style.background = "#fed7d7";
+                } else {
+                    summaryEl.style.background = "#fefcbf";
+                }
+            }
+
+            function closeTestAll() {
+                document.getElementById("testAllPanel").style.display = "none";
+            }
+
+            function sleep(ms) {
+                return new Promise((resolve) => setTimeout(resolve, ms));
+            }
         </script>
     </body>
 </html>

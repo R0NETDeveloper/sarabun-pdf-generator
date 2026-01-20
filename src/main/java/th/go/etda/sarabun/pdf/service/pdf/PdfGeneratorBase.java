@@ -621,7 +621,8 @@ public abstract class PdfGeneratorBase {
         }
         StringBuilder result = new StringBuilder();
         for (char c : text.toCharArray()) {
-            if (Character.isDigit(c)) {
+            // ตรวจสอบเฉพาะเลขอารบิก 0-9 (ไม่รวมเลขไทยหรือเลขอื่น)
+            if (c >= '0' && c <= '9') {
                 result.append(THAI_DIGITS[c - '0']);
             } else {
                 result.append(c);
@@ -1199,6 +1200,185 @@ public abstract class PdfGeneratorBase {
     // ============================================
     // Submit/Learner Pages Methods
     // ============================================
+    
+    /**
+     * สร้าง PDF หน้า "เสนอผ่าน" แยกไฟล์ (ไม่ต่อจาก PDF อื่น)
+     * 
+     * @param submiters รายการผู้เสนอผ่าน
+     * @param bookNo เลขที่หนังสือ
+     * @return PDF ในรูปแบบ Base64
+     */
+    public String createSubmitPdf(List<SignerInfo> submiters, String bookNo) throws Exception {
+        if (submiters == null || submiters.isEmpty()) {
+            return "";
+        }
+        
+        log.info("Creating separate Submit PDF for {} submiters", submiters.size());
+        
+        try (PDDocument document = new PDDocument()) {
+            PDPage page = new PDPage(PDRectangle.A4);
+            document.addPage(page);
+            
+            PDFont fontRegular = loadRegularFont(document);
+            PDFont fontBold = loadBoldFont(document);
+            
+            // สร้าง AcroForm
+            PDAcroForm acroForm = new PDAcroForm(document);
+            document.getDocumentCatalog().setAcroForm(acroForm);
+            
+            int currentPageNumber = 1;
+            
+            PDPageContentStream contentStream = new PDPageContentStream(document, page);
+            try {
+                float yPosition = PAGE_HEIGHT - MARGIN_TOP;
+                
+                // วาด debug borders
+                drawDebugBorders(contentStream);
+                
+                // วาดเลขที่หนังสือ
+                drawBookNumber(contentStream, bookNo, fontRegular);
+                
+                // วาดเลขหน้า
+                drawPageNumber(contentStream, currentPageNumber, fontRegular);
+                
+                // วาดหัวข้อ "เสนอผ่าน"
+                yPosition -= 30;
+                drawCenteredText(contentStream, SignBoxType.SUBMIT, fontBold, 28, yPosition);
+                yPosition -= 80;
+                
+                // วาดลายเซ็นแต่ละคน
+                for (int i = 0; i < submiters.size(); i++) {
+                    SignerInfo submiter = submiters.get(i);
+                    
+                    // ตรวจสอบพื้นที่เหลือ
+                    if (yPosition < MIN_Y_POSITION + 50) {
+                        contentStream.close();
+                        
+                        PDPage nextPage = new PDPage(PDRectangle.A4);
+                        document.addPage(nextPage);
+                        currentPageNumber++;
+                        
+                        contentStream = new PDPageContentStream(document, nextPage);
+                        yPosition = PAGE_HEIGHT - MARGIN_TOP - 30;
+                        
+                        drawDebugBorders(contentStream);
+                        drawBookNumber(contentStream, bookNo, fontRegular);
+                        drawPageNumber(contentStream, currentPageNumber, fontRegular);
+                    }
+                    
+                    yPosition = drawSignerBoxWithSignatureField(document, 
+                                                   document.getPage(document.getNumberOfPages() - 1),
+                                                   contentStream, submiter, fontRegular, 
+                                                   yPosition, "Submit", currentPageNumber, i, SignBoxType.SUBMIT, false);
+                    
+                    yPosition = drawDashedLineSeparator(contentStream, yPosition);
+                }
+            } finally {
+                contentStream.close();
+            }
+            
+            return convertToBase64(document);
+        }
+    }
+    
+    /**
+     * สร้าง PDF หน้า "ผู้เรียน/รับทราบ" แยกไฟล์ (ไม่ต่อจาก PDF อื่น)
+     * 
+     * @param learners รายการผู้เรียน
+     * @param signers รายการผู้ลงนาม (สำหรับแสดง "เรียน")
+     * @param bookNo เลขที่หนังสือ
+     * @return PDF ในรูปแบบ Base64
+     */
+    public String createLearnerPdf(List<SignerInfo> learners, 
+                                   List<SignerInfo> signers, 
+                                   String bookNo) throws Exception {
+        if (learners == null || learners.isEmpty()) {
+            return "";
+        }
+        
+        log.info("Creating separate Learner PDF for {} learners", learners.size());
+        
+        try (PDDocument document = new PDDocument()) {
+            PDPage page = new PDPage(PDRectangle.A4);
+            document.addPage(page);
+            
+            PDFont fontRegular = loadRegularFont(document);
+            PDFont fontBold = loadBoldFont(document);
+            
+            // สร้าง AcroForm
+            PDAcroForm acroForm = new PDAcroForm(document);
+            document.getDocumentCatalog().setAcroForm(acroForm);
+            
+            int currentPageNumber = 1;
+            
+            PDPageContentStream contentStream = new PDPageContentStream(document, page);
+            try {
+                float yPosition = PAGE_HEIGHT - MARGIN_TOP;
+                
+                // วาด debug borders
+                drawDebugBorders(contentStream);
+                
+                // วาดเลขที่หนังสือ
+                drawBookNumber(contentStream, bookNo, fontRegular);
+                
+                // วาดเลขหน้า
+                drawPageNumber(contentStream, currentPageNumber, fontRegular);
+                
+                yPosition -= 30;
+                
+                // วาด "เรียน" ชื่อผู้ลงนาม (ถ้ามี)
+                if (signers != null && !signers.isEmpty()) {
+                    StringBuilder signerNames = new StringBuilder("เรียน ");
+                    for (int i = 0; i < signers.size(); i++) {
+                        SignerInfo signer = signers.get(i);
+                        if (i > 0) signerNames.append(", ");
+                        signerNames.append(signer.getPrefixName())
+                                   .append(signer.getFirstname())
+                                   .append(" ")
+                                   .append(signer.getLastname());
+                    }
+                    drawText(contentStream, signerNames.toString(), fontBold, 16, MARGIN_LEFT, yPosition);
+                    yPosition -= 30;
+                }
+                
+                // วาดหัวข้อ "ผู้เรียน/รับทราบ"
+                drawCenteredText(contentStream, SignBoxType.LEARNER, fontBold, 28, yPosition);
+                yPosition -= 80;
+                
+                // วาดลายเซ็นแต่ละคน
+                for (int i = 0; i < learners.size(); i++) {
+                    SignerInfo learner = learners.get(i);
+                    
+                    // ตรวจสอบพื้นที่เหลือ
+                    if (yPosition < MIN_Y_POSITION + 50) {
+                        contentStream.close();
+                        
+                        PDPage nextPage = new PDPage(PDRectangle.A4);
+                        document.addPage(nextPage);
+                        currentPageNumber++;
+                        
+                        contentStream = new PDPageContentStream(document, nextPage);
+                        yPosition = PAGE_HEIGHT - MARGIN_TOP - 30;
+                        
+                        drawDebugBorders(contentStream);
+                        drawBookNumber(contentStream, bookNo, fontRegular);
+                        drawPageNumber(contentStream, currentPageNumber, fontRegular);
+                    }
+                    
+                    yPosition = drawSignerBoxWithSignatureField(document, 
+                                                   document.getPage(document.getNumberOfPages() - 1),
+                                                   contentStream, learner, fontRegular, 
+                                                   yPosition, "Learner", currentPageNumber, i, SignBoxType.LEARNER, false);
+                    
+                    yPosition = drawDashedLineSeparator(contentStream, yPosition);
+                }
+            } finally {
+                contentStream.close();
+            }
+            
+            return convertToBase64(document);
+        }
+    }
     
     /**
      * สร้าง PDF หน้า "เสนอผ่าน" พร้อม AcroForm Signature Fields
