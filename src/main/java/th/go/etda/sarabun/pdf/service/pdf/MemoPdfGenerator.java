@@ -84,9 +84,10 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
         if (docMain != null) {
             govName = docMain.getDivisionName() != null ? docMain.getDivisionName() : 
                      (docMain.getDepartment() != null ? docMain.getDepartment() : "");
-            dateThai = docMain.getDateThai();
+            // แปลงเลขอารบิกเป็นเลขไทย
+            dateThai = convertStringToThaiNumber(docMain.getDateThai());
             title = docMain.getBookTitle() != null ? docMain.getBookTitle() : "";
-            bookNo = docMain.getBookNo();
+            bookNo = convertStringToThaiNumber(docMain.getBookNo());
             speedLayer = docMain.getSpeedLayer();
         }
         

@@ -145,12 +145,13 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
         // อ่านข้อมูลจาก documentSub (New Format)
         GeneratePdfRequest.DocumentSub docSub = request.getDocumentSub();
         
-        String bookNo = docSub != null ? docSub.getBookNo() : "";
-        String address = docSub != null && docSub.getAddress() != null ? docSub.getAddress() : "";
-        String date = docSub != null ? docSub.getDateThai() : "";
+        // แปลงเลขอารบิกเป็นเลขไทย
+        String bookNo = docSub != null ? convertStringToThaiNumber(docSub.getBookNo()) : "";
+        String address = docSub != null && docSub.getAddress() != null ? convertStringToThaiNumber(docSub.getAddress()) : "";
+        String date = docSub != null ? convertStringToThaiNumber(docSub.getDateThai()) : "";
         String title = docSub != null && docSub.getBookTitle() != null ? docSub.getBookTitle() : "";
         String speedLayer = docSub != null ? docSub.getSpeedLayer() : "";
-        String contact = docSub != null ? docSub.getContact() : "";
+        String contact = docSub != null ? convertStringToThaiNumber(docSub.getContact()) : "";
         
         // ใช้ salutationContent สำหรับ "เรียน"
         String recipients = recipient.getSalutationContent() != null ? recipient.getSalutationContent() : "";
@@ -198,12 +199,13 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
         // อ่านข้อมูลจาก documentSub (New Format)
         GeneratePdfRequest.DocumentSub docSub = request.getDocumentSub();
         
-        String bookNo = docSub != null ? docSub.getBookNo() : "";
-        String address = docSub != null && docSub.getAddress() != null ? docSub.getAddress() : "";
-        String date = docSub != null ? docSub.getDateThai() : "";
+        // แปลงเลขอารบิกเป็นเลขไทย
+        String bookNo = docSub != null ? convertStringToThaiNumber(docSub.getBookNo()) : "";
+        String address = docSub != null && docSub.getAddress() != null ? convertStringToThaiNumber(docSub.getAddress()) : "";
+        String date = docSub != null ? convertStringToThaiNumber(docSub.getDateThai()) : "";
         String title = docSub != null && docSub.getBookTitle() != null ? docSub.getBookTitle() : "";
         String speedLayer = docSub != null ? docSub.getSpeedLayer() : "";
-        String contact = docSub != null ? docSub.getContact() : "";
+        String contact = docSub != null ? convertStringToThaiNumber(docSub.getContact()) : "";
         
         String recipients = "";
         String recipientsAddress = "";

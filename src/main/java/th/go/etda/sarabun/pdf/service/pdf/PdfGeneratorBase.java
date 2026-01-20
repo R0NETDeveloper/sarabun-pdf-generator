@@ -112,7 +112,7 @@ public abstract class PdfGeneratorBase {
      * - ค่าเดิม: MARGIN_BOTTOM + 100 = 170pt
      * - ค่าใหม่: MARGIN_BOTTOM + 150 = 220pt (เผื่อพื้นที่ลายเซ็น)
      */
-    protected static final float MIN_Y_POSITION = MARGIN_BOTTOM + 150;
+    protected static final float MIN_Y_POSITION = MARGIN_BOTTOM + 50;
     
     /**
      * PAGE_NUMBER_Y_OFFSET: ระยะห่างของเลขหน้าจาก margin top ขึ้นไป
@@ -593,12 +593,34 @@ public abstract class PdfGeneratorBase {
     }
     
     /**
-     * แปลงตัวเลขอารบิกเป็นเลขไทย
+     * แปลงตัวเลขอารบิกเป็นเลขไทย (int)
      */
     protected String convertToThaiNumber(int number) {
         StringBuilder result = new StringBuilder();
         String numStr = String.valueOf(number);
         for (char c : numStr.toCharArray()) {
+            if (Character.isDigit(c)) {
+                result.append(THAI_DIGITS[c - '0']);
+            } else {
+                result.append(c);
+            }
+        }
+        return result.toString();
+    }
+    
+    /**
+     * แปลงตัวเลขอารบิกใน String เป็นเลขไทย
+     * ตัวอย่าง:
+     * - "8 มกราคม พ.ศ. 2569" → "๘ มกราคม พ.ศ. ๒๕๖๙"
+     * - "สผ 0101/ว 2568" → "สผ ๐๑๐๑/ว ๒๕๖๘"
+     * - "โทร 02-123-4567" → "โทร ๐๒-๑๒๓-๔๕๖๗"
+     */
+    protected String convertStringToThaiNumber(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+        StringBuilder result = new StringBuilder();
+        for (char c : text.toCharArray()) {
             if (Character.isDigit(c)) {
                 result.append(THAI_DIGITS[c - '0']);
             } else {
@@ -1826,26 +1848,32 @@ public abstract class PdfGeneratorBase {
                 // วาดข้อความ
                 String text = part.getContent();
                 if (text != null && !text.isEmpty()) {
-                    String[] lines = text.split("\n");
+                    String[] paragraphs = text.split("\n");
                     
-                    for (String line : lines) {
-                        if (line.trim().isEmpty()) {
+                    for (String paragraph : paragraphs) {
+                        if (paragraph.trim().isEmpty()) {
                             currentY -= 10; // เว้นบรรทัดว่าง
                             continue;
                         }
                         
-                        // ตรวจสอบว่าต้องขึ้นหน้าใหม่หรือไม่
-                        if (currentY < MIN_Y_POSITION) {
-                            currentStream.close();
-                            
-                            currentPage = createNewPage(document, font, bookNo);
-                            currentStream = new PDPageContentStream(document, currentPage, 
-                                    PDPageContentStream.AppendMode.APPEND, true);
-                            currentY = PAGE_HEIGHT - MARGIN_TOP - 50;
-                        }
+                        // แบ่งย่อหน้าเป็นหลายบรรทัดตามความกว้าง
+                        List<String> lines = splitTextToLines(paragraph, font, FONT_SIZE_CONTENT, maxWidth);
                         
-                        currentY = drawMultilineText(currentStream, line, font, FONT_SIZE_CONTENT, 
-                                                    startX, currentY, maxWidth);
+                        for (String line : lines) {
+                            // ตรวจสอบว่าต้องขึ้นหน้าใหม่หรือไม่ (ก่อนวาดแต่ละบรรทัด)
+                            if (currentY < MIN_Y_POSITION) {
+                                currentStream.close();
+                                
+                                currentPage = createNewPage(document, font, bookNo);
+                                currentStream = new PDPageContentStream(document, currentPage, 
+                                        PDPageContentStream.AppendMode.APPEND, true);
+                                currentY = PAGE_HEIGHT - MARGIN_TOP - 50;
+                            }
+                            
+                            // วาดบรรทัดเดียว
+                            currentY = drawText(currentStream, line, font, FONT_SIZE_CONTENT, startX, currentY);
+                            currentY -= 5; // ระยะห่างระหว่างบรรทัด
+                        }
                     }
                 }
             } else if (part.isTable()) {

@@ -79,8 +79,9 @@ public class OrderPdfGenerator extends PdfGeneratorBase {
         String govName = request.getDepartment() != null ? request.getDepartment() : 
                         (request.getDivisionName() != null ? request.getDivisionName() : "");
         String title = request.getBookTitle() != null ? request.getBookTitle() : "";
-        String bookNo = request.getBookNo();
-        String dateThai = request.getDateThai();
+        // แปลงเลขอารบิกเป็นเลขไทย
+        String bookNo = convertStringToThaiNumber(request.getBookNo());
+        String dateThai = convertStringToThaiNumber(request.getDateThai());
         
         // ดึง edition (ฉบับที่) จาก subDetail
         String edition = extractEdition(request);

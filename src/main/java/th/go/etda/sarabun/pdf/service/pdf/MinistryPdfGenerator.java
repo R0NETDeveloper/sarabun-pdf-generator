@@ -138,9 +138,10 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
         // รวบรวมข้อมูล
         String govName = request.getDivisionName() != null ? request.getDivisionName() : 
                         (request.getDepartment() != null ? request.getDepartment() : "");
-        String dateThai = request.getDateThai();
+        // แปลงเลขอารบิกเป็นเลขไทย
+        String dateThai = convertStringToThaiNumber(request.getDateThai());
         String title = request.getBookTitle() != null ? request.getBookTitle() : "";
-        String bookNo = request.getBookNo();
+        String bookNo = convertStringToThaiNumber(request.getBookNo());
         
         // ใช้ salutation + salutationContent จาก recipient (ถ้ามี)
         String recipients = "";

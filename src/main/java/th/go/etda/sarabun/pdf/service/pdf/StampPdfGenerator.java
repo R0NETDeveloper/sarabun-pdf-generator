@@ -138,8 +138,8 @@ public class StampPdfGenerator extends PdfGeneratorBase {
     private String generateStampPdfForRecipient(GeneratePdfRequest request, 
                                                  GeneratePdfRequest.BookRecipient recipient,
                                                  int documentIndex) throws Exception {
-        // รวบรวมข้อมูล
-        String bookNo = request.getBookNo();
+        // รวบรวมข้อมูล (แปลงเลขอารบิกเป็นเลขไทย)
+        String bookNo = convertStringToThaiNumber(request.getBookNo());
         
         // ใช้ organizeName สำหรับ "ถึง"
         String recipients = recipient.getOrganizeName() != null ? recipient.getOrganizeName() : "";
@@ -180,8 +180,8 @@ public class StampPdfGenerator extends PdfGeneratorBase {
      * @param documentIndex ลำดับเอกสาร (1, 2, 3...) สำหรับสร้าง unique field name
      */
     private String generateStampPdf(GeneratePdfRequest request, int documentIndex) throws Exception {
-        // รวบรวมข้อมูล
-        String bookNo = request.getBookNo();
+        // รวบรวมข้อมูล (แปลงเลขอารบิกเป็นเลขไทย)
+        String bookNo = convertStringToThaiNumber(request.getBookNo());
         
         // รวบรวมผู้รับ (ถึง)
         String recipients = "";
