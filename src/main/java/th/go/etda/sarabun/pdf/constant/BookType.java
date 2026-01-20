@@ -124,10 +124,10 @@ public enum BookType {
     
     /**
      * ตรวจสอบว่าเป็นหนังสือที่ต้องสร้าง PDF หลักหรือไม่
-     * หนังสือรับเข้า (INBOUND) ไม่ต้องสร้าง PDF หลัก
+     * ทุกประเภทต้องสร้าง PDF หลัก (รวมถึง INBOUND ที่สร้าง learner PDF)
      */
     public boolean requiresMainPdf() {
-        return this != INBOUND;
+        return true;  // ทุกประเภทใช้ Generator สร้าง PDF
     }
     
     /**

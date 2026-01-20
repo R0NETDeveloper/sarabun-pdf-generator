@@ -619,7 +619,11 @@ public class GeneratePdfService {
         }
         
         // ===== เพิ่มหน้า "เสนอผ่าน" (ขึ้นหน้าใหม่) =====
-        if (request.getBookSubmited() != null && !request.getBookSubmited().isEmpty()) {
+        // Skip สำหรับ INBOUND เพราะ InboundPdfGenerator จัดการไว้แล้ว
+        BookType bookType = BookType.fromId(request.getBookNameId());
+        boolean isInbound = bookType.isInbound();
+        
+        if (!isInbound && request.getBookSubmited() != null && !request.getBookSubmited().isEmpty()) {
             log.info("Adding Submit pages for {} submiters", request.getBookSubmited().size());
             
             List<PdfGeneratorBase.SignerInfo> submiters = request.getBookSubmited().stream()
@@ -638,7 +642,8 @@ public class GeneratePdfService {
         }
         
         // ===== เพิ่มหน้า "ผู้เรียน" (ขึ้นหน้าใหม่) =====
-        if (request.getBookLearner() != null && !request.getBookLearner().isEmpty()) {
+        // Skip สำหรับ INBOUND เพราะ InboundPdfGenerator จัดการไว้แล้ว
+        if (!isInbound && request.getBookLearner() != null && !request.getBookLearner().isEmpty()) {
             log.info("Adding Learner pages for {} learners", request.getBookLearner().size());
             
             List<PdfGeneratorBase.SignerInfo> learners = request.getBookLearner().stream()

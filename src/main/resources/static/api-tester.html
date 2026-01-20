@@ -708,7 +708,11 @@
                                         <option value="ministryLong">หนังสือกระทรวง - เนื้อหายาว</option>
                                         <option value="ministryTable">หนังสือกระทรวง - มีตาราง</option>
                                     </optgroup>
-                                    <optgroup label="📜 หนังสือประกาศ/ระเบียบ/คำสั่ง">
+                                    <optgroup label="� หนังสือรับเข้า">
+                                        <option value="inboundShort">หนังสือรับเข้า - เนื้อหาสั้น</option>
+                                        <option value="inboundLong">หนังสือรับเข้า - เนื้อหายาว</option>
+                                    </optgroup>
+                                    <optgroup label="�📜 หนังสือประกาศ/ระเบียบ/คำสั่ง">
                                         <option value="announceShort">หนังสือประกาศ - เนื้อหาสั้น</option>
                                         <option value="announceLong">หนังสือประกาศ - เนื้อหายาว</option>
                                         <option value="regulationShort">หนังสือระเบียบ - เนื้อหาสั้น</option>
@@ -797,6 +801,7 @@
                 rules: "4AB1EC00-9E5E-4113-B577-D8ED46BA7728", // หนังสือข้อบังคับ
                 stamp: "AF3E7697-6F7E-4AD8-B76C-E2134DB98747", // หนังสือประทับตรา
                 ministry: "4B3EB169-6203-4A71-A3BD-A442FEAAA91F", // หนังสือภายใต้กระทรวง (Ministry)
+                inbound: "03241AA7-0E85-4C5C-A2CC-688212A79B84", // หนังสือรับเข้า (Inbound)
             };
 
             // Template ตามประเภทเอกสาร - แบ่งเป็น 3 รูปแบบ (Short, Long, Table)
@@ -1322,6 +1327,45 @@
                     documentSub: { bookName: "ข้อบังคับ", bookTitle: "[LONG] ข้อบังคับสำนักงานพัฒนาธุรกรรมฯ", bookNo: "", dateThai: "8 มกราคม พ.ศ. 2569", department: "สพธอ.", divisionName: "", year: "พ.ศ. 2569", bookContent: { subject: "ว่าด้วยจรรยาบรรณพนักงาน", content: longContent, contentType: "html" } },
                     ...commonSigners,
                 },
+                // ============================================
+                // หนังสือรับเข้า (Inbound) - 2 รูปแบบ
+                // หมายเหตุ: base64Pdf คือเอกสารตั้งต้นจากภายนอก (บังคับ)
+                //          bookLearner คือหน้าผู้เรียนที่จะเพิ่มต่อท้าย
+                // ============================================
+
+                // Sample PDF base64 (1 page with text "Sample Inbound Document")
+                inboundShort: {
+                    bookNameId: BOOK_NAME_IDS.inbound,
+                    formatPdf: "A4",
+                    // PDF ตั้งต้น 1 หน้า (Sample Inbound Document - Page 1)
+                    base64Pdf:
+                        "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA4OSA+PgpzdHJlYW0KQlQKL0YxIDI0IFRmCjEwMCA3MDAgVGQKKFNhbXBsZSBJbmJvdW5kIERvY3VtZW50IC0gUGFnZSAxKSBUagpFVAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNjYgMDAwMDAgbiAKMDAwMDAwMDQwNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjQ3OAolJUVPRg==",
+                    documentMain: {
+                        bookNo: "ดศ 0201/ว 001", // ใช้สำหรับแสดงในหน้าผู้เรียน
+                    },
+                    // ไม่มี bookSigned และ bookSubmited
+                    bookLearner: [
+                        { relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "ผู้อำนวยการกอง", departmentName: "กองพัฒนาระบบบริการ", email: "somchai@etda.or.th" },
+                        { relatedNo: "2", prefixName: "นางสาว", firstname: "สมหญิง", lastname: "รักงาน", positionName: "หัวหน้างานบริหาร", departmentName: "กองบริหารงานทั่วไป", email: "somying@etda.or.th" },
+                    ],
+                },
+                inboundLong: {
+                    bookNameId: BOOK_NAME_IDS.inbound,
+                    formatPdf: "A4",
+                    // PDF ตั้งต้น 1 หน้า (Sample Inbound Document - Page 1)
+                    base64Pdf:
+                        "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA4OSA+PgpzdHJlYW0KQlQKL0YxIDI0IFRmCjEwMCA3MDAgVGQKKFNhbXBsZSBJbmJvdW5kIERvY3VtZW50IC0gUGFnZSAxKSBUagpFVAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNjYgMDAwMDAgbiAKMDAwMDAwMDQwNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjQ3OAolJUVPRg==",
+                    documentMain: {
+                        bookNo: "ดศ 0201/ว 002", // ใช้สำหรับแสดงในหน้าผู้เรียน
+                    },
+                    // ไม่มี bookSigned และ bookSubmited - ผู้เรียนหลายคน
+                    bookLearner: [
+                        { relatedNo: "1", prefixName: "นาย", firstname: "สมชาย", lastname: "ใจดี", positionName: "ผู้อำนวยการกอง", departmentName: "กองพัฒนาระบบบริการ", email: "somchai@etda.or.th" },
+                        { relatedNo: "2", prefixName: "นางสาว", firstname: "สมหญิง", lastname: "รักงาน", positionName: "หัวหน้างานบริหาร", departmentName: "กองบริหารงานทั่วไป", email: "somying@etda.or.th" },
+                        { relatedNo: "3", prefixName: "นาง", firstname: "วิไล", lastname: "ศรีสุข", positionName: "ผู้เชี่ยวชาญ", departmentName: "กองนโยบาย", email: "wilai@etda.or.th" },
+                        { relatedNo: "4", prefixName: "นาย", firstname: "ประสิทธิ์", lastname: "พัฒนา", positionName: "นักวิเคราะห์", departmentName: "กองพัฒนาระบบบริการ", email: "prasit@etda.or.th" },
+                    ],
+                },
             };
 
             // Current state
@@ -1719,6 +1763,8 @@
                 commandLong: "📜 หนังสือคำสั่ง - ยาว",
                 rulesShort: "📜 หนังสือข้อบังคับ - สั้น",
                 rulesLong: "📜 หนังสือข้อบังคับ - ยาว",
+                inboundShort: "📥 หนังสือรับเข้า - สั้น",
+                inboundLong: "📥 หนังสือรับเข้า - ยาว",
             };
 
             let isTestingAll = false;

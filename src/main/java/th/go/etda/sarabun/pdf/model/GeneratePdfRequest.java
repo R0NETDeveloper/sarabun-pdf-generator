@@ -30,6 +30,7 @@ public class GeneratePdfRequest {
     // Root Level Fields
     // ============================================
     private String bookNameId;              // รหัสชื่อหนังสือ (GUID สำคัญ!)
+    private String base64Pdf;               // PDF ตั้งต้น (Base64) - ใช้สำหรับหนังสือรับเข้า (Inbound)
     
     // ============================================
     // เอกสารหลักและเอกสารรอง (New Format)
