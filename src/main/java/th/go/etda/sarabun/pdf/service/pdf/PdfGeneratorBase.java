@@ -24,10 +24,14 @@ import org.springframework.core.io.ClassPathResource;
 
 import lombok.extern.slf4j.Slf4j;
 import th.go.etda.sarabun.pdf.constant.BookType;
+import th.go.etda.sarabun.pdf.constant.PdfConstants;
 import th.go.etda.sarabun.pdf.constant.SignBoxType;
 import th.go.etda.sarabun.pdf.model.GeneratePdfRequest;
 import th.go.etda.sarabun.pdf.model.PdfResult;
 import th.go.etda.sarabun.pdf.util.HtmlUtils;
+
+// Static import สำหรับใช้ค่าคงที่โดยตรง
+import static th.go.etda.sarabun.pdf.constant.PdfConstants.*;
 
 /**
  * Base class สำหรับ PDF Generator ทุกประเภท
@@ -37,58 +41,25 @@ import th.go.etda.sarabun.pdf.util.HtmlUtils;
  * - วาดข้อความ
  * - จัดการหน้า
  * - แปลง Base64
+ * 
+ * หมายเหตุ: ค่าคงที่ทั้งหมดย้ายไป PdfConstants.java แล้ว
  */
 @Slf4j
 public abstract class PdfGeneratorBase {
     
     // ============================================
-    // Constants
+    // Constants - ใช้จาก PdfConstants (static import)
     // ============================================
-    protected static final String BASE64_PDF_PREFIX = "data:application/pdf;base64,";
+    // BASE64_PDF_PREFIX, FONT_PATH, FONT_BOLD_PATH
+    // PAGE_WIDTH, PAGE_HEIGHT, MARGIN_*, FONT_SIZE_*
+    // SPACING_*, LOGO_*, etc.
+    // ดูค่าทั้งหมดที่: PdfConstants.java
     
     // ============================================
-    // Font Paths
+    // Computed Constants (ใช้ค่าจาก PdfConstants)
     // ============================================
-    protected static final String FONT_PATH = "fonts/THSarabunNew.ttf";
-    protected static final String FONT_BOLD_PATH = "fonts/THSarabunNew Bold.ttf";
-    
-    // ============================================
-    // Page Settings (A4)
-    // ============================================
-    protected static final float PAGE_WIDTH = PDRectangle.A4.getWidth();   // 595 pt
-    protected static final float PAGE_HEIGHT = PDRectangle.A4.getHeight(); // 842 pt
-    
-    // ============================================
-    // Margins
-    // ============================================
-    protected static final float MARGIN_TOP = 70f;
-    protected static final float MARGIN_BOTTOM = 70f;
-    protected static final float MARGIN_LEFT = 70f;
-    protected static final float MARGIN_RIGHT = 70f;
-    
-    // ============================================
-    // Font Sizes
-    // ============================================
-    protected static final float FONT_SIZE_HEADER = 24f;
-    protected static final float FONT_SIZE_FIELD = 18f;
-    protected static final float FONT_SIZE_FIELD_VALUE = 16f;
-    protected static final float FONT_SIZE_CONTENT = 16f;
-    
-    // ============================================
-    // Spacing
-    // ============================================
-    protected static final float SPACING_AFTER_HEADER = 30f;
-    protected static final float SPACING_BETWEEN_FIELDS = 5f;
-    protected static final float SPACING_BEFORE_CONTENT = 14f;
-    protected static final float SPACING_BEFORE_SIGNATURES = 40f;
-    protected static final float SPACING_BETWEEN_SIGNATURES = 20f;
-    
-    // ============================================
-    // Logo Settings
-    // ============================================
-    protected static final float LOGO_WIDTH = 120f;
-    protected static final float LOGO_HEIGHT = 40f;
-    protected static final float LOGO_SPACING = 30f;
+    protected static final float MIN_Y_POSITION = MARGIN_BOTTOM + MIN_Y_OFFSET;
+    protected static final float DATE_X_POSITION = PAGE_WIDTH - DATE_X_OFFSET;
     
     /**
      * ตำแหน่งโลโก้บนหน้าเอกสาร
@@ -102,46 +73,6 @@ public abstract class PdfGeneratorBase {
         CENTER,  // บนสุดกลาง: x = (PAGE_WIDTH - LOGO_WIDTH) / 2
         RIGHT    // ขวาบนชิดขอบ: x = PAGE_WIDTH - MARGIN_RIGHT - LOGO_WIDTH
     }
-    
-    // ============================================
-    // Multi-page Settings
-    // ============================================
-    /**
-     * MIN_Y_POSITION: ตำแหน่ง Y ต่ำสุดก่อนขึ้นหน้าใหม่
-     * - ค่ายิ่งสูง = ขึ้นหน้าใหม่เร็วขึ้น (เหลือพื้นที่ด้านล่างมากขึ้น)
-     * - ค่าเดิม: MARGIN_BOTTOM + 100 = 170pt
-     * - ค่าใหม่: MARGIN_BOTTOM + 150 = 220pt (เผื่อพื้นที่ลายเซ็น)
-     */
-    protected static final float MIN_Y_POSITION = MARGIN_BOTTOM + 50;
-    
-    /**
-     * PAGE_NUMBER_Y_OFFSET: ระยะห่างของเลขหน้าจาก margin top ขึ้นไป
-     * - ค่ายิ่งสูง = เลขหน้าชิดขอบบนมากขึ้น
-     * - ค่าเดิม: 15f (ห่างจากขอบบน 55pt)
-     * - ค่าใหม่: 40f (ห่างจากขอบบน 30pt)
-     */
-    protected static final float PAGE_NUMBER_Y_OFFSET = 40f;
-    
-    /**
-     * SIGNATURE_RESERVE_HEIGHT: พื้นที่สำรองสำหรับช่องลงนาม
-     * ใช้ตรวจสอบก่อนวาด content ว่าจะพอสำหรับลายเซ็นหรือไม่
-     */
-    protected static final float SIGNATURE_RESERVE_HEIGHT = 200f;
-    
-    // ============================================
-    // Debug Mode
-    // ============================================
-    /**
-     * ENABLE_DEBUG_BORDERS: เปิด/ปิดการวาดกรอบแดงแสดงขอบเขตพื้นที่
-     * - true: แสดงกรอบสีแดงรอบ content area (สำหรับ dev)
-     * - false: ไม่แสดง (สำหรับ production)
-     */
-    protected static final boolean ENABLE_DEBUG_BORDERS = true;
-    
-    // ============================================
-    // Field Positions
-    // ============================================
-    protected static final float DATE_X_POSITION = PAGE_WIDTH - 320;
     
     // ============================================
     // Thai Number Mapping
@@ -230,6 +161,31 @@ public abstract class PdfGeneratorBase {
             }
         }
         return result.toString();
+    }
+    
+    /**
+     * ดึงปี พ.ศ. จาก dateThai
+     * เช่น "8 มกราคม พ.ศ. 2569" → "2569"
+     * 
+     * @param dateThai วันที่ในรูปแบบไทย
+     * @return ปี พ.ศ. (เช่น "2569") หรือ "" ถ้าไม่พบ
+     */
+    protected String extractYear(String dateThai) {
+        if (dateThai != null && !dateThai.isEmpty()) {
+            // หาปี พ.ศ. จากวันที่ไทย เช่น "8 มกราคม พ.ศ. 2569"
+            String[] parts = dateThai.split("\\s+");
+            if (parts.length >= 3) {
+                String lastPart = parts[parts.length - 1];
+                // ลองแปลงเป็นตัวเลข
+                try {
+                    Integer.parseInt(lastPart);
+                    return lastPart;
+                } catch (NumberFormatException e) {
+                    // ไม่ใช่ตัวเลข
+                }
+            }
+        }
+        return "";
     }
     
     // ============================================

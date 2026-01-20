@@ -14,6 +14,9 @@ import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 
 import lombok.extern.slf4j.Slf4j;
 
+// Static import สำหรับใช้ค่าคงที่จาก PdfConstants
+import static th.go.etda.sarabun.pdf.constant.PdfConstants.*;
+
 /**
  * HTML Content Renderer - แปลง HTML เป็น PDF elements
  * 
@@ -24,21 +27,16 @@ import lombok.extern.slf4j.Slf4j;
  * - Images (base64 และ URL)
  * - CSS styling
  * - Thai fonts
+ * 
+ * หมายเหตุ: ค่าคงที่ใช้จาก PdfConstants.java
  */
 @Slf4j
 @Service
 public class HtmlContentRenderer {
     
-    private static final String FONT_PATH = "fonts/THSarabunNew.ttf";
-    private static final String FONT_BOLD_PATH = "fonts/THSarabunNew Bold.ttf";
-    
-    // Page settings (A4)
-    private static final float PAGE_WIDTH_PT = 595f;
-    private static final float PAGE_HEIGHT_PT = 842f;
-    private static final float MARGIN_LEFT = 70f;
-    private static final float MARGIN_RIGHT = 70f;
-    private static final float MARGIN_TOP = 70f;
-    private static final float MARGIN_BOTTOM = 70f;
+    // ค่าคงที่ใช้จาก PdfConstants (static import):
+    // FONT_PATH, FONT_BOLD_PATH, PAGE_WIDTH, PAGE_HEIGHT
+    // MARGIN_LEFT, MARGIN_RIGHT, MARGIN_TOP, MARGIN_BOTTOM
     
     /**
      * แปลง HTML content เป็น PDF bytes
@@ -47,7 +45,7 @@ public class HtmlContentRenderer {
      * @return PDF bytes
      */
     public byte[] renderHtmlToPdf(String htmlContent) throws Exception {
-        return renderHtmlToPdf(htmlContent, PAGE_WIDTH_PT, PAGE_HEIGHT_PT);
+        return renderHtmlToPdf(htmlContent, PAGE_WIDTH, PAGE_HEIGHT);
     }
     
     /**

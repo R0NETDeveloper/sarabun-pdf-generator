@@ -13,6 +13,9 @@ import org.springframework.stereotype.Component;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import th.go.etda.sarabun.pdf.constant.BookType;
+
+// Static import สำหรับใช้ค่าคงที่จาก PdfConstants โดยตรง
+import static th.go.etda.sarabun.pdf.constant.PdfConstants.*;
 import th.go.etda.sarabun.pdf.constant.SignBoxType;
 import th.go.etda.sarabun.pdf.model.GeneratePdfRequest;
 import th.go.etda.sarabun.pdf.model.PdfResult;
@@ -85,7 +88,7 @@ public class RulePdfGenerator extends PdfGeneratorBase {
         
         // ดึง edition (ฉบับที่) และ year (พ.ศ.) จาก bookNo หรือ subDetail
         String edition = extractEdition(request);
-        String year = extractYear(request, dateThai);
+        String year = extractYear(dateThai);  // ใช้จาก PdfGeneratorBase
         
         // รวบรวมเนื้อหา
         String content = buildContent(request);
@@ -120,26 +123,7 @@ public class RulePdfGenerator extends PdfGeneratorBase {
         return "{{ฉบับ}}";
     }
     
-    /**
-     * ดึงปี พ.ศ. จาก dateThai
-     */
-    private String extractYear(GeneratePdfRequest request, String dateThai) {
-        if (dateThai != null && !dateThai.isEmpty()) {
-            // หาปี พ.ศ. จากวันที่ไทย เช่น "8 มกราคม พ.ศ. 2569"
-            String[] parts = dateThai.split("\\s+");
-            if (parts.length >= 3) {
-                String lastPart = parts[parts.length - 1];
-                // ลองแปลงเป็นตัวเลข
-                try {
-                    Integer.parseInt(lastPart);
-                    return lastPart;
-                } catch (NumberFormatException e) {
-                    // ไม่ใช่ตัวเลข ลองหาจาก pattern อื่น
-                }
-            }
-        }
-        return "";
-    }
+    // หมายเหตุ: extractYear() ย้ายไป PdfGeneratorBase แล้ว (DRY principle)
     
     /**
      * สร้าง PDF ภายใน
