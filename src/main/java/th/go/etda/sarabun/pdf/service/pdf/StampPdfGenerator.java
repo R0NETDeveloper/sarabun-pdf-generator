@@ -492,21 +492,7 @@ public class StampPdfGenerator extends PdfGeneratorBase {
         }
     }
     
-    /**
-     * แปลง string ตัวเลขเป็นตัวเลขไทย
-     */
-    private String convertToThaiNumber(String text) {
-        if (text == null) return "";
-        StringBuilder result = new StringBuilder();
-        for (char c : text.toCharArray()) {
-            if (Character.isDigit(c)) {
-                result.append((char) ('๐' + (c - '0')));
-            } else {
-                result.append(c);
-            }
-        }
-        return result.toString();
-    }
+    // หมายเหตุ: convertToThaiNumber() ย้ายไป PdfGeneratorBase แล้ว (DRY principle)
     
     // ============================================
     // Helper methods

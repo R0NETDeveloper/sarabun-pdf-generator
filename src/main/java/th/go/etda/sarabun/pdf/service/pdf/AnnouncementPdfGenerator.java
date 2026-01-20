@@ -250,30 +250,7 @@ public class AnnouncementPdfGenerator extends PdfGeneratorBase {
         }
     }
     
-    /**
-     * แปลงวันที่เป็นรูปแบบไทย (ตัวเลขไทย)
-     * เช่น "8 มกราคม พ.ศ. 2569" -> "๘ มกราคม ๒๕๖๙"
-     */
-    private String convertToThaiDate(String dateThai) {
-        if (dateThai == null || dateThai.isEmpty()) {
-            return "";
-        }
-        
-        StringBuilder result = new StringBuilder();
-        for (char c : dateThai.toCharArray()) {
-            // ตรวจสอบเฉพาะเลขอารบิก 0-9 เท่านั้น (ไม่รวมเลขไทยหรือเลขอื่น)
-            if (c >= '0' && c <= '9') {
-                // แปลงตัวเลขอารบิกเป็นตัวเลขไทย
-                result.append((char) ('๐' + (c - '0')));
-            } else {
-                result.append(c);
-            }
-        }
-        
-        // ลบ "พ.ศ." ออก (ถ้ามี) เพราะจะใช้ "ประกาศ ณ วันที่" แทน
-        String text = result.toString().replace("พ.ศ. ", "").replace("พ.ศ.", "");
-        return text.trim();
-    }
+    // หมายเหตุ: convertToThaiDate() ย้ายไป PdfGeneratorBase แล้ว (DRY principle)
     
     /**
      * สร้างรายการผู้รับ (bookLearner) สำหรับเจาะช่องลงนามในหนังสือหลัก

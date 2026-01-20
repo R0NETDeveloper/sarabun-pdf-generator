@@ -175,6 +175,64 @@ public abstract class PdfGeneratorBase {
     public abstract String getGeneratorName();
     
     // ============================================
+    // Common Thai Date/Number Conversion Methods
+    // ============================================
+    
+    /**
+     * แปลงวันที่เป็นรูปแบบไทย (ตัวเลขไทย)
+     * เช่น "8 มกราคม พ.ศ. 2569" -> "๘ มกราคม ๒๕๖๙"
+     * 
+     * หมายเหตุ: ใช้ c >= '0' && c <= '9' แทน Character.isDigit(c) 
+     * เพราะ isDigit() รวมตัวเลขไทยด้วย ทำให้เกิด double conversion
+     * 
+     * @param dateThai วันที่ในรูปแบบ "8 มกราคม พ.ศ. 2569"
+     * @return วันที่ในรูปแบบ "๘ มกราคม ๒๕๖๙"
+     */
+    protected String convertToThaiDate(String dateThai) {
+        if (dateThai == null || dateThai.isEmpty()) {
+            return "";
+        }
+        
+        StringBuilder result = new StringBuilder();
+        for (char c : dateThai.toCharArray()) {
+            // ตรวจสอบเฉพาะเลขอารบิก 0-9 เท่านั้น (ไม่รวมเลขไทยหรือเลขอื่น)
+            if (c >= '0' && c <= '9') {
+                // แปลงตัวเลขอารบิกเป็นตัวเลขไทย
+                result.append((char) ('๐' + (c - '0')));
+            } else {
+                result.append(c);
+            }
+        }
+        
+        // ลบ "พ.ศ." ออก (ถ้ามี) เพราะจะใช้ "ประกาศ ณ วันที่" แทน
+        String text = result.toString().replace("พ.ศ. ", "").replace("พ.ศ.", "");
+        return text.trim();
+    }
+    
+    /**
+     * แปลงตัวเลขอารบิกเป็นตัวเลขไทย
+     * เช่น "2569" -> "๒๕๖๙"
+     * 
+     * @param number ตัวเลขอารบิก
+     * @return ตัวเลขไทย
+     */
+    protected String convertToThaiNumber(String number) {
+        if (number == null || number.isEmpty()) {
+            return "";
+        }
+        
+        StringBuilder result = new StringBuilder();
+        for (char c : number.toCharArray()) {
+            if (c >= '0' && c <= '9') {
+                result.append(THAI_DIGITS[c - '0']);
+            } else {
+                result.append(c);
+            }
+        }
+        return result.toString();
+    }
+    
+    // ============================================
     // Common Helper Methods
     // ============================================
     
