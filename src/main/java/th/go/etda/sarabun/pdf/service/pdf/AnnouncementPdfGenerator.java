@@ -74,25 +74,44 @@ public class AnnouncementPdfGenerator extends PdfGeneratorBase {
     
     /**
      * สร้าง PDF หนังสือประกาศ
+     * อ่านข้อมูลจาก document (เดิมคือ documentSub)
      */
     public String generateAnnouncementPdf(GeneratePdfRequest request) throws Exception {
-        // รวบรวมข้อมูล
-        String govName = request.getDepartment() != null ? request.getDepartment() : 
-                        (request.getDivisionName() != null ? request.getDivisionName() : "");
-        String title = request.getBookTitle() != null ? request.getBookTitle() : "";
-        // แปลงเลขอารบิกเป็นเลขไทย
-        String bookNo = convertStringToThaiNumber(request.getBookNo());
-        String dateThai = convertStringToThaiNumber(request.getDateThai());
+        // อ่านจาก document (New Format v2)
+        GeneratePdfRequest.Document doc = request.getDocument();
+        
+        // รวบรวมข้อมูล - ใช้จาก document ก่อน, fallback เป็น memo
+        String govName = "";
+        String title = "";
+        String bookNo = "";
+        String dateThai = "";
+        String speedLayer = "";
+        
+        if (doc != null) {
+            govName = doc.getDepartment() != null ? doc.getDepartment() : 
+                     (doc.getDivisionName() != null ? doc.getDivisionName() : "");
+            title = doc.getBookTitle() != null ? doc.getBookTitle() : "";
+            bookNo = convertStringToThaiNumber(doc.getBookNo());
+            dateThai = convertStringToThaiNumber(doc.getDateThai());
+            speedLayer = doc.getSpeedLayer();
+        } else {
+            // Fallback to memo
+            govName = request.getDepartment() != null ? request.getDepartment() : 
+                     (request.getDivisionName() != null ? request.getDivisionName() : "");
+            title = request.getBookTitle() != null ? request.getBookTitle() : "";
+            bookNo = convertStringToThaiNumber(request.getBookNo());
+            dateThai = convertStringToThaiNumber(request.getDateThai());
+            speedLayer = request.getSpeedLayer();
+        }
         
         // รวบรวมเนื้อหา
         String content = buildContent(request);
         
-        // ตรวจสอบและรวบรวม HTML content (bookContent เป็น Object ไม่ใช่ Array)
+        // ตรวจสอบและรวบรวม HTML content จาก document
         String htmlContent = null;
-        if (request.getDocumentSub() != null && 
-            request.getDocumentSub().getBookContent() != null &&
-            hasHtmlContent(request.getDocumentSub().getBookContent())) {
-            htmlContent = buildHtmlContent(request.getDocumentSub().getBookContent());
+        if (doc != null && doc.getBookContent() != null &&
+            hasHtmlContent(doc.getBookContent())) {
+            htmlContent = buildHtmlContent(doc.getBookContent());
         }
         
         // รวบรวมผู้ลงนาม
@@ -101,7 +120,7 @@ public class AnnouncementPdfGenerator extends PdfGeneratorBase {
         log.info("Generating announcement - govName: {}, title: {}, content length: {}, hasHtml: {}", 
                 govName, title, content.length(), htmlContent != null);
         
-        return generatePdfInternal(govName, title, dateThai, content, htmlContent, signers, bookNo, request.getSpeedLayer());
+        return generatePdfInternal(govName, title, dateThai, content, htmlContent, signers, bookNo, speedLayer);
     }
     
     /**

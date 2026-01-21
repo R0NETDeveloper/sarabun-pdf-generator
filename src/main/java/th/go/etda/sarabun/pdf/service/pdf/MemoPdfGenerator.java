@@ -72,11 +72,11 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
     
     /**
      * สร้าง PDF บันทึกข้อความ
-     * อ่านข้อมูลจาก documentMain (New Format)
+     * อ่านข้อมูลจาก memo (เดิมคือ documentMain)
      */
     public String generateMemoPdf(GeneratePdfRequest request) throws Exception {
-        // อ่านจาก documentMain (New Format)
-        GeneratePdfRequest.DocumentMain docMain = request.getDocumentMain();
+        // อ่านจาก memo (New Format v2)
+        GeneratePdfRequest.Memo memo = request.getMemo();
         
         String govName = "";
         String dateThai = "";
@@ -84,14 +84,14 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
         String bookNo = "";
         String speedLayer = "";
         
-        if (docMain != null) {
-            govName = docMain.getDivisionName() != null ? docMain.getDivisionName() : 
-                     (docMain.getDepartment() != null ? docMain.getDepartment() : "");
+        if (memo != null) {
+            govName = memo.getDivisionName() != null ? memo.getDivisionName() : 
+                     (memo.getDepartment() != null ? memo.getDepartment() : "");
             // แปลงเลขอารบิกเป็นเลขไทย
-            dateThai = convertStringToThaiNumber(docMain.getDateThai());
-            title = docMain.getBookTitle() != null ? docMain.getBookTitle() : "";
-            bookNo = convertStringToThaiNumber(docMain.getBookNo());
-            speedLayer = docMain.getSpeedLayer();
+            dateThai = convertStringToThaiNumber(memo.getDateThai());
+            title = memo.getBookTitle() != null ? memo.getBookTitle() : "";
+            bookNo = convertStringToThaiNumber(memo.getBookNo());
+            speedLayer = memo.getSpeedLayer();
         }
         
         // รวบรวมรายชื่อผู้รับจาก bookLearner
@@ -104,11 +104,11 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
                 .collect(Collectors.joining("\n"));
         }
         
-        // รวบรวมเนื้อหาจาก documentMain
-        String content = buildContentFromDocMain(docMain);
+        // รวบรวมเนื้อหาจาก memo
+        String content = buildContentFromMemo(memo);
         
         // ตรวจสอบและรวบรวม HTML content
-        String htmlContent = hasHtmlContentInDocMain(docMain) ? buildHtmlContentFromDocMain(docMain) : null;
+        String htmlContent = hasHtmlContentInMemo(memo) ? buildHtmlContentFromMemo(memo) : null;
         
         // รวบรวมผู้ลงนาม
         List<SignerInfo> signers = buildSigners(request);
@@ -121,14 +121,14 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
     }
     
     /**
-     * รวบรวมเนื้อหาจาก documentMain.bookContent (New Format - Object)
+     * รวบรวมเนื้อหาจาก memo.bookContent (New Format - Object)
      */
-    private String buildContentFromDocMain(GeneratePdfRequest.DocumentMain docMain) {
-        if (docMain == null || docMain.getBookContent() == null) {
+    private String buildContentFromMemo(GeneratePdfRequest.Memo memo) {
+        if (memo == null || memo.getBookContent() == null) {
             return "";
         }
         
-        GeneratePdfRequest.BookContent bc = docMain.getBookContent();
+        GeneratePdfRequest.BookContent bc = memo.getBookContent();
         String content = bc.getContent();
         
         if (content == null || content.isEmpty()) {
@@ -144,24 +144,24 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
     }
     
     /**
-     * ดึง subject จาก documentMain.bookContent
+     * ดึง subject จาก memo.bookContent
      */
-    private String getSubjectFromDocMain(GeneratePdfRequest.DocumentMain docMain) {
-        if (docMain == null || docMain.getBookContent() == null) {
+    private String getSubjectFromMemo(GeneratePdfRequest.Memo memo) {
+        if (memo == null || memo.getBookContent() == null) {
             return null;
         }
-        return docMain.getBookContent().getSubject();
+        return memo.getBookContent().getSubject();
     }
     
     /**
-     * ตรวจสอบว่า documentMain.bookContent เป็น HTML content หรือไม่
+     * ตรวจสอบว่า memo.bookContent เป็น HTML content หรือไม่
      */
-    private boolean hasHtmlContentInDocMain(GeneratePdfRequest.DocumentMain docMain) {
-        if (docMain == null || docMain.getBookContent() == null) {
+    private boolean hasHtmlContentInMemo(GeneratePdfRequest.Memo memo) {
+        if (memo == null || memo.getBookContent() == null) {
             return false;
         }
         
-        GeneratePdfRequest.BookContent bc = docMain.getBookContent();
+        GeneratePdfRequest.BookContent bc = memo.getBookContent();
         if (bc.isHtmlContent()) {
             return true;
         }
@@ -171,14 +171,14 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
     }
     
     /**
-     * สร้าง HTML content จาก documentMain.bookContent (สำหรับ HTML rendering)
+     * สร้าง HTML content จาก memo.bookContent (สำหรับ HTML rendering)
      */
-    private String buildHtmlContentFromDocMain(GeneratePdfRequest.DocumentMain docMain) {
-        if (docMain == null || docMain.getBookContent() == null) {
+    private String buildHtmlContentFromMemo(GeneratePdfRequest.Memo memo) {
+        if (memo == null || memo.getBookContent() == null) {
             return "";
         }
         
-        GeneratePdfRequest.BookContent bc = docMain.getBookContent();
+        GeneratePdfRequest.BookContent bc = memo.getBookContent();
         String content = bc.getContent();
         
         if (content == null || content.isEmpty()) {

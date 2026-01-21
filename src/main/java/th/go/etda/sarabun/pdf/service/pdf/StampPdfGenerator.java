@@ -149,13 +149,31 @@ public class StampPdfGenerator extends PdfGeneratorBase {
     
     /**
      * สร้าง PDF หนังสือประทับตราสำหรับผู้รับเฉพาะราย (หน่วยงานภายนอก)
+     * อ่านข้อมูลจาก document (เดิมคือ documentSub)
      * @param documentIndex ลำดับเอกสาร (1, 2, 3...) สำหรับสร้าง unique field name
      */
     private String generateStampPdfForRecipient(GeneratePdfRequest request, 
                                                  GeneratePdfRequest.BookRecipient recipient,
                                                  int documentIndex) throws Exception {
-        // รวบรวมข้อมูล (แปลงเลขอารบิกเป็นเลขไทย)
-        String bookNo = convertStringToThaiNumber(request.getBookNo());
+        // อ่านจาก document (New Format v2)
+        GeneratePdfRequest.Document doc = request.getDocument();
+        
+        // รวบรวมข้อมูล - ใช้จาก document ก่อน, fallback เป็น memo
+        String bookNo = "";
+        String departmentName = "";
+        String speedLayer = "";
+        
+        if (doc != null) {
+            bookNo = convertStringToThaiNumber(doc.getBookNo());
+            departmentName = doc.getDepartment() != null ? doc.getDepartment() : 
+                            (doc.getDivisionName() != null ? doc.getDivisionName() : "");
+            speedLayer = doc.getSpeedLayer();
+        } else {
+            bookNo = convertStringToThaiNumber(request.getBookNo());
+            departmentName = request.getDepartment() != null ? request.getDepartment() : 
+                            (request.getDivisionName() != null ? request.getDivisionName() : "");
+            speedLayer = request.getSpeedLayer();
+        }
         
         // ใช้ organizeName สำหรับ "ถึง"
         String recipients = recipient.getOrganizeName() != null ? recipient.getOrganizeName() : "";
@@ -163,20 +181,15 @@ public class StampPdfGenerator extends PdfGeneratorBase {
         // รวบรวมเนื้อหา
         String content = buildContent(request);
         
-        // ตรวจสอบและรวบรวม HTML content (bookContent เป็น Object ไม่ใช่ Array)
+        // ตรวจสอบและรวบรวม HTML content จาก document
         String htmlContent = null;
-        if (request.getDocumentSub() != null && 
-            request.getDocumentSub().getBookContent() != null &&
-            hasHtmlContent(request.getDocumentSub().getBookContent())) {
-            htmlContent = buildHtmlContent(request.getDocumentSub().getBookContent());
+        if (doc != null && doc.getBookContent() != null &&
+            hasHtmlContent(doc.getBookContent())) {
+            htmlContent = buildHtmlContent(doc.getBookContent());
         }
         
         // สร้าง SignerInfo จาก bookSigned (ผู้ลงนาม) - ไม่ใช่จาก recipient
         List<SignerInfo> signers = buildSigners(request);
-        
-        // ชื่อหน่วยงาน
-        String departmentName = request.getDepartment() != null ? request.getDepartment() : 
-                               (request.getDivisionName() != null ? request.getDivisionName() : "");
         
         // ข้อมูลติดต่อ
         ContactInfo contactInfo = buildContactInfo(request);
@@ -188,16 +201,29 @@ public class StampPdfGenerator extends PdfGeneratorBase {
         
         log.info("Generating stamp for recipient: {}, endDoc: {}, hasHtml: {}, docIndex: {}", recipients, endDoc, htmlContent != null, documentIndex);
         
-        return generatePdfInternal(bookNo, recipients, content, htmlContent, signers, departmentName, contactInfo, endDoc, request.getSpeedLayer(), documentIndex);
+        return generatePdfInternal(bookNo, recipients, content, htmlContent, signers, departmentName, contactInfo, endDoc, speedLayer, documentIndex);
     }
     
     /**
      * สร้าง PDF หนังสือประทับตรา
+     * อ่านข้อมูลจาก document (เดิมคือ documentSub)
      * @param documentIndex ลำดับเอกสาร (1, 2, 3...) สำหรับสร้าง unique field name
      */
     private String generateStampPdf(GeneratePdfRequest request, int documentIndex) throws Exception {
-        // รวบรวมข้อมูล (แปลงเลขอารบิกเป็นเลขไทย)
-        String bookNo = convertStringToThaiNumber(request.getBookNo());
+        // อ่านจาก document (New Format v2)
+        GeneratePdfRequest.Document doc = request.getDocument();
+        
+        // รวบรวมข้อมูล - ใช้จาก document ก่อน, fallback เป็น memo
+        String bookNo = "";
+        String speedLayer = "";
+        
+        if (doc != null) {
+            bookNo = convertStringToThaiNumber(doc.getBookNo());
+            speedLayer = doc.getSpeedLayer();
+        } else {
+            bookNo = convertStringToThaiNumber(request.getBookNo());
+            speedLayer = request.getSpeedLayer();
+        }
         
         // รวบรวมผู้รับ (ถึง)
         String recipients = "";
@@ -217,20 +243,25 @@ public class StampPdfGenerator extends PdfGeneratorBase {
         // รวบรวมเนื้อหา
         String content = buildContent(request);
         
-        // ตรวจสอบและรวบรวม HTML content (bookContent เป็น Object ไม่ใช่ Array)
+        // ตรวจสอบและรวบรวม HTML content จาก document
         String htmlContent = null;
-        if (request.getDocumentSub() != null && 
-            request.getDocumentSub().getBookContent() != null &&
-            hasHtmlContent(request.getDocumentSub().getBookContent())) {
-            htmlContent = buildHtmlContent(request.getDocumentSub().getBookContent());
+        if (doc != null && doc.getBookContent() != null &&
+            hasHtmlContent(doc.getBookContent())) {
+            htmlContent = buildHtmlContent(doc.getBookContent());
         }
         
         // รวบรวมผู้ลงนาม
         List<SignerInfo> signers = buildSigners(request);
         
-        // ชื่อหน่วยงาน
-        String departmentName = request.getDepartment() != null ? request.getDepartment() : 
-                               (request.getDivisionName() != null ? request.getDivisionName() : "");
+        // ชื่อหน่วยงาน - ใช้จาก document ก่อน, fallback เป็น memo
+        String departmentName = "";
+        if (doc != null) {
+            departmentName = doc.getDepartment() != null ? doc.getDepartment() : 
+                            (doc.getDivisionName() != null ? doc.getDivisionName() : "");
+        } else {
+            departmentName = request.getDepartment() != null ? request.getDepartment() : 
+                            (request.getDivisionName() != null ? request.getDivisionName() : "");
+        }
         
         // ข้อมูลติดต่อ
         ContactInfo contactInfo = buildContactInfo(request);
@@ -241,7 +272,7 @@ public class StampPdfGenerator extends PdfGeneratorBase {
         log.info("Generating stamp - bookNo: {}, recipients: {}, content length: {}, hasHtml: {}, docIndex: {}", 
                 bookNo, recipients, content.length(), htmlContent != null, documentIndex);
         
-        return generatePdfInternal(bookNo, recipients, content, htmlContent, signers, departmentName, contactInfo, endDoc, request.getSpeedLayer(), documentIndex);
+        return generatePdfInternal(bookNo, recipients, content, htmlContent, signers, departmentName, contactInfo, endDoc, speedLayer, documentIndex);
     }
     
     /**

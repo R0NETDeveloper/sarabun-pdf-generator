@@ -3,6 +3,7 @@ package th.go.etda.sarabun.pdf.model;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.AllArgsConstructor;
@@ -11,14 +12,20 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Request Model สำหรับ PDF Generation (New Format)
+ * Request Model สำหรับ PDF Generation (New Format v2)
  * 
  * โครงสร้างใหม่:
  * - bookNameId: GUID ประเภทเอกสาร
- * - documentMain: ข้อมูลเอกสารหลัก (บันทึกข้อความ)
- * - documentSub: ข้อมูลเอกสารรอง (หนังสือส่งออก)
+ * - memo: ข้อมูลสำหรับสร้าง Memo (บันทึกข้อความ)
+ * - document: ข้อมูลสำหรับสร้างเอกสารหลัก (หนังสือส่งออก, คำสั่ง, ประกาศ ฯลฯ)
  * - bookSigned, bookSubmited, bookLearner: ผู้เกี่ยวข้อง
  * - toRecipients: ผู้รับหนังสือภายนอก
+ * 
+ * หมายเหตุ:
+ * - MEMO: ใช้ memo เท่านั้น
+ * - OUTBOUND: ใช้ document สร้างหนังสือส่งออก + memo สร้าง Memo สำเนา
+ * - INBOUND: ใช้ base64Pdf + memo.bookNo
+ * - ORDER/ANNOUNCEMENT/REGULATION/RULE: ใช้ document + memo สร้าง Memo สำเนา
  */
 @Data
 @Builder
@@ -33,10 +40,20 @@ public class GeneratePdfRequest {
     private String base64Pdf;               // PDF ตั้งต้น (Base64) - ใช้สำหรับหนังสือรับเข้า (Inbound)
     
     // ============================================
-    // เอกสารหลักและเอกสารรอง (New Format)
+    // เอกสาร Memo และ เอกสารหลัก (New Format v2)
     // ============================================
-    private DocumentMain documentMain;      // ข้อมูลเอกสารหลัก (บันทึกข้อความ)
-    private DocumentSub documentSub;        // ข้อมูลเอกสารรอง (หนังสือส่งออก)
+    @JsonAlias({"documentMain"})  // backward compatibility
+    private Memo memo;                      // ข้อมูลสำหรับสร้าง Memo (บันทึกข้อความ)
+    
+    @JsonAlias({"documentSub"})   // backward compatibility
+    private Document document;              // ข้อมูลสำหรับสร้างเอกสารหลัก (Outbound, Order, Announcement ฯลฯ)
+    
+    // ============================================
+    // Backward compatibility: alias methods
+    // ============================================
+    public Memo getDocumentMain() { return memo; }
+    public void setDocumentMain(Memo value) { this.memo = value; }
+    public Document getDocumentSub() { return document; }
     
     // ============================================
     // ผู้เกี่ยวข้อง
@@ -51,55 +68,62 @@ public class GeneratePdfRequest {
     private List<BookRecipient> toRecipients;   // ผู้รับหนังสือภายนอก (หน่วยงาน)
     
     // ============================================
-    // Helper methods สำหรับดึงข้อมูลจาก documentMain
+    // Helper methods สำหรับดึงข้อมูลจาก memo
     // เพื่อ backward compatibility กับ generators อื่นๆ
     // ============================================
     
     public String getBookTitle() {
-        return documentMain != null ? documentMain.getBookTitle() : null;
+        return memo != null ? memo.getBookTitle() : null;
     }
     
     public String getBookNo() {
-        return documentMain != null ? documentMain.getBookNo() : null;
+        return memo != null ? memo.getBookNo() : null;
     }
     
     public String getDateThai() {
-        return documentMain != null ? documentMain.getDateThai() : null;
+        return memo != null ? memo.getDateThai() : null;
     }
     
     public String getDepartment() {
-        return documentMain != null ? documentMain.getDepartment() : null;
+        return memo != null ? memo.getDepartment() : null;
     }
     
     public String getDivisionName() {
-        return documentMain != null ? documentMain.getDivisionName() : null;
+        return memo != null ? memo.getDivisionName() : null;
     }
     
     public String getAddress() {
-        return documentMain != null ? documentMain.getAddress() : null;
+        return memo != null ? memo.getAddress() : null;
     }
     
     public String getSpeedLayer() {
-        return documentMain != null ? documentMain.getSpeedLayer() : null;
+        return memo != null ? memo.getSpeedLayer() : null;
     }
     
     public String getSpeedLayerId() {
-        return documentMain != null ? documentMain.getSpeedLayerId() : null;
+        return memo != null ? memo.getSpeedLayerId() : null;
     }
     
     public String getFormatPdf() {
-        return documentMain != null ? documentMain.getFormatPdf() : null;
+        return memo != null ? memo.getFormatPdf() : null;
     }
     
     public BookContent getBookContent() {
-        return documentMain != null ? documentMain.getBookContent() : null;
+        return memo != null ? memo.getBookContent() : null;
     }
     
     /**
-     * ดึง bookContent จาก documentSub (สำหรับหนังสือส่งออก, ระเบียบ, คำสั่ง ฯลฯ)
+     * ดึง bookContent จาก document (สำหรับหนังสือส่งออก, ระเบียบ, คำสั่ง ฯลฯ)
      */
     public BookContent getSubBookContent() {
-        return documentSub != null ? documentSub.getBookContent() : null;
+        return document != null ? document.getBookContent() : null;
+    }
+    
+    /**
+     * ดึง bookContent จาก document (alias)
+     */
+    public BookContent getDocumentBookContent() {
+        return document != null ? document.getBookContent() : null;
     }
     
     // Alias: toRecipients เป็น bookRecipients
@@ -109,7 +133,7 @@ public class GeneratePdfRequest {
     
     // Helper methods เพิ่มเติมสำหรับ backward compatibility
     public BookSubDetail getSubDetail() {
-        // Map documentSub to BookSubDetail-like object
+        // Map document to BookSubDetail-like object
         return null; // TODO: implement if needed
     }
     
@@ -122,7 +146,7 @@ public class GeneratePdfRequest {
     }
     
     public String getContact() {
-        return documentSub != null ? documentSub.getContact() : null;
+        return document != null ? document.getContact() : null;
     }
     
     public ContactInfo getContactInfo() {
@@ -134,15 +158,16 @@ public class GeneratePdfRequest {
     // ============================================
     
     /**
-     * DocumentMain Model - ข้อมูลเอกสารหลัก (บันทึกข้อความ)
+     * Memo Model - ข้อมูลสำหรับสร้าง Memo (บันทึกข้อความ)
+     * (เดิมชื่อ DocumentMain)
      */
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class DocumentMain {
+    public static class Memo {
         private String bookName;            // ชื่อประเภทหนังสือ (เช่น "หนังสือบันทึกข้อความ")
-        private String bookTitle;           // ชื่อเรื่อง (สำหรับ backward compatibility)
+        private String bookTitle;           // ชื่อเรื่อง
         private String bookNo;              // เลขที่หนังสือ
         private String dateThai;            // วันที่ภาษาไทย
         private String department;          // ชื่อหน่วยงาน
@@ -154,16 +179,20 @@ public class GeneratePdfRequest {
         private BookContent bookContent;    // เนื้อหาหนังสือ (Object ไม่ใช่ Array)
     }
     
+    // Backward compatibility alias
+    public static class DocumentMain extends Memo {}
+    
     /**
-     * DocumentSub Model - ข้อมูลเอกสารรอง (หนังสือส่งออก)
+     * Document Model - ข้อมูลสำหรับสร้างเอกสารหลัก (หนังสือส่งออก, คำสั่ง, ประกาศ ฯลฯ)
+     * (เดิมชื่อ DocumentSub)
      */
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class DocumentSub {
+    public static class Document {
         private String bookName;            // ชื่อประเภทหนังสือ (เช่น "หนังสือส่งออก")
-        private String bookTitle;           // ชื่อเรื่อง (สำหรับ backward compatibility)
+        private String bookTitle;           // ชื่อเรื่อง
         private String bookNo;              // เลขที่หนังสือ
         private String dateThai;            // วันที่ภาษาไทย
         private String department;          // ชื่อหน่วยงาน
@@ -177,6 +206,9 @@ public class GeneratePdfRequest {
         private List<BookReferTo> bookReferTo;      // อ้างถึง
         private List<DocumentAttachment> attachment; // สิ่งที่ส่งมาด้วย
     }
+    
+    // Backward compatibility alias
+    public static class DocumentSub extends Document {}
     
     /**
      * BookContent Model - เนื้อหาหนังสือ (New Format - Object ไม่ใช่ Array)

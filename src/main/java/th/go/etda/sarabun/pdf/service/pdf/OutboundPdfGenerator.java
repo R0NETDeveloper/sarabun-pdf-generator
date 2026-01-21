@@ -152,22 +152,22 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
     
     /**
      * สร้าง PDF หนังสือส่งออกสำหรับผู้รับเฉพาะราย (หน่วยงานภายนอก)
-     * อ่านข้อมูลจาก documentSub (New Format)
+     * อ่านข้อมูลจาก document (เดิมคือ documentSub)
      * @param documentIndex ลำดับเอกสาร (1, 2, 3...) สำหรับสร้าง unique field name
      */
     private String generateOutboundPdfForRecipient(GeneratePdfRequest request, 
                                                     GeneratePdfRequest.BookRecipient recipient,
                                                     int documentIndex) throws Exception {
-        // อ่านข้อมูลจาก documentSub (New Format)
-        GeneratePdfRequest.DocumentSub docSub = request.getDocumentSub();
+        // อ่านข้อมูลจาก document (New Format v2)
+        GeneratePdfRequest.Document doc = request.getDocument();
         
         // แปลงเลขอารบิกเป็นเลขไทย
-        String bookNo = docSub != null ? convertStringToThaiNumber(docSub.getBookNo()) : "";
-        String address = docSub != null && docSub.getAddress() != null ? convertStringToThaiNumber(docSub.getAddress()) : "";
-        String date = docSub != null ? convertStringToThaiNumber(docSub.getDateThai()) : "";
-        String title = docSub != null && docSub.getBookTitle() != null ? docSub.getBookTitle() : "";
-        String speedLayer = docSub != null ? docSub.getSpeedLayer() : "";
-        String contact = docSub != null ? convertStringToThaiNumber(docSub.getContact()) : "";
+        String bookNo = doc != null ? convertStringToThaiNumber(doc.getBookNo()) : "";
+        String address = doc != null && doc.getAddress() != null ? convertStringToThaiNumber(doc.getAddress()) : "";
+        String date = doc != null ? convertStringToThaiNumber(doc.getDateThai()) : "";
+        String title = doc != null && doc.getBookTitle() != null ? doc.getBookTitle() : "";
+        String speedLayer = doc != null ? doc.getSpeedLayer() : "";
+        String contact = doc != null ? convertStringToThaiNumber(doc.getContact()) : "";
         
         // ใช้ salutationContent สำหรับ "เรียน"
         String recipients = recipient.getSalutationContent() != null ? recipient.getSalutationContent() : "";
@@ -175,22 +175,22 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
         // ไม่ใช้ที่อยู่ผู้รับแล้ว
         String recipientsAddress = "";
         
-        // รวบรวมอ้างถึง จาก documentSub
-        String referTo = buildReferTo(docSub);
+        // รวบรวมอ้างถึง จาก document
+        String referTo = buildReferTo(doc);
         
-        // รวบรวมสิ่งที่ส่งมาด้วย จาก documentSub
-        List<String> attachments = buildAttachments(docSub);
+        // รวบรวมสิ่งที่ส่งมาด้วย จาก document
+        List<String> attachments = buildAttachments(doc);
         
-        // รวบรวมเนื้อหา จาก documentSub
-        String content = buildContentFromDocSub(docSub);
+        // รวบรวมเนื้อหา จาก document
+        String content = buildContentFromDocument(doc);
         
         // รวบรวม HTML content (ถ้ามี)
-        String htmlContent = hasHtmlContentInDocSub(docSub) ? buildHtmlContentFromDocSub(docSub) : null;
+        String htmlContent = hasHtmlContentInDocument(doc) ? buildHtmlContentFromDocument(doc) : null;
         
         // สร้าง SignerInfo จาก bookSigned (ผู้ลงนาม)
         List<SignerInfo> signers = buildSigners(request);
         
-        // ข้อมูลติดต่อ จาก documentSub
+        // ข้อมูลติดต่อ จาก document
         ContactInfo contactInfo = buildContactInfoFromString(contact);
         
         // ใช้ salutation, salutationContent, endDoc จาก recipient
@@ -212,36 +212,36 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
      * @param documentIndex ลำดับเอกสาร (1, 2, 3...) สำหรับสร้าง unique field name
      */
     private String generateOutboundPdf(GeneratePdfRequest request, int documentIndex) throws Exception {
-        // อ่านข้อมูลจาก documentSub (New Format)
-        GeneratePdfRequest.DocumentSub docSub = request.getDocumentSub();
+        // อ่านข้อมูลจาก document (New Format v2)
+        GeneratePdfRequest.Document doc = request.getDocument();
         
         // แปลงเลขอารบิกเป็นเลขไทย
-        String bookNo = docSub != null ? convertStringToThaiNumber(docSub.getBookNo()) : "";
-        String address = docSub != null && docSub.getAddress() != null ? convertStringToThaiNumber(docSub.getAddress()) : "";
-        String date = docSub != null ? convertStringToThaiNumber(docSub.getDateThai()) : "";
-        String title = docSub != null && docSub.getBookTitle() != null ? docSub.getBookTitle() : "";
-        String speedLayer = docSub != null ? docSub.getSpeedLayer() : "";
-        String contact = docSub != null ? convertStringToThaiNumber(docSub.getContact()) : "";
+        String bookNo = doc != null ? convertStringToThaiNumber(doc.getBookNo()) : "";
+        String address = doc != null && doc.getAddress() != null ? convertStringToThaiNumber(doc.getAddress()) : "";
+        String date = doc != null ? convertStringToThaiNumber(doc.getDateThai()) : "";
+        String title = doc != null && doc.getBookTitle() != null ? doc.getBookTitle() : "";
+        String speedLayer = doc != null ? doc.getSpeedLayer() : "";
+        String contact = doc != null ? convertStringToThaiNumber(doc.getContact()) : "";
         
         String recipients = "";
         String recipientsAddress = "";
         
-        // รวบรวมอ้างถึง จาก documentSub
-        String referTo = buildReferTo(docSub);
+        // รวบรวมอ้างถึง จาก document
+        String referTo = buildReferTo(doc);
         
-        // รวบรวมสิ่งที่ส่งมาด้วย จาก documentSub
-        List<String> attachments = buildAttachments(docSub);
+        // รวบรวมสิ่งที่ส่งมาด้วย จาก document
+        List<String> attachments = buildAttachments(doc);
         
-        // รวบรวมเนื้อหา จาก documentSub
-        String content = buildContentFromDocSub(docSub);
+        // รวบรวมเนื้อหา จาก document
+        String content = buildContentFromDocument(doc);
         
         // รวบรวม HTML content (ถ้ามี)
-        String htmlContent = hasHtmlContentInDocSub(docSub) ? buildHtmlContentFromDocSub(docSub) : null;
+        String htmlContent = hasHtmlContentInDocument(doc) ? buildHtmlContentFromDocument(doc) : null;
         
         // รวบรวมผู้ลงนาม
         List<SignerInfo> signers = buildSigners(request);
         
-        // ข้อมูลติดต่อ จาก documentSub
+        // ข้อมูลติดต่อ จาก document
         ContactInfo contactInfo = buildContactInfoFromString(contact);
         
         log.info("Generating outbound - bookNo: {}, title: {}, content length: {}, hasHtml: {}, docIndex: {}", 
@@ -541,14 +541,14 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
     // ============================================
     
     /**
-     * รวบรวมอ้างถึงจาก documentSub (New Format)
+     * รวบรวมอ้างถึงจาก document (New Format v2)
      */
-    private String buildReferTo(GeneratePdfRequest.DocumentSub docSub) {
-        if (docSub == null || docSub.getBookReferTo() == null || docSub.getBookReferTo().isEmpty()) {
+    private String buildReferTo(GeneratePdfRequest.Document doc) {
+        if (doc == null || doc.getBookReferTo() == null || doc.getBookReferTo().isEmpty()) {
             return "";
         }
         
-        return docSub.getBookReferTo().stream()
+        return doc.getBookReferTo().stream()
             .map(ref -> {
                 StringBuilder sb = new StringBuilder();
                 if (ref.getBookReferToName() != null) {
@@ -567,12 +567,12 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
     }
     
     /**
-     * รวบรวมสิ่งที่ส่งมาด้วยจาก documentSub (New Format)
+     * รวบรวมสิ่งที่ส่งมาด้วยจาก document (New Format v2)
      */
-    private List<String> buildAttachments(GeneratePdfRequest.DocumentSub docSub) {
+    private List<String> buildAttachments(GeneratePdfRequest.Document doc) {
         List<String> attachments = new ArrayList<>();
-        if (docSub != null && docSub.getAttachment() != null && !docSub.getAttachment().isEmpty()) {
-            for (var attach : docSub.getAttachment()) {
+        if (doc != null && doc.getAttachment() != null && !doc.getAttachment().isEmpty()) {
+            for (var attach : doc.getAttachment()) {
                 String attachName = attach.getName() != null ? attach.getName() : "";
                 String attachRemark = attach.getRemark() != null ? " " + attach.getRemark() : "";
                 attachments.add(attachName + attachRemark);
@@ -582,15 +582,15 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
     }
     
     /**
-     * รวบรวมเนื้อหาจาก documentSub.bookContent (New Format - Object)
+     * รวบรวมเนื้อหาจาก document.bookContent (New Format v2 - Object)
      * สำหรับ plain text rendering (ใช้ drawMultilineText)
      */
-    private String buildContentFromDocSub(GeneratePdfRequest.DocumentSub docSub) {
-        if (docSub == null || docSub.getBookContent() == null) {
+    private String buildContentFromDocument(GeneratePdfRequest.Document doc) {
+        if (doc == null || doc.getBookContent() == null) {
             return "";
         }
         
-        GeneratePdfRequest.BookContent bc = docSub.getBookContent();
+        GeneratePdfRequest.BookContent bc = doc.getBookContent();
         String content = bc.getContent();
         
         if (content == null || content.isEmpty()) {
@@ -606,24 +606,24 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
     }
     
     /**
-     * ดึง subject จาก documentSub.bookContent
+     * ดึง subject จาก document.bookContent
      */
-    private String getSubjectFromDocSub(GeneratePdfRequest.DocumentSub docSub) {
-        if (docSub == null || docSub.getBookContent() == null) {
+    private String getSubjectFromDocument(GeneratePdfRequest.Document doc) {
+        if (doc == null || doc.getBookContent() == null) {
             return null;
         }
-        return docSub.getBookContent().getSubject();
+        return doc.getBookContent().getSubject();
     }
     
     /**
-     * ตรวจสอบว่า documentSub.bookContent เป็น HTML content หรือไม่
+     * ตรวจสอบว่า document.bookContent เป็น HTML content หรือไม่
      */
-    private boolean hasHtmlContentInDocSub(GeneratePdfRequest.DocumentSub docSub) {
-        if (docSub == null || docSub.getBookContent() == null) {
+    private boolean hasHtmlContentInDocument(GeneratePdfRequest.Document doc) {
+        if (doc == null || doc.getBookContent() == null) {
             return false;
         }
         
-        GeneratePdfRequest.BookContent bc = docSub.getBookContent();
+        GeneratePdfRequest.BookContent bc = doc.getBookContent();
         if (bc.isHtmlContent()) {
             return true;
         }
@@ -633,14 +633,14 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
     }
     
     /**
-     * สร้าง HTML content จาก documentSub.bookContent (สำหรับ HTML rendering)
+     * สร้าง HTML content จาก document.bookContent (สำหรับ HTML rendering)
      */
-    private String buildHtmlContentFromDocSub(GeneratePdfRequest.DocumentSub docSub) {
-        if (docSub == null || docSub.getBookContent() == null) {
+    private String buildHtmlContentFromDocument(GeneratePdfRequest.Document doc) {
+        if (doc == null || doc.getBookContent() == null) {
             return "";
         }
         
-        GeneratePdfRequest.BookContent bc = docSub.getBookContent();
+        GeneratePdfRequest.BookContent bc = doc.getBookContent();
         String content = bc.getContent();
         
         if (content == null || content.isEmpty()) {

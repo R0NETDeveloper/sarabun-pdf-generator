@@ -91,12 +91,12 @@ public class RequestValidator {
             errors.add("bookNameId must be a valid GUID format");
         }
         
-        // 2. ตรวจสอบ documentMain
-        validateDocumentMain(request.getDocumentMain(), errors, warnings);
+        // 2. ตรวจสอบ memo (เดิมคือ documentMain)
+        validateMemo(request.getMemo(), errors, warnings);
         
-        // 3. ตรวจสอบ documentSub (ถ้ามี)
-        if (request.getDocumentSub() != null) {
-            validateDocumentSub(request.getDocumentSub(), errors, warnings);
+        // 3. ตรวจสอบ document (เดิมคือ documentSub) ถ้ามี
+        if (request.getDocument() != null) {
+            validateDocument(request.getDocument(), errors, warnings);
         }
         
         // 4. ตรวจสอบผู้ลงนาม
@@ -122,38 +122,38 @@ public class RequestValidator {
     }
     
     // ============================================
-    // Validation Methods - Document Main
+    // Validation Methods - Memo (เดิมคือ Document Main)
     // ============================================
     
-    private void validateDocumentMain(GeneratePdfRequest.DocumentMain docMain, 
-                                     List<String> errors, List<String> warnings) {
-        if (docMain == null) {
-            warnings.add("documentMain is null - may cause issues for some document types");
+    private void validateMemo(GeneratePdfRequest.Memo memo, 
+                             List<String> errors, List<String> warnings) {
+        if (memo == null) {
+            warnings.add("memo is null - may cause issues for some document types");
             return;
         }
         
         // ตรวจสอบ bookContent
-        if (docMain.getBookContent() != null) {
-            validateBookContent(docMain.getBookContent(), "documentMain.bookContent", errors, warnings);
+        if (memo.getBookContent() != null) {
+            validateBookContent(memo.getBookContent(), "memo.bookContent", errors, warnings);
         }
     }
     
     // ============================================
-    // Validation Methods - Document Sub
+    // Validation Methods - Document (เดิมคือ Document Sub)
     // ============================================
     
-    private void validateDocumentSub(GeneratePdfRequest.DocumentSub docSub, 
-                                    List<String> errors, List<String> warnings) {
+    private void validateDocument(GeneratePdfRequest.Document doc, 
+                                 List<String> errors, List<String> warnings) {
         // ตรวจสอบ bookContent
-        if (docSub.getBookContent() != null) {
-            validateBookContent(docSub.getBookContent(), "documentSub.bookContent", errors, warnings);
+        if (doc.getBookContent() != null) {
+            validateBookContent(doc.getBookContent(), "document.bookContent", errors, warnings);
         }
         
         // ตรวจสอบ attachments
-        if (docSub.getAttachment() != null) {
-            if (docSub.getAttachment().size() > maxAttachments) {
+        if (doc.getAttachment() != null) {
+            if (doc.getAttachment().size() > maxAttachments) {
                 errors.add(String.format("Too many attachments: %d (max: %d)", 
-                    docSub.getAttachment().size(), maxAttachments));
+                    doc.getAttachment().size(), maxAttachments));
             }
         }
     }

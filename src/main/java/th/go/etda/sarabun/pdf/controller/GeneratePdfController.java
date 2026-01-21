@@ -350,7 +350,7 @@ public class GeneratePdfController {
         attachments.add(attach1);
         docSub.setAttachment(attachments);
         
-        request.setDocumentSub(docSub);
+        request.setDocument(docSub);
         
         // ========== ผู้ลงนาม (bookSigned) ==========
         java.util.List<GeneratePdfRequest.BookRelate> signers = new java.util.ArrayList<>();

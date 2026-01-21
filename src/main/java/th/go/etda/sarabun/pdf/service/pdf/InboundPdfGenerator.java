@@ -122,10 +122,10 @@ public class InboundPdfGenerator extends PdfGeneratorBase {
                     .build())
                 .collect(Collectors.toList());
             
-            // ใช้ bookNo จาก documentMain (ถ้ามี)
+            // ใช้ bookNo จาก memo (ถ้ามี)
             String bookNo = "";
-            if (request.getDocumentMain() != null && request.getDocumentMain().getBookNo() != null) {
-                bookNo = request.getDocumentMain().getBookNo();
+            if (request.getMemo() != null && request.getMemo().getBookNo() != null) {
+                bookNo = request.getMemo().getBookNo();
             }
             
             // เพิ่มหน้าผู้เรียน (ใช้ method จาก PdfGeneratorBase)

@@ -131,6 +131,7 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
     /**
      * สร้าง PDF หนังสือภายใต้กระทรวงสำหรับผู้รับเฉพาะราย (หน่วยงานภายนอก)
      * โครงสร้างคล้าย Memo แต่หัวเปลี่ยนเป็น "หนังสือภายใต้กระทรวง"
+     * อ่านข้อมูลจาก memo (เพราะโครงสร้างคล้าย Memo)
      * @param documentIndex ลำดับเอกสาร (1, 2, 3...) สำหรับสร้าง unique field name
      */
     private String generateMinistryPdfForRecipient(GeneratePdfRequest request, 
@@ -138,13 +139,24 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
                                                     int documentIndex) throws Exception {
         log.info("Generating ministry for recipient: {}, docIndex: {}", recipient.getOrganizeName(), documentIndex);
         
-        // รวบรวมข้อมูล
-        String govName = request.getDivisionName() != null ? request.getDivisionName() : 
-                        (request.getDepartment() != null ? request.getDepartment() : "");
-        // แปลงเลขอารบิกเป็นเลขไทย
-        String dateThai = convertStringToThaiNumber(request.getDateThai());
-        String title = request.getBookTitle() != null ? request.getBookTitle() : "";
-        String bookNo = convertStringToThaiNumber(request.getBookNo());
+        // อ่านจาก memo (New Format v2) - Ministry ใช้โครงสร้างคล้าย Memo
+        GeneratePdfRequest.Memo memo = request.getMemo();
+        
+        // รวบรวมข้อมูลจาก memo
+        String govName = "";
+        String dateThai = "";
+        String title = "";
+        String bookNo = "";
+        String speedLayer = "";
+        
+        if (memo != null) {
+            govName = memo.getDivisionName() != null ? memo.getDivisionName() : 
+                     (memo.getDepartment() != null ? memo.getDepartment() : "");
+            dateThai = convertStringToThaiNumber(memo.getDateThai());
+            title = memo.getBookTitle() != null ? memo.getBookTitle() : "";
+            bookNo = convertStringToThaiNumber(memo.getBookNo());
+            speedLayer = memo.getSpeedLayer();
+        }
         
         // ใช้ salutation + salutationContent จาก recipient (ถ้ามี)
         String recipients = "";
@@ -168,12 +180,11 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
         // รวบรวมเนื้อหา
         String content = buildContent(request);
         
-        // ตรวจสอบและรวบรวม HTML content (bookContent เป็น Object ไม่ใช่ Array)
+        // ตรวจสอบและรวบรวม HTML content จาก memo.bookContent
         String htmlContent = null;
-        if (request.getDocumentSub() != null && 
-            request.getDocumentSub().getBookContent() != null &&
-            hasHtmlContent(request.getDocumentSub().getBookContent())) {
-            htmlContent = buildHtmlContent(request.getDocumentSub().getBookContent());
+        if (memo != null && memo.getBookContent() != null &&
+            hasHtmlContent(memo.getBookContent())) {
+            htmlContent = buildHtmlContent(memo.getBookContent());
         }
         
         // รวบรวมผู้ลงนาม
@@ -188,7 +199,7 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
                 govName, recipients, endDoc, htmlContent != null, documentIndex);
         
         return generateMinistryPdfInternal(govName, dateThai, bookNo, title, recipients, content, htmlContent,
-                                          request.getSpeedLayer(), signers, endDoc, documentIndex);
+                                          speedLayer, signers, endDoc, documentIndex);
     }
     
     /**

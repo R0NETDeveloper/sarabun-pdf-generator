@@ -19,7 +19,6 @@ import static th.go.etda.sarabun.pdf.constant.PdfConstants.*;
 import th.go.etda.sarabun.pdf.constant.SignBoxType;
 import th.go.etda.sarabun.pdf.model.GeneratePdfRequest;
 import th.go.etda.sarabun.pdf.model.PdfResult;
-import th.go.etda.sarabun.pdf.util.HtmlUtils;
 
 /**
  * Generator สำหรับ หนังสือระเบียบ (Regulation)
@@ -45,7 +44,6 @@ import th.go.etda.sarabun.pdf.util.HtmlUtils;
 public class RegulationPdfGenerator extends PdfGeneratorBase {
     
     private final MemoPdfGenerator memoPdfGenerator;
-    private final HtmlContentRenderer htmlContentRenderer;
     
     @Override
     public BookType getBookType() {
@@ -76,29 +74,48 @@ public class RegulationPdfGenerator extends PdfGeneratorBase {
     
     /**
      * สร้าง PDF หนังสือระเบียบ
+     * อ่านข้อมูลจาก document (เดิมคือ documentSub)
      */
     public String generateRegulationPdf(GeneratePdfRequest request) throws Exception {
-        // รวบรวมข้อมูล
-        String govName = request.getDepartment() != null ? request.getDepartment() : 
-                        (request.getDivisionName() != null ? request.getDivisionName() : "");
-        String title = request.getBookTitle() != null ? request.getBookTitle() : "";
-        // แปลงเลขอารบิกเป็นเลขไทย
-        String bookNo = convertStringToThaiNumber(request.getBookNo());
-        String dateThai = convertStringToThaiNumber(request.getDateThai());
+        // อ่านจาก document (New Format v2)
+        GeneratePdfRequest.Document doc = request.getDocument();
         
-        // ดึง edition (ฉบับที่) และ year (พ.ศ.) จาก bookNo หรือ subDetail
-        String edition = extractEdition(request);
+        // รวบรวมข้อมูล - ใช้จาก document ก่อน, fallback เป็น memo
+        String govName = "";
+        String title = "";
+        String bookNo = "";
+        String dateThai = "";
+        String speedLayer = "";
+        
+        if (doc != null) {
+            govName = doc.getDepartment() != null ? doc.getDepartment() : 
+                     (doc.getDivisionName() != null ? doc.getDivisionName() : "");
+            title = doc.getBookTitle() != null ? doc.getBookTitle() : "";
+            bookNo = convertStringToThaiNumber(doc.getBookNo());
+            dateThai = convertStringToThaiNumber(doc.getDateThai());
+            speedLayer = doc.getSpeedLayer();
+        } else {
+            // Fallback to memo
+            govName = request.getDepartment() != null ? request.getDepartment() : 
+                     (request.getDivisionName() != null ? request.getDivisionName() : "");
+            title = request.getBookTitle() != null ? request.getBookTitle() : "";
+            bookNo = convertStringToThaiNumber(request.getBookNo());
+            dateThai = convertStringToThaiNumber(request.getDateThai());
+            speedLayer = request.getSpeedLayer();
+        }
+        
+        // ดึง edition (ฉบับที่) และ year (พ.ศ.) จาก document
+        String edition = extractEdition(request, doc);
         String year = extractYear(dateThai);  // ใช้จาก PdfGeneratorBase
         
         // รวบรวมเนื้อหา
         String content = buildContent(request);
         
-        // ตรวจสอบและรวบรวม HTML content (bookContent เป็น Object ไม่ใช่ Array)
+        // ตรวจสอบและรวบรวม HTML content จาก document
         String htmlContent = null;
-        if (request.getDocumentSub() != null && 
-            request.getDocumentSub().getBookContent() != null &&
-            hasHtmlContent(request.getDocumentSub().getBookContent())) {
-            htmlContent = buildHtmlContent(request.getDocumentSub().getBookContent());
+        if (doc != null && doc.getBookContent() != null &&
+            hasHtmlContent(doc.getBookContent())) {
+            htmlContent = buildHtmlContent(doc.getBookContent());
         }
         
         // รวบรวมผู้ลงนาม
@@ -107,14 +124,18 @@ public class RegulationPdfGenerator extends PdfGeneratorBase {
         log.info("Generating regulation - govName: {}, title: {}, edition: {}, year: {}, content length: {}, hasHtml: {}", 
                 govName, title, edition, year, content.length(), htmlContent != null);
         
-        return generatePdfInternal(govName, title, edition, year, dateThai, content, htmlContent, signers, bookNo, request.getSpeedLayer());
+        return generatePdfInternal(govName, title, edition, year, dateThai, content, htmlContent, signers, bookNo, speedLayer);
     }
     
     /**
      * ดึงฉบับที่ จาก request
      */
-    private String extractEdition(GeneratePdfRequest request) {
-        // ลองดึงจาก subDetail.docNo ก่อน
+    private String extractEdition(GeneratePdfRequest request, GeneratePdfRequest.Document doc) {
+        // ลองดึงจาก document.year ก่อน (ถ้ามี)
+        if (doc != null && doc.getYear() != null && !doc.getYear().isEmpty()) {
+            return doc.getYear();
+        }
+        // ลองดึงจาก subDetail.docNo
         if (request.getSubDetail() != null && request.getSubDetail().getDocNo() != null 
             && !request.getSubDetail().getDocNo().isEmpty()) {
             return request.getSubDetail().getDocNo();
