@@ -14,6 +14,8 @@ import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState;
 import org.springframework.stereotype.Component;
 
+import th.go.etda.sarabun.pdf.exception.PdfGenerationException;
+
 import lombok.extern.slf4j.Slf4j;
 import th.go.etda.sarabun.pdf.constant.BookType;
 
@@ -464,15 +466,12 @@ public class StampPdfGenerator extends PdfGeneratorBase {
                 }
             }
             
-            String pdfBase64 = convertToBase64(document);
-            
             // NOTE: HTML tables are now drawn inline in SECTION 3.5
-            
-            return pdfBase64;
+            return convertToBase64(document);
             
         } catch (Exception e) {
             log.error("Error generating stamp PDF: ", e);
-            throw new Exception("ไม่สามารถสร้าง PDF หนังสือประทับตราได้: " + e.getMessage(), e);
+            throw new PdfGenerationException("ไม่สามารถสร้าง PDF หนังสือประทับตราได้: " + e.getMessage(), e);
         }
     }
     

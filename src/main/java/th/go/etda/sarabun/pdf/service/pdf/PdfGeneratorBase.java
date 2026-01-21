@@ -18,6 +18,8 @@ import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType0Font;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
+
+import th.go.etda.sarabun.pdf.exception.PdfGenerationException;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.apache.pdfbox.pdmodel.interactive.form.PDSignatureField;
 import org.springframework.core.io.ClassPathResource;
@@ -204,7 +206,7 @@ public abstract class PdfGeneratorBase {
             
             if (!resource.exists()) {
                 log.error("Font file not found in classpath: {}", fontPath);
-                throw new Exception("ไม่พบไฟล์ฟอนต์: " + fontPath);
+                throw new PdfGenerationException("ไม่พบไฟล์ฟอนต์: " + fontPath);
             }
             
             try (InputStream is = resource.getInputStream()) {
@@ -215,7 +217,7 @@ public abstract class PdfGeneratorBase {
             
         } catch (Exception e) {
             log.error("Error loading Thai font: ", e);
-            throw new Exception("ไม่สามารถโหลดฟอนต์ภาษาไทยได้: " + e.getMessage(), e);
+            throw new PdfGenerationException("ไม่สามารถโหลดฟอนต์ภาษาไทยได้: " + e.getMessage(), e);
         }
     }
     

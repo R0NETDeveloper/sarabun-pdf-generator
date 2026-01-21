@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 import th.go.etda.sarabun.pdf.constant.BookType;
+import th.go.etda.sarabun.pdf.exception.PdfGenerationException;
 
 // Static import สำหรับใช้ค่าคงที่จาก PdfConstants โดยตรง
 import static th.go.etda.sarabun.pdf.constant.PdfConstants.*;
@@ -273,7 +274,7 @@ public class AnnouncementPdfGenerator extends PdfGeneratorBase {
             
         } catch (Exception e) {
             log.error("Error generating announcement PDF: ", e);
-            throw new Exception("ไม่สามารถสร้าง PDF หนังสือประกาศได้: " + e.getMessage(), e);
+            throw new PdfGenerationException("ไม่สามารถสร้าง PDF หนังสือประกาศได้: " + e.getMessage(), e);
         }
     }
     
