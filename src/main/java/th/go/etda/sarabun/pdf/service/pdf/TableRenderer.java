@@ -138,14 +138,18 @@ public class TableRenderer {
                     if (!colspanAttr.isEmpty()) {
                         colspan = Integer.parseInt(colspanAttr);
                     }
-                } catch (NumberFormatException ignored) {}
+                } catch (NumberFormatException ignored) {
+                    // ถ้า colspan ไม่ใช่ตัวเลข ใช้ค่า default = 1
+                }
                 
                 try {
                     String rowspanAttr = td.attr("rowspan");
                     if (!rowspanAttr.isEmpty()) {
                         rowspan = Integer.parseInt(rowspanAttr);
                     }
-                } catch (NumberFormatException ignored) {}
+                } catch (NumberFormatException ignored) {
+                    // ถ้า rowspan ไม่ใช่ตัวเลข ใช้ค่า default = 1
+                }
                 
                 boolean isHeader = td.tagName().equalsIgnoreCase("th");
                 String text = td.text().trim();
@@ -341,12 +345,12 @@ public class TableRenderer {
         for (String word : words) {
             if (word.isEmpty()) continue;
             
-            String testLine = currentLine.length() == 0 ? word : currentLine + " " + word;
+            String testLine = currentLine.isEmpty() ? word : currentLine + " " + word;
             float testWidth = font.getStringWidth(testLine) / 1000 * fontSize;
             
             if (testWidth > maxWidth) {
                 // กรณีคำยาวเกินบรรทัด
-                if (currentLine.length() > 0) {
+                if (!currentLine.isEmpty()) {
                     lines.add(currentLine.toString());
                     currentLine = new StringBuilder();
                 }
@@ -381,7 +385,7 @@ public class TableRenderer {
             }
         }
         
-        if (currentLine.length() > 0) {
+        if (!currentLine.isEmpty()) {
             lines.add(currentLine.toString());
         }
         
@@ -483,11 +487,10 @@ public class TableRenderer {
         StringBuilder textBuffer = new StringBuilder();
         
         for (org.jsoup.nodes.Node node : body.childNodes()) {
-            if (node instanceof Element) {
-                Element elem = (Element) node;
+            if (node instanceof Element elem) {
                 if (elem.tagName().equalsIgnoreCase("table")) {
                     // ถ้ามี text สะสมอยู่ ให้ flush ก่อน
-                    if (textBuffer.length() > 0) {
+                    if (!textBuffer.isEmpty()) {
                         String text = textBuffer.toString().trim();
                         if (!text.isEmpty()) {
                             parts.add(new ContentPart(ContentPartType.TEXT, text));
@@ -500,8 +503,7 @@ public class TableRenderer {
                     // ดึง text จาก element (รวม <p>, <div>, etc.)
                     textBuffer.append(elem.text()).append("\n");
                 }
-            } else if (node instanceof org.jsoup.nodes.TextNode) {
-                org.jsoup.nodes.TextNode textNode = (org.jsoup.nodes.TextNode) node;
+            } else if (node instanceof org.jsoup.nodes.TextNode textNode) {
                 String text = textNode.text().trim();
                 if (!text.isEmpty()) {
                     textBuffer.append(text).append("\n");
@@ -510,7 +512,7 @@ public class TableRenderer {
         }
         
         // Flush remaining text
-        if (textBuffer.length() > 0) {
+        if (!textBuffer.isEmpty()) {
             String text = textBuffer.toString().trim();
             if (!text.isEmpty()) {
                 parts.add(new ContentPart(ContentPartType.TEXT, text));

@@ -150,8 +150,12 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
         String speedLayer = "";
         
         if (memo != null) {
-            govName = memo.getDivisionName() != null ? memo.getDivisionName() : 
-                     (memo.getDepartment() != null ? memo.getDepartment() : "");
+            // กำหนด govName จาก divisionName หรือ department
+            if (memo.getDivisionName() != null) {
+                govName = memo.getDivisionName();
+            } else if (memo.getDepartment() != null) {
+                govName = memo.getDepartment();
+            }
             dateThai = convertStringToThaiNumber(memo.getDateThai());
             title = memo.getBookTitle() != null ? memo.getBookTitle() : "";
             bookNo = convertStringToThaiNumber(memo.getBookNo());
@@ -371,11 +375,9 @@ public class MinistryPdfGenerator extends PdfGeneratorBase {
                 }
             }
             
-            String pdfBase64 = convertToBase64(document);
-            
             // NOTE: HTML tables are now drawn inline in SECTION 6.5
             
-            return pdfBase64;
+            return convertToBase64(document);
             
         } catch (Exception e) {
             log.error("Error generating ministry PDF: ", e);

@@ -524,12 +524,10 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                 }
             }
             
-            String pdfBase64 = convertToBase64(document);
-            
             // NOTE: HTML tables are now drawn inline in SECTION 7.5
             // No need to append as separate pages
             
-            return pdfBase64;
+            return convertToBase64(document);
             
         } catch (Exception e) {
             log.error("Error generating outbound PDF: ", e);

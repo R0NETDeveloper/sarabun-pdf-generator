@@ -96,7 +96,7 @@ public class GeneratePdfController {
             // 3. สร้าง PDF
             ApiResponse<String> response = generatePdfService.previewPdf(request);
             
-            if (response.getIsOk()) {
+            if (Boolean.TRUE.equals(response.getIsOk())) {
                 return ResponseEntity.ok(response);
             } else {
                 return ResponseEntity
@@ -154,7 +154,7 @@ public class GeneratePdfController {
             // 3. สร้าง PDF แยกไฟล์
             ApiResponse<java.util.List<th.go.etda.sarabun.pdf.model.PdfResult>> response = generatePdfService.generatePdf(request);
             
-            if (response.getIsOk()) {
+            if (Boolean.TRUE.equals(response.getIsOk())) {
                 log.info("Generated {} separate PDF files", response.getData().size());
                 return ResponseEntity.ok(response);
             } else {
@@ -266,7 +266,7 @@ public class GeneratePdfController {
             // สร้าง PDF
             ApiResponse<String> response = generatePdfService.previewPdf(request);
             
-            if (response.getIsOk() && response.getData() != null) {
+            if (Boolean.TRUE.equals(response.getIsOk()) && response.getData() != null) {
                 // ลบ prefix "data:application/pdf;base64," ถ้ามี
                 String base64Data = response.getData();
                 if (base64Data.startsWith("data:application/pdf;base64,")) {

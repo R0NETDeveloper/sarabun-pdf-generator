@@ -90,16 +90,23 @@ public class RegulationPdfGenerator extends PdfGeneratorBase {
         String speedLayer = "";
         
         if (doc != null) {
-            govName = doc.getDepartment() != null ? doc.getDepartment() : 
-                     (doc.getDivisionName() != null ? doc.getDivisionName() : "");
+            // กำหนด govName จาก department หรือ divisionName
+            if (doc.getDepartment() != null) {
+                govName = doc.getDepartment();
+            } else if (doc.getDivisionName() != null) {
+                govName = doc.getDivisionName();
+            }
             title = doc.getBookTitle() != null ? doc.getBookTitle() : "";
             bookNo = convertStringToThaiNumber(doc.getBookNo());
             dateThai = convertStringToThaiNumber(doc.getDateThai());
             speedLayer = doc.getSpeedLayer();
         } else {
-            // Fallback to memo
-            govName = request.getDepartment() != null ? request.getDepartment() : 
-                     (request.getDivisionName() != null ? request.getDivisionName() : "");
+            // Fallback to memo - กำหนด govName จาก department หรือ divisionName
+            if (request.getDepartment() != null) {
+                govName = request.getDepartment();
+            } else if (request.getDivisionName() != null) {
+                govName = request.getDivisionName();
+            }
             title = request.getBookTitle() != null ? request.getBookTitle() : "";
             bookNo = convertStringToThaiNumber(request.getBookNo());
             dateThai = convertStringToThaiNumber(request.getDateThai());
@@ -297,11 +304,9 @@ public class RegulationPdfGenerator extends PdfGeneratorBase {
                 }
             }
             
-            String pdfBase64 = convertToBase64(document);
-            
             // NOTE: HTML tables are now drawn inline in SECTION 6.5
             
-            return pdfBase64;
+            return convertToBase64(document);
             
         } catch (Exception e) {
             log.error("Error generating regulation PDF: ", e);

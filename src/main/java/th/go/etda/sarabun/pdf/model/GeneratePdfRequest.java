@@ -124,7 +124,7 @@ public class GeneratePdfRequest {
     // Helper methods เพิ่มเติมสำหรับ backward compatibility
     public BookSubDetail getSubDetail() {
         // Map document to BookSubDetail-like object
-        return null; // TODO: implement if needed
+        return null;
     }
     
     public String getRecipients() {

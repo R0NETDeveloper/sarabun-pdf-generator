@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Refill;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 
@@ -63,10 +62,11 @@ public class RateLimitConfig {
     public void init() {
         // สร้าง Global Bucket
         globalBucket = Bucket.builder()
-            .addLimit(Bandwidth.classic(
-                globalRequestsPerMinute, 
-                Refill.greedy(globalRequestsPerMinute, Duration.ofMinutes(1))
-            ))
+            .addLimit(Bandwidth.builder()
+                .capacity(globalRequestsPerMinute)
+                .refillGreedy(globalRequestsPerMinute, Duration.ofMinutes(1))
+                .build()
+            )
             .build();
         
         log.info("RateLimitConfig initialized:");
@@ -111,10 +111,11 @@ public class RateLimitConfig {
      */
     private Bucket createIpBucket(String ip) {
         return Bucket.builder()
-            .addLimit(Bandwidth.classic(
-                perIpBurstCapacity,
-                Refill.greedy(perIpRequestsPerMinute, Duration.ofMinutes(1))
-            ))
+            .addLimit(Bandwidth.builder()
+                .capacity(perIpBurstCapacity)
+                .refillGreedy(perIpRequestsPerMinute, Duration.ofMinutes(1))
+                .build()
+            )
             .build();
     }
     

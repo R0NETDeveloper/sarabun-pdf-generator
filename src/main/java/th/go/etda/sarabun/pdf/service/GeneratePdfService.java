@@ -5,7 +5,6 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.apache.pdfbox.io.MemoryUsageSetting;
 import org.apache.pdfbox.multipdf.PDFMergerUtility;
@@ -152,9 +151,9 @@ public class GeneratePdfService {
             pdfArray = addFilenames(pdfArray, bookType);
             
             // กรอง PDF ที่มีเนื้อหา
-            pdfArray = pdfArray.stream()
+            pdfArray = new ArrayList<>(pdfArray.stream()
                 .filter(p -> p.getPdfBase64() != null && !p.getPdfBase64().isEmpty())
-                .collect(Collectors.toList());
+                .toList());
             
             log.info("PDF generation completed: {} separate files", pdfArray.size());
             return ApiResponse.success(pdfArray, "สร้าง PDF สำเร็จ (" + pdfArray.size() + " ไฟล์)");
@@ -187,8 +186,15 @@ public class GeneratePdfService {
                 
                 String outboundPdf = outboundGen.generateOutboundPdfForRecipientPublic(request, recipient, i + 1);
                 
-                String recipientName = recipient.getOrganizeName() != null ? recipient.getOrganizeName() : 
-                                       (recipient.getDepartmentName() != null ? recipient.getDepartmentName() : "ผู้รับ");
+                // กำหนดชื่อผู้รับจาก organizeName หรือ departmentName
+                String recipientName;
+                if (recipient.getOrganizeName() != null) {
+                    recipientName = recipient.getOrganizeName();
+                } else if (recipient.getDepartmentName() != null) {
+                    recipientName = recipient.getDepartmentName();
+                } else {
+                    recipientName = "ผู้รับ";
+                }
                 
                 results.add(PdfResult.builder()
                     .pdfBase64(outboundPdf)
@@ -217,7 +223,7 @@ public class GeneratePdfService {
                     .email(s.getEmail())
                     .signatureBase64(s.getSignatureBase64())
                     .build())
-                .collect(Collectors.toList());
+                .toList();
             
             memoPdf = memoPdfGenerator.addSubmitPages(memoPdf, submiters, request.getBookNo());
             log.info("Added submit pages to memo PDF");
@@ -235,7 +241,7 @@ public class GeneratePdfService {
                     .email(l.getEmail())
                     .signatureBase64(l.getSignatureBase64())
                     .build())
-                .collect(Collectors.toList());
+                .toList();
             
             List<PdfGeneratorBase.SignerInfo> signersForDisplay = null;
             if (request.getBookSigned() != null && !request.getBookSigned().isEmpty()) {
@@ -246,7 +252,7 @@ public class GeneratePdfService {
                         .lastname(s.getLastname())
                         .positionName(s.getPositionName())
                         .build())
-                    .collect(Collectors.toList());
+                    .toList();
             }
             
             memoPdf = memoPdfGenerator.addLearnerPages(memoPdf, learners, signersForDisplay, request.getBookNo());
@@ -382,7 +388,7 @@ public class GeneratePdfService {
                     .email(s.getEmail())
                     .signatureBase64(s.getSignatureBase64())
                     .build())
-                .collect(Collectors.toList());
+                .toList();
             
             result = memoPdfGenerator.addSubmitPages(result, submiters, request.getBookNo());
         }
@@ -399,7 +405,7 @@ public class GeneratePdfService {
                     .email(l.getEmail())
                     .signatureBase64(l.getSignatureBase64())
                     .build())
-                .collect(Collectors.toList());
+                .toList();
             
             List<PdfGeneratorBase.SignerInfo> signersForDisplay = null;
             if (request.getBookSigned() != null && !request.getBookSigned().isEmpty()) {
@@ -410,7 +416,7 @@ public class GeneratePdfService {
                         .lastname(s.getLastname())
                         .positionName(s.getPositionName())
                         .build())
-                    .collect(Collectors.toList());
+                    .toList();
             }
             
             result = memoPdfGenerator.addLearnerPages(result, learners, signersForDisplay, request.getBookNo());
@@ -521,7 +527,7 @@ public class GeneratePdfService {
                 
             List<PdfResult> otherPdfs = pdfArray.stream()
                 .filter(p -> "Other".equals(p.getType()))
-                .collect(Collectors.toList());
+                .toList();
             
             // สร้างรายการ PDF ที่จะรวม (ตามลำดับ: Main -> Memo -> Other)
             List<String> pdfsToMerge = new ArrayList<>();
@@ -562,7 +568,7 @@ public class GeneratePdfService {
                     .email(s.getEmail())
                     .signatureBase64(s.getSignatureBase64())
                     .build())
-                .collect(Collectors.toList());
+                .toList();
             
             mergedBase64 = memoPdfGenerator.addSubmitPages(mergedBase64, submiters, request.getBookNo());
         }
@@ -582,7 +588,7 @@ public class GeneratePdfService {
                     .email(l.getEmail())
                     .signatureBase64(l.getSignatureBase64())
                     .build())
-                .collect(Collectors.toList());
+                .toList();
             
             // สร้าง signers สำหรับแสดง "เรียน ชื่อผู้ลงนาม" ที่ด้านบน
             List<PdfGeneratorBase.SignerInfo> signersForDisplay = null;
@@ -594,7 +600,7 @@ public class GeneratePdfService {
                         .lastname(s.getLastname())
                         .positionName(s.getPositionName())
                         .build())
-                    .collect(Collectors.toList());
+                    .toList();
             }
             
             mergedBase64 = memoPdfGenerator.addLearnerPages(mergedBase64, learners, signersForDisplay, request.getBookNo());
@@ -631,7 +637,7 @@ public class GeneratePdfService {
             // ใช้ setupMixed แทน setupMainMemoryOnly เพื่อป้องกัน OOM
             // - ถ้า PDF < 10MB จะใช้ memory
             // - ถ้า PDF >= 10MB จะใช้ temp file
-            merger.mergeDocuments(MemoryUsageSetting.setupMixed(10 * 1024 * 1024));
+            merger.mergeDocuments(MemoryUsageSetting.setupMixed(10L * 1024 * 1024));
             
             log.info("Merged {} PDFs successfully using PDFMergerUtility", base64Pdfs.size());
             return Base64.getEncoder().encodeToString(outputStream.toByteArray());

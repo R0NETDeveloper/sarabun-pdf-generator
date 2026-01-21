@@ -85,8 +85,12 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
         String speedLayer = "";
         
         if (memo != null) {
-            govName = memo.getDivisionName() != null ? memo.getDivisionName() : 
-                     (memo.getDepartment() != null ? memo.getDepartment() : "");
+            // กำหนด govName จาก divisionName หรือ department ตามลำดับ
+            if (memo.getDivisionName() != null) {
+                govName = memo.getDivisionName();
+            } else if (memo.getDepartment() != null) {
+                govName = memo.getDepartment();
+            }
             // แปลงเลขอารบิกเป็นเลขไทย
             dateThai = convertStringToThaiNumber(memo.getDateThai());
             title = memo.getBookTitle() != null ? memo.getBookTitle() : "";
@@ -348,12 +352,10 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
                 }
             }
             
-            String pdfBase64 = convertToBase64(document);
-            
             // NOTE: HTML tables are now drawn inline in SECTION 6.5
             // No need to append as separate pages
             
-            return pdfBase64;
+            return convertToBase64(document);
             
         } catch (Exception e) {
             log.error("Error generating memo PDF: ", e);

@@ -3,7 +3,6 @@ package th.go.etda.sarabun.pdf.service.pdf;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.springframework.stereotype.Component;
@@ -120,7 +119,7 @@ public class InboundPdfGenerator extends PdfGeneratorBase {
                     .departmentName(l.getDepartmentName())
                     .email(l.getEmail())
                     .build())
-                .collect(Collectors.toList());
+                .toList();
             
             // ใช้ bookNo จาก memo (ถ้ามี)
             String bookNo = "";

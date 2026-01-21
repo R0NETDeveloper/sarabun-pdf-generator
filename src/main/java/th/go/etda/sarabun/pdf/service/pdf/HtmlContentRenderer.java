@@ -134,7 +134,7 @@ public class HtmlContentRenderer {
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             merger.setDestinationStream(outputStream);
             // ใช้ setupMixed เพื่อป้องกัน OOM กรณี PDF ขนาดใหญ่ (threshold 10MB)
-            merger.mergeDocuments(MemoryUsageSetting.setupMixed(10 * 1024 * 1024));
+            merger.mergeDocuments(MemoryUsageSetting.setupMixed(10L * 1024 * 1024));
             
             return Base64.getEncoder().encodeToString(outputStream.toByteArray());
         }
