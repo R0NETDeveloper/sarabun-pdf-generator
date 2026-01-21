@@ -1770,15 +1770,15 @@ public abstract class PdfGeneratorBase {
     /**
      * สร้างเนื้อหา plain text จาก bookContent
      * 
-     * @param request GeneratePdfRequest ที่มี documentMain.bookContent
+     * @param request GeneratePdfRequest ที่มี memo.bookContent
      * @return String เนื้อหาที่พร้อมใช้ใน PDF
      */
     protected String buildContent(GeneratePdfRequest request) {
-        // อ่านจาก documentMain.bookContent (New Format - Object)
-        if (request.getDocumentMain() != null && 
-            request.getDocumentMain().getBookContent() != null) {
+        // อ่านจาก memo.bookContent (New Format - Object)
+        if (request.getMemo() != null && 
+            request.getMemo().getBookContent() != null) {
             
-            GeneratePdfRequest.BookContent bookContent = request.getDocumentMain().getBookContent();
+            GeneratePdfRequest.BookContent bookContent = request.getMemo().getBookContent();
             String content = bookContent.getContent();
             
             if (content != null && !content.isEmpty()) {
@@ -1799,24 +1799,24 @@ public abstract class PdfGeneratorBase {
      * @return String หัวเรื่อง
      */
     protected String getSubject(GeneratePdfRequest request) {
-        if (request.getDocumentMain() != null && 
-            request.getDocumentMain().getBookContent() != null) {
-            return request.getDocumentMain().getBookContent().getSubject();
+        if (request.getMemo() != null && 
+            request.getMemo().getBookContent() != null) {
+            return request.getMemo().getBookContent().getSubject();
         }
         // Fallback to bookTitle
         return request.getBookTitle();
     }
     
     /**
-     * ดึง subject จาก documentSub.bookContent (สำหรับหนังสือส่งออก)
+     * ดึง subject จาก document.bookContent (สำหรับหนังสือส่งออก)
      * 
      * @param request GeneratePdfRequest
      * @return String หัวเรื่อง
      */
-    protected String getSubjectFromDocSub(GeneratePdfRequest request) {
-        if (request.getDocumentSub() != null && 
-            request.getDocumentSub().getBookContent() != null) {
-            return request.getDocumentSub().getBookContent().getSubject();
+    protected String getSubjectFromDocument(GeneratePdfRequest request) {
+        if (request.getDocument() != null && 
+            request.getDocument().getBookContent() != null) {
+            return request.getDocument().getBookContent().getSubject();
         }
         return null;
     }

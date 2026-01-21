@@ -3,7 +3,6 @@ package th.go.etda.sarabun.pdf.model;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.AllArgsConstructor;
@@ -42,18 +41,9 @@ public class GeneratePdfRequest {
     // ============================================
     // เอกสาร Memo และ เอกสารหลัก (New Format v2)
     // ============================================
-    @JsonAlias({"documentMain"})  // backward compatibility
     private Memo memo;                      // ข้อมูลสำหรับสร้าง Memo (บันทึกข้อความ)
     
-    @JsonAlias({"documentSub"})   // backward compatibility
     private Document document;              // ข้อมูลสำหรับสร้างเอกสารหลัก (Outbound, Order, Announcement ฯลฯ)
-    
-    // ============================================
-    // Backward compatibility: alias methods
-    // ============================================
-    public Memo getDocumentMain() { return memo; }
-    public void setDocumentMain(Memo value) { this.memo = value; }
-    public Document getDocumentSub() { return document; }
     
     // ============================================
     // ผู้เกี่ยวข้อง
@@ -179,9 +169,6 @@ public class GeneratePdfRequest {
         private BookContent bookContent;    // เนื้อหาหนังสือ (Object ไม่ใช่ Array)
     }
     
-    // Backward compatibility alias
-    public static class DocumentMain extends Memo {}
-    
     /**
      * Document Model - ข้อมูลสำหรับสร้างเอกสารหลัก (หนังสือส่งออก, คำสั่ง, ประกาศ ฯลฯ)
      * (เดิมชื่อ DocumentSub)
@@ -206,9 +193,6 @@ public class GeneratePdfRequest {
         private List<BookReferTo> bookReferTo;      // อ้างถึง
         private List<DocumentAttachment> attachment; // สิ่งที่ส่งมาด้วย
     }
-    
-    // Backward compatibility alias
-    public static class DocumentSub extends Document {}
     
     /**
      * BookContent Model - เนื้อหาหนังสือ (New Format - Object ไม่ใช่ Array)

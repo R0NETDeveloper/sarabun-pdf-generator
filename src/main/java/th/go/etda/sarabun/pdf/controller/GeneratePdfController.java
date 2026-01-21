@@ -304,53 +304,53 @@ public class GeneratePdfController {
         // ========== BookNameId ==========
         request.setBookNameId("90F72F0E-528D-4992-907A-F2C6B37AD9A5"); // Outbound
         
-        // ========== DocumentMain (บันทึกข้อความ) ==========
-        GeneratePdfRequest.DocumentMain docMain = new GeneratePdfRequest.DocumentMain();
-        docMain.setBookName("หนังสือบันทึกข้อความ");
-        docMain.setBookTitle("ขอความอนุเคราะห์จัดส่งเอกสาร");
-        docMain.setBookNo("สพธอ. 0102/2568");
-        docMain.setDateThai("29 ธันวาคม 2568");
-        docMain.setDepartment("สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์");
-        docMain.setDivisionName("ฝ่ายพัฒนาระบบและเทคโนโลยีสารสนเทศ");
-        docMain.setSpeedLayer("ด่วนที่สุด");
-        docMain.setFormatPdf("A4");
+        // ========== Memo (บันทึกข้อความ) ==========
+        GeneratePdfRequest.Memo memo = new GeneratePdfRequest.Memo();
+        memo.setBookName("หนังสือบันทึกข้อความ");
+        memo.setBookTitle("ขอความอนุเคราะห์จัดส่งเอกสาร");
+        memo.setBookNo("สพธอ. 0102/2568");
+        memo.setDateThai("29 ธันวาคม 2568");
+        memo.setDepartment("สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์");
+        memo.setDivisionName("ฝ่ายพัฒนาระบบและเทคโนโลยีสารสนเทศ");
+        memo.setSpeedLayer("ด่วนที่สุด");
+        memo.setFormatPdf("A4");
         
-        // Content for documentMain (New Format - Object ไม่ใช่ Array)
+        // Content for memo (New Format - Object ไม่ใช่ Array)
         GeneratePdfRequest.BookContent mainContent = new GeneratePdfRequest.BookContent();
         mainContent.setSubject("ขอเชิญเข้าร่วมประชุมสัมมนา");
         mainContent.setContent("        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์จะจัดการประชุมสัมมนา ในหัวข้อ \"การพัฒนาระบบสารบรรณอิเล็กทรอนิกส์\" ในวันที่ 15 มกราคม 2569 ณ ห้องประชุมใหญ่ ชั้น 5\n\n        จึงเรียนมาเพื่อโปรดพิจารณาส่งผู้แทนเข้าร่วมประชุมสัมมนาดังกล่าวด้วย จะขอบคุณยิ่ง");
         mainContent.setContentType("text");
-        docMain.setBookContent(mainContent);
+        memo.setBookContent(mainContent);
         
-        request.setDocumentMain(docMain);
+        request.setMemo(memo);
         
-        // ========== DocumentSub (หนังสือส่งออก) ==========
-        GeneratePdfRequest.DocumentSub docSub = new GeneratePdfRequest.DocumentSub();
-        docSub.setBookName("หนังสือส่งออก");
-        docSub.setBookTitle("ขอเชิญเข้าร่วมประชุมสัมมนา กับ ETDA");
-        docSub.setDateThai("29 ธันวาคม 2568");
-        docSub.setDepartment("สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์");
-        docSub.setDivisionName("ฝ่ายพัฒนาระบบและเทคโนโลยีสารสนเทศ");
-        docSub.setAddress("สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์\nศูนย์ราชการเฉลิมพระเกียรติฯ (อาคารบี)");
-        docSub.setContact("โทร. 02-123-4567\nอีเมล info@etda.or.th");
-        docSub.setSpeedLayer("ด่วนที่สุด");
+        // ========== Document (หนังสือส่งออก) ==========
+        GeneratePdfRequest.Document doc = new GeneratePdfRequest.Document();
+        doc.setBookName("หนังสือส่งออก");
+        doc.setBookTitle("ขอเชิญเข้าร่วมประชุมสัมมนา กับ ETDA");
+        doc.setDateThai("29 ธันวาคม 2568");
+        doc.setDepartment("สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์");
+        doc.setDivisionName("ฝ่ายพัฒนาระบบและเทคโนโลยีสารสนเทศ");
+        doc.setAddress("สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์\nศูนย์ราชการเฉลิมพระเกียรติฯ (อาคารบี)");
+        doc.setContact("โทร. 02-123-4567\nอีเมล info@etda.or.th");
+        doc.setSpeedLayer("ด่วนที่สุด");
         
-        // Content for documentSub (New Format - Object ไม่ใช่ Array)
+        // Content for document (New Format - Object ไม่ใช่ Array)
         GeneratePdfRequest.BookContent subContent = new GeneratePdfRequest.BookContent();
         subContent.setSubject("ขอเชิญเข้าร่วมประชุมสัมมนา กับ ETDA");
         subContent.setContent("        ด้วยสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์จะจัดการประชุมสัมมนา ในหัวข้อ \"การพัฒนาระบบสารบรรณอิเล็กทรอนิกส์\" ในวันที่ 15 มกราคม 2569 ณ ห้องประชุมใหญ่ ชั้น 5\n\n        จึงเรียนมาเพื่อโปรดพิจารณาส่งผู้แทนเข้าร่วมประชุมสัมมนาดังกล่าวด้วย จะขอบคุณยิ่ง");
         subContent.setContentType("text");
-        docSub.setBookContent(subContent);
+        doc.setBookContent(subContent);
         
-        // Attachments for documentSub
+        // Attachments for document
         java.util.List<GeneratePdfRequest.DocumentAttachment> attachments = new java.util.ArrayList<>();
         GeneratePdfRequest.DocumentAttachment attach1 = new GeneratePdfRequest.DocumentAttachment();
         attach1.setName("กำหนดการประชุม");
         attach1.setRemark("จำนวน 1 ฉบับ");
         attachments.add(attach1);
-        docSub.setAttachment(attachments);
+        doc.setAttachment(attachments);
         
-        request.setDocument(docSub);
+        request.setDocument(doc);
         
         // ========== ผู้ลงนาม (bookSigned) ==========
         java.util.List<GeneratePdfRequest.BookRelate> signers = new java.util.ArrayList<>();
