@@ -166,13 +166,11 @@ public class StampPdfGenerator extends PdfGeneratorBase {
         
         if (doc != null) {
             bookNo = convertStringToThaiNumber(doc.getBookNo());
-            departmentName = doc.getDepartment() != null ? doc.getDepartment() : 
-                            (doc.getDivisionName() != null ? doc.getDivisionName() : "");
+            departmentName = getFirstNonEmpty(doc.getDepartment(), doc.getDivisionName());
             speedLayer = doc.getSpeedLayer();
         } else {
             bookNo = convertStringToThaiNumber(request.getBookNo());
-            departmentName = request.getDepartment() != null ? request.getDepartment() : 
-                            (request.getDivisionName() != null ? request.getDivisionName() : "");
+            departmentName = getFirstNonEmpty(request.getDepartment(), request.getDivisionName());
             speedLayer = request.getSpeedLayer();
         }
         
@@ -255,13 +253,11 @@ public class StampPdfGenerator extends PdfGeneratorBase {
         List<SignerInfo> signers = buildSigners(request);
         
         // ชื่อหน่วยงาน - ใช้จาก document ก่อน, fallback เป็น memo
-        String departmentName = "";
+        String departmentName;
         if (doc != null) {
-            departmentName = doc.getDepartment() != null ? doc.getDepartment() : 
-                            (doc.getDivisionName() != null ? doc.getDivisionName() : "");
+            departmentName = getFirstNonEmpty(doc.getDepartment(), doc.getDivisionName());
         } else {
-            departmentName = request.getDepartment() != null ? request.getDepartment() : 
-                            (request.getDivisionName() != null ? request.getDivisionName() : "");
+            departmentName = getFirstNonEmpty(request.getDepartment(), request.getDivisionName());
         }
         
         // ข้อมูลติดต่อ
@@ -584,5 +580,18 @@ public class StampPdfGenerator extends PdfGeneratorBase {
         }
         
         return info;
+    }
+    
+    /**
+     * คืนค่า string แรกที่ไม่เป็น null หรือ empty
+     */
+    private String getFirstNonEmpty(String first, String second) {
+        if (first != null && !first.isEmpty()) {
+            return first;
+        }
+        if (second != null && !second.isEmpty()) {
+            return second;
+        }
+        return "";
     }
 }

@@ -20,6 +20,8 @@ import th.go.etda.sarabun.pdf.service.pdf.MemoPdfGenerator;
 import th.go.etda.sarabun.pdf.service.pdf.PdfGeneratorBase;
 import th.go.etda.sarabun.pdf.service.pdf.PdfGeneratorFactory;
 
+import static th.go.etda.sarabun.pdf.constant.PdfConstants.*;
+
 /**
  * PDF Generation Service - ใช้ Factory Pattern
  * 
@@ -79,7 +81,7 @@ public class GeneratePdfService {
                 pdfArray = new ArrayList<>();
                 pdfArray.add(PdfResult.builder()
                     .pdfBase64("")
-                    .type("Other")
+                    .type(PDF_TYPE_OTHER)
                     .description("บันทึกข้อความรอง")
                     .build());
             } else {
@@ -261,9 +263,9 @@ public class GeneratePdfService {
         
         results.add(PdfResult.builder()
             .pdfBase64(memoPdf)
-            .type("Memo")
-            .description("บันทึกข้อความ (สำเนาเก็บ)")
-            .filename("memo.pdf")
+            .type(PDF_TYPE_MEMO)
+            .description(DESC_MEMO_COPY)
+            .filename(FILENAME_MEMO)
             .build());
         
         log.info("Generated {} outbound PDFs + 1 memo PDF", results.size() - 1);
@@ -304,9 +306,9 @@ public class GeneratePdfService {
         
         results.add(PdfResult.builder()
             .pdfBase64(memoPdf)
-            .type("Memo")
-            .description("บันทึกข้อความ (สำเนาเก็บ)")
-            .filename("memo.pdf")
+            .type(PDF_TYPE_MEMO)
+            .description(DESC_MEMO_COPY)
+            .filename(FILENAME_MEMO)
             .build());
         
         return results;
@@ -335,9 +337,9 @@ public class GeneratePdfService {
                 
                 results.add(PdfResult.builder()
                     .pdfBase64(mainPdf)
-                    .type("Memo")
+                    .type(PDF_TYPE_MEMO)
                     .description("บันทึกข้อความ")
-                    .filename("memo.pdf")
+                    .filename(FILENAME_MEMO)
                     .build());
             }
         } else {
@@ -360,9 +362,9 @@ public class GeneratePdfService {
             
             results.add(PdfResult.builder()
                 .pdfBase64(memoPdf)
-                .type("Memo")
-                .description("บันทึกข้อความ (สำเนาเก็บ)")
-                .filename("memo.pdf")
+                .type(PDF_TYPE_MEMO)
+                .description(DESC_MEMO_COPY)
+                .filename(FILENAME_MEMO)
                 .build());
         }
         
@@ -443,9 +445,9 @@ public class GeneratePdfService {
                         mainCount++;
                         filename = bookType.getCode().toLowerCase() + "_" + mainCount + ".pdf";
                         break;
-                    case "Memo":
+                    case PDF_TYPE_MEMO:
                         memoCount++;
-                        filename = memoCount > 1 ? "memo_" + memoCount + ".pdf" : "memo.pdf";
+                        filename = memoCount > 1 ? "memo_" + memoCount + ".pdf" : FILENAME_MEMO;
                         break;
                     default:
                         otherCount++;

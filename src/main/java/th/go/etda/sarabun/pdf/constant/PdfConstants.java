@@ -120,4 +120,30 @@ public final class PdfConstants {
     // ============================================
     public static final float LINE_HEIGHT_MULTIPLIER = 1.2f;
     public static final float PARAGRAPH_SPACING_MULTIPLIER = 1.5f;
+    
+    // ============================================
+    // Common String Constants (ป้องกัน duplicate literals)
+    // ============================================
+    
+    // PDF Types
+    public static final String PDF_TYPE_OTHER = "Other";
+    public static final String PDF_TYPE_MEMO = "Memo";
+    public static final String PDF_TYPE_OUTBOUND = "Outbound";
+    public static final String PDF_TYPE_STAMP = "Stamp";
+    
+    // Descriptions
+    public static final String DESC_MEMO_COPY = "บันทึกข้อความ (สำเนาเก็บ)";
+    
+    // Filenames
+    public static final String FILENAME_MEMO = "memo.pdf";
+    
+    // Labels (Thai)
+    public static final String LABEL_REFER_TO = "อ้างถึง  ";
+    public static final String LABEL_ATTACHMENT = "สิ่งที่ส่งมาด้วย  ";
+    
+    // Table HTML tag
+    public static final String HTML_TAG_TABLE = "table";
+    
+    // Organization names
+    public static final String ORG_ETDA = "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์";
 }

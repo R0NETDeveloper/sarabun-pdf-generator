@@ -173,9 +173,6 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
         // ใช้ salutationContent สำหรับ "เรียน"
         String recipients = recipient.getSalutationContent() != null ? recipient.getSalutationContent() : "";
         
-        // ไม่ใช้ที่อยู่ผู้รับแล้ว
-        String recipientsAddress = "";
-        
         // รวบรวมอ้างถึง จาก document
         String referTo = buildReferTo(doc);
         
@@ -202,7 +199,7 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
         log.info("Generating outbound for recipient: {}, salutation: {}, endDoc: {}, docIndex: {}, hasHtml: {}", 
                 recipients, salutation, endDoc, documentIndex, htmlContent != null);
         
-        return generatePdfInternal(bookNo, address, date, title, recipients, recipientsAddress,
+        return generatePdfInternal(bookNo, address, date, title, recipients,
                                   referTo, attachments, content, htmlContent, signers,
                                   salutation, salutationContent, 
                                   endDoc, contactInfo, speedLayer, documentIndex);
@@ -225,7 +222,6 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
         String contact = doc != null ? convertStringToThaiNumber(doc.getContact()) : "";
         
         String recipients = "";
-        String recipientsAddress = "";
         
         // รวบรวมอ้างถึง จาก document
         String referTo = buildReferTo(doc);
@@ -248,7 +244,7 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
         log.info("Generating outbound - bookNo: {}, title: {}, content length: {}, hasHtml: {}, docIndex: {}", 
                 bookNo, title, content.length(), htmlContent != null, documentIndex);
         
-        return generatePdfInternal(bookNo, address, date, title, recipients, recipientsAddress,
+        return generatePdfInternal(bookNo, address, date, title, recipients,
                                   referTo, attachments, content, htmlContent, signers,
                                   null, null, 
                                   null, contactInfo, speedLayer, documentIndex);
@@ -263,7 +259,6 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                                        String date,
                                        String title,
                                        String recipients,
-                                       String recipientsAddress,
                                        String referTo,
                                        List<String> attachments,
                                        String content,
@@ -354,13 +349,13 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                     String[] referToLines = referTo.split("\n");
                     if (referToLines.length == 1) {
                         // มี 1 รายการ - แสดงต่อท้าย "อ้างถึง"
-                        yPosition = drawText(contentStream, "อ้างถึง  " + referToLines[0], fontRegular, 
+                        yPosition = drawText(contentStream, LABEL_REFER_TO + referToLines[0], fontRegular, 
                                            FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
                     } else {
                         // มีหลายรายการ - แสดง "อ้างถึง" แล้วขึ้นบรรทัดใหม่พร้อม indent
                         yPosition = drawText(contentStream, "อ้างถึง", fontRegular, 
                                            FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
-                        float indentX = MARGIN_LEFT + fontRegular.getStringWidth("อ้างถึง  ") / 1000 * FONT_SIZE_FIELD_VALUE;
+                        float indentX = MARGIN_LEFT + fontRegular.getStringWidth(LABEL_REFER_TO) / 1000 * FONT_SIZE_FIELD_VALUE;
                         for (int i = 0; i < referToLines.length; i++) {
                             String referItem = convertToThaiNumber(i + 1) + ". " + referToLines[i];
                             yPosition = drawText(contentStream, referItem, fontRegular, 
@@ -368,7 +363,7 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                         }
                     }
                 } else {
-                    yPosition = drawText(contentStream, "อ้างถึง  ", fontRegular, 
+                    yPosition = drawText(contentStream, LABEL_REFER_TO, fontRegular, 
                                         FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
                 }
                 yPosition -= SPACING_BETWEEN_FIELDS;
@@ -376,12 +371,12 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                 // SECTION 6: สิ่งที่ส่งมาด้วย
                 if (attachments != null && !attachments.isEmpty()) {
                     if (attachments.size() == 1) {
-                        yPosition = drawText(contentStream, "สิ่งที่ส่งมาด้วย  " + attachments.get(0), 
+                        yPosition = drawText(contentStream, LABEL_ATTACHMENT + attachments.get(0), 
                                            fontRegular, FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
                     } else {
                         yPosition = drawText(contentStream, "สิ่งที่ส่งมาด้วย", fontRegular, 
                                            FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
-                        float indentX = MARGIN_LEFT + fontRegular.getStringWidth("สิ่งที่ส่งมาด้วย  ") / 1000 * FONT_SIZE_FIELD_VALUE;
+                        float indentX = MARGIN_LEFT + fontRegular.getStringWidth(LABEL_ATTACHMENT) / 1000 * FONT_SIZE_FIELD_VALUE;
                         for (int i = 0; i < attachments.size(); i++) {
                             String attachItem = convertToThaiNumber(i + 1) + ". " + attachments.get(i);
                             yPosition = drawText(contentStream, attachItem, fontRegular, 
@@ -389,7 +384,7 @@ public class OutboundPdfGenerator extends PdfGeneratorBase {
                         }
                     }
                 } else {
-                    yPosition = drawText(contentStream, "สิ่งที่ส่งมาด้วย  ", fontRegular, 
+                    yPosition = drawText(contentStream, LABEL_ATTACHMENT, fontRegular, 
                                         FONT_SIZE_FIELD_VALUE, MARGIN_LEFT, yPosition);
                 }
                 yPosition -= SPACING_BETWEEN_FIELDS;

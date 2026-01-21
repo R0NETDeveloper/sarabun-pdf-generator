@@ -114,7 +114,7 @@ public class RulePdfGenerator extends PdfGeneratorBase {
         }
         
         // ดึง edition (ฉบับที่) และ year (พ.ศ.) จาก document
-        String edition = extractEdition(request, doc);
+        String edition = extractEdition(doc);
         String year = extractYear(dateThai);  // ใช้จาก PdfGeneratorBase
         
         // รวบรวมเนื้อหา
@@ -139,15 +139,10 @@ public class RulePdfGenerator extends PdfGeneratorBase {
     /**
      * ดึงฉบับที่ จาก request
      */
-    private String extractEdition(GeneratePdfRequest request, GeneratePdfRequest.Document doc) {
-        // ลองดึงจาก document.year ก่อน (ถ้ามี)
+    private String extractEdition(GeneratePdfRequest.Document doc) {
+        // ดึงจาก document.year (ถ้ามี)
         if (doc != null && doc.getYear() != null && !doc.getYear().isEmpty()) {
             return doc.getYear();
-        }
-        // ลองดึงจาก subDetail.docNo
-        if (request.getSubDetail() != null && request.getSubDetail().getDocNo() != null 
-            && !request.getSubDetail().getDocNo().isEmpty()) {
-            return request.getSubDetail().getDocNo();
         }
         // ถ้าไม่มี return placeholder
         return "{{ฉบับ}}";
@@ -305,11 +300,8 @@ public class RulePdfGenerator extends PdfGeneratorBase {
                 }
             }
             
-            String pdfBase64 = convertToBase64(document);
-            
             // NOTE: HTML tables are now drawn inline in SECTION 6.5
-            
-            return pdfBase64;
+            return convertToBase64(document);
             
         } catch (Exception e) {
             log.error("Error generating rule PDF: ", e);
