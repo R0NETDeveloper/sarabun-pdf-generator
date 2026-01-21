@@ -859,6 +859,22 @@ public abstract class PdfGeneratorBase {
             // รีเซ็ตสีกลับเป็นดำ
             contentStream.setNonStrokingColor(0, 0, 0);
             
+            // วาด debug border สำหรับ Speed Layer (ถ้าเปิด)
+            if (ENABLE_DEBUG_BORDERS) {
+                float textHeight = fontSize;  // ความสูงโดยประมาณ
+                float padding = 2f;           // ระยะห่างจากข้อความ
+                
+                contentStream.setStrokingColor(java.awt.Color.MAGENTA);  // สีม่วงแดง
+                contentStream.setLineWidth(0.5f);
+                contentStream.addRect(
+                    textX - padding, 
+                    textY - padding, 
+                    textWidth + (padding * 2), 
+                    textHeight + (padding * 2)
+                );
+                contentStream.stroke();
+            }
+            
             log.info("Speed layer '{}' drawn at ({}, {}) size {}pt", speedLayer, textX, textY, fontSize);
             
         } catch (Exception e) {

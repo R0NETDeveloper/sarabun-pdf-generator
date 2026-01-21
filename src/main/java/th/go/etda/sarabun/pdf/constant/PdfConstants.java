@@ -113,7 +113,7 @@ public final class PdfConstants {
      * - true: แสดงกรอบสีแดงรอบ content area (สำหรับ dev)
      * - false: ไม่แสดง (สำหรับ production)
      */
-    public static final boolean ENABLE_DEBUG_BORDERS = false;
+    public static final boolean ENABLE_DEBUG_BORDERS = true;
     
     // ============================================
     // Line Height Multipliers
