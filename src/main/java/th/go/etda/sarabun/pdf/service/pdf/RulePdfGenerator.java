@@ -10,7 +10,6 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.springframework.stereotype.Component;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import th.go.etda.sarabun.pdf.constant.BookType;
 
@@ -19,7 +18,6 @@ import static th.go.etda.sarabun.pdf.constant.PdfConstants.*;
 import th.go.etda.sarabun.pdf.constant.SignBoxType;
 import th.go.etda.sarabun.pdf.model.GeneratePdfRequest;
 import th.go.etda.sarabun.pdf.model.PdfResult;
-import th.go.etda.sarabun.pdf.util.HtmlUtils;
 
 /**
  * Generator สำหรับ หนังสือข้อบังคับ (Rule)
@@ -41,11 +39,13 @@ import th.go.etda.sarabun.pdf.util.HtmlUtils;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class RulePdfGenerator extends PdfGeneratorBase {
     
     private final MemoPdfGenerator memoPdfGenerator;
-    private final HtmlContentRenderer htmlContentRenderer;
+    
+    public RulePdfGenerator(MemoPdfGenerator memoPdfGenerator) {
+        this.memoPdfGenerator = memoPdfGenerator;
+    }
     
     @Override
     public BookType getBookType() {

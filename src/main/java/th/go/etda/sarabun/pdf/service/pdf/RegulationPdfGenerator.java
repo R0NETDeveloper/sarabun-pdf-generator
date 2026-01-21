@@ -10,7 +10,6 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.springframework.stereotype.Component;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import th.go.etda.sarabun.pdf.constant.BookType;
 
@@ -40,10 +39,13 @@ import th.go.etda.sarabun.pdf.model.PdfResult;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class RegulationPdfGenerator extends PdfGeneratorBase {
     
     private final MemoPdfGenerator memoPdfGenerator;
+    
+    public RegulationPdfGenerator(MemoPdfGenerator memoPdfGenerator) {
+        this.memoPdfGenerator = memoPdfGenerator;
+    }
     
     @Override
     public BookType getBookType() {

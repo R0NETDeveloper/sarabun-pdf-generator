@@ -24,7 +24,6 @@ import org.springframework.core.io.ClassPathResource;
 
 import lombok.extern.slf4j.Slf4j;
 import th.go.etda.sarabun.pdf.constant.BookType;
-import th.go.etda.sarabun.pdf.constant.PdfConstants;
 import th.go.etda.sarabun.pdf.constant.SignBoxType;
 import th.go.etda.sarabun.pdf.model.GeneratePdfRequest;
 import th.go.etda.sarabun.pdf.model.PdfResult;

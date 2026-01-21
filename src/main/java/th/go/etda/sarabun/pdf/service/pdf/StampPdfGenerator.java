@@ -14,7 +14,6 @@ import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState;
 import org.springframework.stereotype.Component;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import th.go.etda.sarabun.pdf.constant.BookType;
 
@@ -43,11 +42,13 @@ import th.go.etda.sarabun.pdf.util.HtmlUtils;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class StampPdfGenerator extends PdfGeneratorBase {
     
     private final MemoPdfGenerator memoPdfGenerator;
-    private final HtmlContentRenderer htmlContentRenderer;
+    
+    public StampPdfGenerator(MemoPdfGenerator memoPdfGenerator) {
+        this.memoPdfGenerator = memoPdfGenerator;
+    }
     
     @Override
     public BookType getBookType() {

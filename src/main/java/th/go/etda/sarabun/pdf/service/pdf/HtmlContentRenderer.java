@@ -184,7 +184,7 @@ public class HtmlContentRenderer {
     private String wrapWithTemplate(String content, float pageWidth, float pageHeight) {
         // Calculate content area dimensions
         float contentWidth = pageWidth - MARGIN_LEFT - MARGIN_RIGHT;
-        float contentHeight = pageHeight - MARGIN_TOP - MARGIN_BOTTOM;
+        // Note: contentHeight สำรองไว้สำหรับใช้ในอนาคต
         
         return """
             <!DOCTYPE html>

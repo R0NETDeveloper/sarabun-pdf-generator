@@ -34,7 +34,6 @@ public class TableRenderer {
     // Default settings
     private static final float DEFAULT_CELL_PADDING = 5f;
     private static final float DEFAULT_BORDER_WIDTH = 0.5f;
-    private static final float DEFAULT_FONT_SIZE = 14f;
     private static final float MIN_ROW_HEIGHT = 20f;
     
     /**

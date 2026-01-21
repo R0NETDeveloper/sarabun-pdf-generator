@@ -41,10 +41,10 @@ import th.go.etda.sarabun.pdf.util.HtmlUtils;
 @Component
 public class MemoPdfGenerator extends PdfGeneratorBase {
     
-    private final HtmlContentRenderer htmlContentRenderer;
+    // Note: HtmlContentRenderer สำรองไว้สำหรับใช้ในอนาคต (ถ้าต้องการ render HTML content)
     
-    public MemoPdfGenerator(HtmlContentRenderer htmlContentRenderer) {
-        this.htmlContentRenderer = htmlContentRenderer;
+    public MemoPdfGenerator() {
+        // Default constructor
     }
     
     @Override
@@ -141,16 +141,6 @@ public class MemoPdfGenerator extends PdfGeneratorBase {
         }
         
         return content;
-    }
-    
-    /**
-     * ดึง subject จาก memo.bookContent
-     */
-    private String getSubjectFromMemo(GeneratePdfRequest.Memo memo) {
-        if (memo == null || memo.getBookContent() == null) {
-            return null;
-        }
-        return memo.getBookContent().getSubject();
     }
     
     /**
