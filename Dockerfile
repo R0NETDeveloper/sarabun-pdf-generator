@@ -63,5 +63,12 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 # JVM options for container
 ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
 
+# Default to production profile
+ENV SPRING_PROFILES_ACTIVE=prod
+
+# API Key - ต้องตั้งค่าตอน docker run
+# docker run -e API_KEY=your-secret-key ...
+ENV API_KEY=""
+
 # Run the application
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

@@ -1,4 +1,4 @@
-# 🐳 Docker Deployment Guide
+# Docker Deployment Guide
 
 ## Sarabun PDF API - Docker Deployment
 
@@ -6,128 +6,223 @@
 
 ---
 
-## 🚀 Quick Start (Copy & Paste ได้เลย!)
+## Quick Start
 
-### **Windows PowerShell:**
+### Development Mode (ไม่ต้อง API Key)
 
+**Windows PowerShell:**
 ```powershell
-# รันครั้งแรก (Build + Run)
-docker build -t sarabun-pdf-api:1.0.0 .; docker run -d --name sarabun-pdf-api -p 8889:8888 sarabun-pdf-api:1.0.0
+docker build -t sarabun-pdf-api:1.0.0 .; docker run -d --name sarabun-pdf-api -p 8889:8888 -e SPRING_PROFILES_ACTIVE=dev sarabun-pdf-api:1.0.0
 ```
 
-### **Windows CMD:**
-
-```cmd
-docker build -t sarabun-pdf-api:1.0.0 . && docker run -d --name sarabun-pdf-api -p 8889:8888 sarabun-pdf-api:1.0.0
+**Linux / Mac:**
+```bash
+docker build -t sarabun-pdf-api:1.0.0 . && docker run -d --name sarabun-pdf-api -p 8889:8888 -e SPRING_PROFILES_ACTIVE=dev sarabun-pdf-api:1.0.0
 ```
 
-### **Linux / Mac:**
+### Production Mode (ต้องมี API Key)
+
+**Windows PowerShell:**
+```powershell
+docker build -t sarabun-pdf-api:1.0.0 .; docker run -d --name sarabun-pdf-api -p 8889:8888 -e API_KEY=your-secret-api-key-here sarabun-pdf-api:1.0.0
+```
+
+**Linux / Mac:**
+```bash
+docker build -t sarabun-pdf-api:1.0.0 . && docker run -d --name sarabun-pdf-api -p 8889:8888 -e API_KEY=your-secret-api-key-here sarabun-pdf-api:1.0.0
+```
+
+---
+
+## API Key Authentication
+
+### สร้าง API Key
 
 ```bash
-docker build -t sarabun-pdf-api:1.0.0 . && docker run -d --name sarabun-pdf-api -p 8889:8888 sarabun-pdf-api:1.0.0
+# Linux / Mac / Git Bash
+openssl rand -hex 32
+
+# ผลลัพธ์ตัวอย่าง: 7f3a9c2b8e4d1f6a5b0c9e8d7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a
 ```
 
----
+### โหมดการทำงาน
 
-## 🔄 Rebuild (อัพเดทโค้ดใหม่)
+| Mode | Environment Variable | API Key |
+|------|---------------------|---------|
+| **Development** | `-e SPRING_PROFILES_ACTIVE=dev` | ไม่ต้อง |
+| **Production** | `-e API_KEY=xxx` | ต้องใส่ใน Header |
 
-### **Windows PowerShell:**
-
-```powershell
-# หยุด → ลบ → Build ใหม่ → รัน
-docker stop sarabun-pdf-api; docker rm sarabun-pdf-api; docker build -t sarabun-pdf-api:1.0.0 .; docker run -d --name sarabun-pdf-api -p 8889:8888 sarabun-pdf-api:1.0.0
-```
-
-### **Windows CMD:**
-
-```cmd
-docker stop sarabun-pdf-api && docker rm sarabun-pdf-api && docker build -t sarabun-pdf-api:1.0.0 . && docker run -d --name sarabun-pdf-api -p 8889:8888 sarabun-pdf-api:1.0.0
-```
-
-### **Linux / Mac:**
+### ใช้ API Key ใน Request
 
 ```bash
-docker stop sarabun-pdf-api && docker rm sarabun-pdf-api && docker build -t sarabun-pdf-api:1.0.0 . && docker run -d --name sarabun-pdf-api -p 8889:8888 sarabun-pdf-api:1.0.0
+# Production mode - ต้องใส่ X-API-Key header
+curl -H "X-API-Key: your-secret-api-key-here" \
+  http://localhost:8889/api/pdf/health
+
+# Development mode - ไม่ต้องใส่
+curl http://localhost:8889/api/pdf/health
 ```
 
-### **หรือใช้ Script (แนะนำ):**
+### Endpoints ที่ไม่ต้อง API Key (Public)
 
+| Endpoint | คำอธิบาย |
+|----------|----------|
+| `/actuator/**` | Health check |
+| `/swagger-ui/**` | API documentation |
+| `/api-docs/**` | OpenAPI spec |
+| `/api-tester.html` | API tester tool |
+
+---
+
+## Rebuild (อัพเดทโค้ดใหม่)
+
+### Development Mode
+
+**Windows PowerShell:**
 ```powershell
-# Windows PowerShell
-.\docker-rebuild.ps1
+docker stop sarabun-pdf-api; docker rm sarabun-pdf-api; docker build -t sarabun-pdf-api:1.0.0 .; docker run -d --name sarabun-pdf-api -p 8889:8888 -e SPRING_PROFILES_ACTIVE=dev sarabun-pdf-api:1.0.0
+```
+
+**Linux / Mac:**
+```bash
+docker stop sarabun-pdf-api && docker rm sarabun-pdf-api && docker build -t sarabun-pdf-api:1.0.0 . && docker run -d --name sarabun-pdf-api -p 8889:8888 -e SPRING_PROFILES_ACTIVE=dev sarabun-pdf-api:1.0.0
+```
+
+### Production Mode
+
+**Windows PowerShell:**
+```powershell
+docker stop sarabun-pdf-api; docker rm sarabun-pdf-api; docker build -t sarabun-pdf-api:1.0.0 .; docker run -d --name sarabun-pdf-api -p 8889:8888 -e API_KEY=your-secret-api-key-here sarabun-pdf-api:1.0.0
+```
+
+**Linux / Mac:**
+```bash
+docker stop sarabun-pdf-api && docker rm sarabun-pdf-api && docker build -t sarabun-pdf-api:1.0.0 . && docker run -d --name sarabun-pdf-api -p 8889:8888 -e API_KEY=your-secret-api-key-here sarabun-pdf-api:1.0.0
 ```
 
 ---
 
-## ⚙️ คำสั่งพื้นฐาน
+## Docker Compose
 
-| คำสั่ง                               | คำอธิบาย                 |
-| ------------------------------------ | ------------------------ |
-| `docker ps`                          | ดู container ที่กำลังรัน |
-| `docker logs sarabun-pdf-api`        | ดู logs                  |
-| `docker logs -f sarabun-pdf-api`     | ดู logs แบบ realtime     |
-| `docker stop sarabun-pdf-api`        | หยุด container           |
-| `docker start sarabun-pdf-api`       | เริ่ม container          |
-| `docker restart sarabun-pdf-api`     | restart container        |
-| `docker rm sarabun-pdf-api`          | ลบ container             |
-| `docker exec -it sarabun-pdf-api sh` | เข้าไปใน container       |
+### Development
+
+```bash
+# แก้ไข .env
+API_SECURITY_ENABLED=false
+SPRING_PROFILE=dev
+
+# รัน
+docker-compose up -d
+```
+
+### Production
+
+```bash
+# แก้ไข .env
+API_SECURITY_ENABLED=true
+SPRING_PROFILE=prod
+API_KEY=your-secret-api-key-here
+
+# รัน
+docker-compose up -d
+```
 
 ---
 
-## 🌐 URLs หลัง Deploy
+## คำสั่งพื้นฐาน
 
-| URL                                       | คำอธิบาย            |
-| ----------------------------------------- | ------------------- |
-| http://localhost:8889/actuator/health     | ✅ Health Check     |
-| http://localhost:8889/swagger-ui.html     | 📖 Swagger UI       |
-| http://localhost:8889/api-tester.html     | 🧪 API Tester       |
-| http://localhost:8889/api/v1/pdf/generate | 📄 Generate PDF API |
+| คำสั่ง | คำอธิบาย |
+|--------|----------|
+| `docker ps` | ดู container ที่กำลังรัน |
+| `docker logs sarabun-pdf-api` | ดู logs |
+| `docker logs -f sarabun-pdf-api` | ดู logs แบบ realtime |
+| `docker stop sarabun-pdf-api` | หยุด container |
+| `docker start sarabun-pdf-api` | เริ่ม container |
+| `docker restart sarabun-pdf-api` | restart container |
+| `docker rm sarabun-pdf-api` | ลบ container |
+| `docker exec -it sarabun-pdf-api sh` | เข้าไปใน container |
 
 ---
 
-## 🔍 ทดสอบ API
+## URLs หลัง Deploy
 
-### Health Check:
+| URL | คำอธิบาย | ต้อง API Key? |
+|-----|----------|---------------|
+| http://localhost:8889/actuator/health | Health Check | ไม่ |
+| http://localhost:8889/swagger-ui.html | Swagger UI | ไม่ |
+| http://localhost:8889/api-tester.html | API Tester | ไม่ |
+| http://localhost:8889/api/pdf/preview | Generate PDF Preview | Production: ใช่ |
+| http://localhost:8889/api/pdf/generate | Generate PDF | Production: ใช่ |
 
-```powershell
-# PowerShell
-Invoke-RestMethod -Uri "http://localhost:8889/actuator/health"
+---
 
-# หรือ curl
+## ทดสอบ API
+
+### Health Check
+
+```bash
 curl http://localhost:8889/actuator/health
 ```
 
-### Generate PDF:
+### Generate PDF (Development)
 
-```powershell
-$body = @'
-{
-  "bookNameId": "BB4A2F11-722D-449A-BCC5-22208C7A4DEC",
-  "bookTitle": "ทดสอบระบบ",
-  "dateThai": "13 มกราคม พ.ศ. 2569",
-  "divisionName": "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
-  "bookContent": [{ "bookContent": "<p>เนื้อหาทดสอบ</p>" }],
-  "bookSigned": [{ "positionName": "ผู้อำนวยการ", "prefixName": "นาย", "firstname": "ทดสอบ", "lastname": "ระบบ" }]
-}
-'@
-Invoke-RestMethod -Uri "http://localhost:8889/api/v1/pdf/generate" -Method Post -Body $body -ContentType "application/json; charset=utf-8"
+```bash
+curl -X POST http://localhost:8889/api/pdf/preview \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bookNameId": "BB4A2F11-722D-449A-BCC5-22208C7A4DEC",
+    "memo": {
+      "bookTitle": "ทดสอบระบบ",
+      "dateThai": "13 มกราคม พ.ศ. 2569",
+      "divisionName": "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์"
+    }
+  }'
+```
+
+### Generate PDF (Production - ต้องมี API Key)
+
+```bash
+curl -X POST http://localhost:8889/api/pdf/preview \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-secret-api-key-here" \
+  -d '{
+    "bookNameId": "BB4A2F11-722D-449A-BCC5-22208C7A4DEC",
+    "memo": {
+      "bookTitle": "ทดสอบระบบ",
+      "dateThai": "13 มกราคม พ.ศ. 2569",
+      "divisionName": "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์"
+    }
+  }'
 ```
 
 ---
 
-## 📁 ไฟล์ Configuration
+## Configuration Files
 
-| ไฟล์                 | คำอธิบาย                                |
-| -------------------- | --------------------------------------- |
-| `.env`               | ⚙️ Config หลัก (PORT, IMAGE_NAME, etc.) |
-| `Dockerfile`         | 🐳 Docker build instructions            |
-| `docker-compose.yml` | 🚢 Docker Compose config                |
-| `docker-rebuild.ps1` | 🔄 Script rebuild (Windows PowerShell)  |
-| `docker-rebuild.sh`  | 🔄 Script rebuild (Linux/Mac)           |
+| ไฟล์ | คำอธิบาย |
+|------|----------|
+| `.env` | Config หลัก (PORT, API_KEY, etc.) |
+| `Dockerfile` | Docker build instructions |
+| `docker-compose.yml` | Docker Compose config |
+| `application.properties` | Spring Boot config |
+| `application-dev.properties` | Development profile |
+| `application-prod.properties` | Production profile |
 
 ---
 
-## 🔧 เปลี่ยน Port
+## Environment Variables
+
+| Variable | Default | คำอธิบาย |
+|----------|---------|----------|
+| `SPRING_PROFILES_ACTIVE` | `prod` | Profile: `dev` หรือ `prod` |
+| `API_KEY` | (empty) | API Key สำหรับ authentication |
+| `API_SECURITY_ENABLED` | `true` | เปิด/ปิด API Key check |
+| `SERVER_PORT` | `8888` | Port ภายใน container |
+| `HOST_PORT` | `8889` | Port ที่เปิดให้ภายนอก |
+
+---
+
+## เปลี่ยน Port
 
 แก้ไขไฟล์ `.env`:
 
@@ -135,75 +230,74 @@ Invoke-RestMethod -Uri "http://localhost:8889/api/v1/pdf/generate" -Method Post 
 HOST_PORT=9000    # เปลี่ยนจาก 8889 เป็น 9000
 ```
 
-แล้วรัน rebuild:
-
-```powershell
-.\docker-rebuild.ps1
-```
+แล้วรัน rebuild
 
 ---
 
-## 📊 ตรวจสอบ Resource
+## Troubleshooting
 
-```powershell
-# ดู CPU/Memory usage
-docker stats sarabun-pdf-api
+### 1. Container ไม่ start (API Key error)
 
-# ดูขนาด image
-docker images sarabun-pdf-api
-```
-
----
-
-## ❌ Troubleshooting
-
-### 1. Container ไม่ start
-
-```powershell
+```bash
 docker logs sarabun-pdf-api
 ```
 
-### 2. Port ถูกใช้งานอยู่แล้ว
-
-```powershell
-# ดู process ที่ใช้ port
-netstat -ano | findstr :8889
-
-# หรือเปลี่ยน port ใน .env
-HOST_PORT=9000
+ถ้าเห็น error:
+```
+API Security is enabled but api.key is not configured
 ```
 
-### 3. Build ช้า / Cache error
+**แก้ไข:** เพิ่ม `-e API_KEY=xxx` หรือใช้ `-e SPRING_PROFILES_ACTIVE=dev`
+
+### 2. 401 Unauthorized
+
+```json
+{"success":false,"message":"Missing API Key. Please provide X-API-Key header."}
+```
+
+**แก้ไข:** เพิ่ม header `-H "X-API-Key: your-key"`
+
+### 3. Port ถูกใช้งานอยู่แล้ว
 
 ```powershell
-# Build โดยไม่ใช้ cache
+netstat -ano | findstr :8889
+```
+
+แก้ไข: เปลี่ยน port ใน `.env` → `HOST_PORT=9000`
+
+### 4. Build ช้า / Cache error
+
+```bash
 docker build --no-cache -t sarabun-pdf-api:1.0.0 .
 ```
 
-### 4. ลบ container และ image ทั้งหมด (reset)
+### 5. ลบทั้งหมด (reset)
 
-```powershell
+```bash
 docker stop sarabun-pdf-api; docker rm sarabun-pdf-api; docker rmi sarabun-pdf-api:1.0.0
 ```
 
 ---
 
-## 📋 System Requirements
+## System Requirements
 
--   Docker 20.10+
--   Docker Desktop (Windows/Mac) หรือ Docker Engine (Linux)
--   RAM: 512MB minimum (1GB recommended)
--   Disk: 500MB สำหรับ image
+- Docker 20.10+
+- Docker Desktop (Windows/Mac) หรือ Docker Engine (Linux)
+- RAM: 512MB minimum (1GB recommended)
+- Disk: 500MB สำหรับ image
 
 ---
 
-## 🏷️ bookNameId ตามประเภทหนังสือ
+## bookNameId ตามประเภทหนังสือ
 
-| ประเภท                       | bookNameId                             |
-| ---------------------------- | -------------------------------------- |
-| บันทึกข้อความ (Memo)         | `BB4A2F11-722D-449A-BCC5-22208C7A4DEC` |
-| หนังสือส่งออก (Outbound)     | `90F72F0E-528D-4992-907A-F2C6B37AD9A5` |
+| ประเภท | bookNameId |
+|--------|------------|
+| บันทึกข้อความ (Memo) | `BB4A2F11-722D-449A-BCC5-22208C7A4DEC` |
+| หนังสือส่งออก (Outbound) | `90F72F0E-528D-4992-907A-F2C6B37AD9A5` |
+| หนังสือรับเข้า (Inbound) | `03241AA7-0E85-4C5C-A2CC-688212A79B84` |
 | หนังสือประกาศ (Announcement) | `23065068-BB18-49EA-8CE7-22945E16CB6D` |
-| หนังสือคำสั่ง (Order)        | `3FEDE42B-078A-4D2C-9B21-3EAD3E418F3D` |
-| หนังสือระเบียบ (Regulation)  | `50792880-F85A-4343-9672-7B61AF828A5B` |
-| หนังสือข้อบังคับ (Rule)      | `4AB1EC00-9E5E-4113-B577-D8ED46BA7728` |
+| หนังสือคำสั่ง (Order) | `3FEDE42B-078A-4D2C-9B21-3EAD3E418F3D` |
+| หนังสือระเบียบ (Regulation) | `50792880-F85A-4343-9672-7B61AF828A5B` |
+| หนังสือข้อบังคับ (Rule) | `4AB1EC00-9E5E-4113-B577-D8ED46BA7728` |
+| หนังสือประทับตรา (Stamp) | `AF3E7697-6F7E-4AD8-B76C-E2134DB98747` |
+| หนังสือกระทรวง (Ministry) | `4B3EB169-6203-4A71-A3BD-A442FEAAA91F` |

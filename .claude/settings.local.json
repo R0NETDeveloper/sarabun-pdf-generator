@@ -6,7 +6,8 @@
       "Bash(wc:*)",
       "Bash(mvn test:*)",
       "Bash(where mvn:*)",
-      "Bash(powershell.exe -Command \"./mvnw.cmd test\")"
+      "Bash(powershell.exe -Command \"./mvnw.cmd test\")",
+      "Bash(powershell.exe -Command \"Get-Process -Name java -ErrorAction SilentlyContinue | Stop-Process -Force\")"
     ]
   }
 }

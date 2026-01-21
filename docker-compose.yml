@@ -20,14 +20,20 @@ services:
         environment:
             # Server settings
             - SERVER_PORT=${CONTAINER_PORT:-8888}
-            - SPRING_PROFILES_ACTIVE=${SPRING_PROFILE:-docker}
+            - SPRING_PROFILES_ACTIVE=${SPRING_PROFILE:-prod}
+
+            # API Security
+            # ตั้งค่า API_KEY ใน .env file หรือ environment variable
+            # วิธีสร้าง: openssl rand -hex 32
+            - API_SECURITY_ENABLED=${API_SECURITY_ENABLED:-true}
+            - API_KEY=${API_KEY}
 
             # JVM settings
             - JAVA_OPTS=${JAVA_OPTS:--Xms256m -Xmx512m -XX:+UseContainerSupport}
 
             # Logging
             - LOGGING_LEVEL_ROOT=${LOG_LEVEL_ROOT:-INFO}
-            - LOGGING_LEVEL_TH_GO_ETDA_SARABUN_PDF=${LOG_LEVEL_APP:-DEBUG}
+            - LOGGING_LEVEL_TH_GO_ETDA_SARABUN_PDF=${LOG_LEVEL_APP:-INFO}
 
         volumes:
             # Mount output directory for generated PDFs (optional)
