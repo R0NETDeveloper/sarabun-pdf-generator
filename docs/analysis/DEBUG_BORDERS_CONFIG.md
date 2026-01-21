@@ -110,8 +110,8 @@ protected static final float MARGIN_TOP = 100f;
 #### ให้ขึ้นหน้าใหม่ช้าลง (เส้นส้มลงมาอีก = เขียนได้มากขึ้น)
 
 ```java
-// ก่อน - ขึ้นหน้าใหม่ที่ 220pt จากขอบล่าง
-protected static final float MIN_Y_POSITION = MARGIN_BOTTOM + 150;
+// ก่อน - ขึ้นหน้าใหม่ที่ 120pt จากขอบล่าง
+protected static final float MIN_Y_POSITION = MARGIN_BOTTOM + 50;
 
 // หลัง - ขึ้นหน้าใหม่ที่ 170pt จากขอบล่าง (เขียนได้มากขึ้น 50pt)
 protected static final float MIN_Y_POSITION = MARGIN_BOTTOM + 100;
@@ -124,7 +124,7 @@ protected static final float MIN_Y_POSITION = MARGIN_BOTTOM + 50;
 
 ```java
 // ก่อน
-protected static final float MIN_Y_POSITION = MARGIN_BOTTOM + 150;
+protected static final float MIN_Y_POSITION = MARGIN_BOTTOM + 50;
 
 // หลัง - ขึ้นหน้าใหม่ที่ 270pt จากขอบล่าง (เขียนได้น้อยลง 50pt)
 protected static final float MIN_Y_POSITION = MARGIN_BOTTOM + 200;
@@ -135,7 +135,7 @@ protected static final float MIN_Y_POSITION = MARGIN_BOTTOM + 200;
 | ค่า                   | คำนวณ    | ระยะจากขอบล่าง | พื้นที่เขียน |
 | --------------------- | -------- | -------------- | ------------ |
 | `MARGIN_BOTTOM + 200` | 70 + 200 | 270pt          | น้อยสุด      |
-| `MARGIN_BOTTOM + 150` | 70 + 150 | **220pt**      | ปัจจุบัน     |
+| `MARGIN_BOTTOM + 150` | 70 + 150 | **120pt**      | ปัจจุบัน     |
 | `MARGIN_BOTTOM + 100` | 70 + 100 | 170pt          | มากขึ้น 50pt |
 | `MARGIN_BOTTOM + 80`  | 70 + 80  | 150pt          | มากขึ้น 70pt |
 | `MARGIN_BOTTOM + 50`  | 70 + 50  | 120pt          | มากสุด       |
@@ -257,7 +257,7 @@ protected static final boolean ENABLE_DEBUG_BORDERS = false;
 │  │                                            │            │
 │  │                                            │            │
 │  ├─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┤ 🟠 MIN_Y   │
-│  │                                            │    (220pt) │
+│  │                                            │    (120pt) │
 │  │         (พื้นที่สำรอง 150pt)               │            │
 │  │                                            │            │
 │  └────────────────────────────────────────────┘            │

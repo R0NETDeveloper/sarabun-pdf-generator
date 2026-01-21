@@ -22,8 +22,8 @@
 ```json
 {
   "bookNameId": "GUID ประเภทเอกสาร",
-  "documentMain": { ... },
-  "documentSub": { ... },
+  "memo": { ... },
+  "document": { ... },
   "bookSigned": [ ... ],
   "bookSubmited": [ ... ],
   "bookLearner": [ ... ],
@@ -54,13 +54,13 @@
 ┌─────────────────────────────────────────────────────────┐
 │  [LOGO]              บันทึกข้อความ                       │
 ├─────────────────────────────────────────────────────────┤
-│  ส่วนราชการ: {documentMain.divisionName}                │
-│  ที่: {documentMain.bookNo}    วันที่: {documentMain.dateThai} │
-│  เรื่อง: {documentMain.bookTitle}                       │
+│  ส่วนราชการ: {memo.divisionName}                │
+│  ที่: {memo.bookNo}    วันที่: {memo.dateThai} │
+│  เรื่อง: {memo.bookTitle}                       │
 │  ─────────────────────────────────────────              │
 │  เรียน: {bookLearner[].positionName}                    │
 │                                                         │
-│         {documentMain.bookContent.content}              │
+│         {memo.bookContent.content}              │
 │                                                         │
 │                    ┌─────────────────┐                  │
 │                    │ [ช่องลงนาม]      │                  │
@@ -75,14 +75,14 @@
 
 | Field | ตำแหน่งในเอกสาร | จำเป็น | หมายเหตุ |
 |-------|----------------|--------|----------|
-| `documentMain.divisionName` | ส่วนราชการ | ✅ | ชื่อหน่วยงาน/ส่วนราชการ |
-| `documentMain.department` | ส่วนราชการ (fallback) | ❌ | ใช้ถ้าไม่มี divisionName |
-| `documentMain.bookNo` | ที่ (เลขที่หนังสือ) | ✅ | เช่น "สพธอ. 0101/ว 2568" (แปลงเป็นเลขไทย) |
-| `documentMain.dateThai` | วันที่ | ✅ | เช่น "8 มกราคม พ.ศ. 2569" (แปลงเป็นเลขไทย) |
-| `documentMain.bookTitle` | เรื่อง | ✅ | หัวข้อเรื่องของหนังสือ |
-| `documentMain.speedLayer` | ชั้นความเร็ว | ❌ | เช่น "ด่วนที่สุด" (แสดงมุมขวาบน) |
-| `documentMain.bookContent.content` | เนื้อหา | ✅ | เนื้อความหลักของหนังสือ |
-| `documentMain.bookContent.contentType` | ประเภทเนื้อหา | ❌ | "text" หรือ "html" (default: text) |
+| `memo.divisionName` | ส่วนราชการ | ✅ | ชื่อหน่วยงาน/ส่วนราชการ |
+| `memo.department` | ส่วนราชการ (fallback) | ❌ | ใช้ถ้าไม่มี divisionName |
+| `memo.bookNo` | ที่ (เลขที่หนังสือ) | ✅ | เช่น "สพธอ. 0101/ว 2568" (แปลงเป็นเลขไทย) |
+| `memo.dateThai` | วันที่ | ✅ | เช่น "8 มกราคม พ.ศ. 2569" (แปลงเป็นเลขไทย) |
+| `memo.bookTitle` | เรื่อง | ✅ | หัวข้อเรื่องของหนังสือ |
+| `memo.speedLayer` | ชั้นความเร็ว | ❌ | เช่น "ด่วนที่สุด" (แสดงมุมขวาบน) |
+| `memo.bookContent.content` | เนื้อหา | ✅ | เนื้อความหลักของหนังสือ |
+| `memo.bookContent.contentType` | ประเภทเนื้อหา | ❌ | "text" หรือ "html" (default: text) |
 | `bookLearner[].positionName` | เรียน | ✅ | ตำแหน่งผู้รับ (แสดงหลังคำว่า "เรียน") |
 | `bookSigned[].prefixName` | ช่องลงนาม | ✅ | คำนำหน้า (เช่น "นาย") |
 | `bookSigned[].firstname` | ช่องลงนาม | ✅ | ชื่อ |
@@ -102,17 +102,17 @@
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                                          [LOGO]  [ชั้นความเร็ว]│
-│  ที่: {documentSub.bookNo}                               │
-│  {documentSub.address}                                   │
-│  {documentSub.dateThai}                                  │
+│  ที่: {document.bookNo}                               │
+│  {document.address}                                   │
+│  {document.dateThai}                                  │
 ├─────────────────────────────────────────────────────────┤
-│  เรื่อง: {documentSub.bookTitle}                        │
+│  เรื่อง: {document.bookTitle}                        │
 │  ─────────────────────────────────────────              │
 │  เรียน: {toRecipients[].salutationContent}              │
-│  อ้างถึง: {documentSub.bookReferTo[].bookReferToName}   │
-│  สิ่งที่ส่งมาด้วย: {documentSub.attachment[].name}      │
+│  อ้างถึง: {document.bookReferTo[].bookReferToName}   │
+│  สิ่งที่ส่งมาด้วย: {document.attachment[].name}      │
 │                                                         │
-│         {documentSub.bookContent.content}               │
+│         {document.bookContent.content}               │
 │                                                         │
 │                    {toRecipients[].endDoc}              │
 │                                                         │
@@ -120,7 +120,7 @@
 │                    │ [ช่องลงนาม]      │                  │
 │                    │ {bookSigned[0]}  │                  │
 │                    └─────────────────┘                  │
-│  {documentSub.contact}                                  │
+│  {document.contact}                                  │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -128,18 +128,18 @@
 
 | Field | ตำแหน่งในเอกสาร | จำเป็น | หมายเหตุ |
 |-------|----------------|--------|----------|
-| `documentSub.bookNo` | ที่ (เลขที่หนังสือ) | ✅ | เลขที่หนังสือส่งออก |
-| `documentSub.address` | ที่อยู่หน่วยงาน | ❌ | ที่อยู่ผู้ส่ง (บรรทัดที่ 2) |
-| `documentSub.dateThai` | วันที่ | ✅ | วันที่ภาษาไทย |
-| `documentSub.bookTitle` | เรื่อง | ✅ | หัวข้อเรื่อง |
-| `documentSub.speedLayer` | ชั้นความเร็ว | ❌ | เช่น "ด่วนที่สุด" |
-| `documentSub.contact` | ข้อมูลติดต่อ | ❌ | แสดงท้ายเอกสาร |
-| `documentSub.bookContent.subject` | หัวข้อ | ❌ | (ไม่ใช้ใน Outbound) |
-| `documentSub.bookContent.content` | เนื้อหา | ✅ | เนื้อความหลัก |
-| `documentSub.bookContent.contentType` | ประเภท | ❌ | "text" หรือ "html" |
-| `documentSub.bookReferTo[].bookReferToName` | อ้างถึง | ❌ | รายการอ้างถึง |
-| `documentSub.attachment[].name` | สิ่งที่ส่งมาด้วย | ❌ | รายการสิ่งที่ส่งมาด้วย |
-| `documentSub.attachment[].remark` | หมายเหตุ | ❌ | เช่น "จำนวน 1 ฉบับ" |
+| `document.bookNo` | ที่ (เลขที่หนังสือ) | ✅ | เลขที่หนังสือส่งออก |
+| `document.address` | ที่อยู่หน่วยงาน | ❌ | ที่อยู่ผู้ส่ง (บรรทัดที่ 2) |
+| `document.dateThai` | วันที่ | ✅ | วันที่ภาษาไทย |
+| `document.bookTitle` | เรื่อง | ✅ | หัวข้อเรื่อง |
+| `document.speedLayer` | ชั้นความเร็ว | ❌ | เช่น "ด่วนที่สุด" |
+| `document.contact` | ข้อมูลติดต่อ | ❌ | แสดงท้ายเอกสาร |
+| `document.bookContent.subject` | หัวข้อ | ❌ | (ไม่ใช้ใน Outbound) |
+| `document.bookContent.content` | เนื้อหา | ✅ | เนื้อความหลัก |
+| `document.bookContent.contentType` | ประเภท | ❌ | "text" หรือ "html" |
+| `document.bookReferTo[].bookReferToName` | อ้างถึง | ❌ | รายการอ้างถึง |
+| `document.attachment[].name` | สิ่งที่ส่งมาด้วย | ❌ | รายการสิ่งที่ส่งมาด้วย |
+| `document.attachment[].remark` | หมายเหตุ | ❌ | เช่น "จำนวน 1 ฉบับ" |
 | `toRecipients[].salutation` | คำขึ้นต้น | ❌ | เช่น "เรียน", "กราบเรียน" |
 | `toRecipients[].salutationContent` | เรียน | ✅ | เช่น "ท่านปลัดกระทรวง..." |
 | `toRecipients[].organizeName` | ชื่อองค์กร | ❌ | ใช้สำหรับชื่อไฟล์ |
@@ -159,10 +159,10 @@
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                                          [LOGO]         │
-│  ที่: {documentSub.bookNo}                               │
+│  ที่: {document.bookNo}                               │
 │  ถึง: {toRecipients[].salutationContent}                │
 ├─────────────────────────────────────────────────────────┤
-│         {documentSub.bookContent.content}               │
+│         {document.bookContent.content}               │
 │                                                         │
 │                    ┌───────────────────┐                │
 │                    │   [ตราประทับ]      │                │
@@ -176,11 +176,11 @@
 
 | Field | ตำแหน่งในเอกสาร | จำเป็น | หมายเหตุ |
 |-------|----------------|--------|----------|
-| `documentSub.bookNo` | ที่ (เลขที่หนังสือ) | ✅ | เลขที่หนังสือ |
-| `documentSub.dateThai` | วันที่ (ในตรา) | ✅ | แสดงในวงกลมตราประทับ |
-| `documentSub.bookContent.content` | เนื้อหา | ✅ | เนื้อความหลัก |
+| `document.bookNo` | ที่ (เลขที่หนังสือ) | ✅ | เลขที่หนังสือ |
+| `document.dateThai` | วันที่ (ในตรา) | ✅ | แสดงในวงกลมตราประทับ |
+| `document.bookContent.content` | เนื้อหา | ✅ | เนื้อความหลัก |
 | `toRecipients[].salutationContent` | ถึง | ✅ | ผู้รับหนังสือ |
-| `documentMain.department` | ชื่อหน่วยงาน (ในตรา) | ✅ | แสดงในวงกลมตราประทับ |
+| `memo.department` | ชื่อหน่วยงาน (ในตรา) | ✅ | แสดงในวงกลมตราประทับ |
 
 ### ไฟล์ที่สร้าง (Generate Endpoint)
 - **N ไฟล์**: หนังสือประทับตรา (แยกตามจำนวน toRecipients)
@@ -195,15 +195,15 @@
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                                          [LOGO]         │
-│  ที่: {documentSub.bookNo}                               │
-│  {documentSub.address}                                   │
-│  {documentSub.dateThai}                                  │
+│  ที่: {document.bookNo}                               │
+│  {document.address}                                   │
+│  {document.dateThai}                                  │
 ├─────────────────────────────────────────────────────────┤
-│  เรื่อง: {documentSub.bookTitle}                        │
+│  เรื่อง: {document.bookTitle}                        │
 │  ─────────────────────────────────────────              │
 │  เรียน: {toRecipients[].salutationContent}              │
 │                                                         │
-│         {documentSub.bookContent.content}               │
+│         {document.bookContent.content}               │
 │                                                         │
 │                    {toRecipients[].endDoc}              │
 │                                                         │
@@ -220,11 +220,11 @@
 
 | Field | ตำแหน่งในเอกสาร | จำเป็น |
 |-------|----------------|--------|
-| `documentSub.bookNo` | ที่ | ✅ |
-| `documentSub.address` | ที่อยู่ | ❌ |
-| `documentSub.dateThai` | วันที่ | ✅ |
-| `documentSub.bookTitle` | เรื่อง | ✅ |
-| `documentSub.bookContent.content` | เนื้อหา | ✅ |
+| `document.bookNo` | ที่ | ✅ |
+| `document.address` | ที่อยู่ | ❌ |
+| `document.dateThai` | วันที่ | ✅ |
+| `document.bookTitle` | เรื่อง | ✅ |
+| `document.bookContent.content` | เนื้อหา | ✅ |
 | `toRecipients[].salutationContent` | เรียน | ✅ |
 | `toRecipients[].endDoc` | คำลงท้าย | ❌ |
 | `bookSigned[].*` | ช่องลงนาม | ✅ |
@@ -239,13 +239,13 @@
 ┌─────────────────────────────────────────────────────────┐
 │                      [LOGO]                             │
 │                                                         │
-│                 ประกาศ{documentSub.department}          │
-│                 เรื่อง {documentSub.bookTitle}          │
+│                 ประกาศ{document.department}          │
+│                 เรื่อง {document.bookTitle}          │
 │                 ────────────────────                    │
 │                                                         │
-│         {documentSub.bookContent.content}               │
+│         {document.bookContent.content}               │
 │                                                         │
-│                 ประกาศ ณ วันที่ {documentSub.dateThai}  │
+│                 ประกาศ ณ วันที่ {document.dateThai}  │
 │                                                         │
 │                    ┌─────────────────┐                  │
 │                    │ [ช่องลงนาม]      │                  │
@@ -258,11 +258,11 @@
 
 | Field | ตำแหน่งในเอกสาร | จำเป็น | หมายเหตุ |
 |-------|----------------|--------|----------|
-| `documentSub.department` | หัวข้อ (ประกาศ...) | ✅ | ต่อท้าย "ประกาศ" |
-| `documentSub.bookTitle` | เรื่อง | ✅ | หัวข้อเรื่องประกาศ |
-| `documentSub.dateThai` | ประกาศ ณ วันที่ | ✅ | วันที่ประกาศ |
-| `documentSub.bookContent.subject` | หัวเรื่อง | ❌ | แสดงหลัง "เรื่อง" |
-| `documentSub.bookContent.content` | เนื้อหา | ✅ | เนื้อความประกาศ |
+| `document.department` | หัวข้อ (ประกาศ...) | ✅ | ต่อท้าย "ประกาศ" |
+| `document.bookTitle` | เรื่อง | ✅ | หัวข้อเรื่องประกาศ |
+| `document.dateThai` | ประกาศ ณ วันที่ | ✅ | วันที่ประกาศ |
+| `document.bookContent.subject` | หัวเรื่อง | ❌ | แสดงหลัง "เรื่อง" |
+| `document.bookContent.content` | เนื้อหา | ✅ | เนื้อความประกาศ |
 | `bookLearner[].*` | ช่องลงนาม | ✅ | ผู้ลงนามในประกาศ |
 
 ### ไฟล์ที่สร้าง (Generate Endpoint)
@@ -279,15 +279,15 @@
 ┌─────────────────────────────────────────────────────────┐
 │                      [LOGO]                             │
 │                                                         │
-│              ระเบียบ{documentSub.department}            │
-│              ว่าด้วย {documentSub.bookTitle}            │
+│              ระเบียบ{document.department}            │
+│              ว่าด้วย {document.bookTitle}            │
 │              ฉบับที่ {edition}                          │
-│              พ.ศ. {documentSub.year}                    │
+│              พ.ศ. {document.year}                    │
 │              ────────────────────                       │
 │                                                         │
-│         {documentSub.bookContent.content}               │
+│         {document.bookContent.content}               │
 │                                                         │
-│              ประกาศ ณ วันที่ {documentSub.dateThai}     │
+│              ประกาศ ณ วันที่ {document.dateThai}     │
 │                                                         │
 │                    ┌─────────────────┐                  │
 │                    │ [ช่องลงนาม]      │                  │
@@ -299,13 +299,13 @@
 
 | Field | ตำแหน่งในเอกสาร | จำเป็น | หมายเหตุ |
 |-------|----------------|--------|----------|
-| `documentSub.department` | หัวข้อ (ระเบียบ...) | ✅ | ต่อท้าย "ระเบียบ" |
-| `documentSub.bookTitle` | ว่าด้วย | ✅ | หัวข้อเรื่องระเบียบ |
-| `documentSub.bookNo` | ฉบับที่ | ❌ | ดึงเลขฉบับจาก bookNo |
-| `documentSub.year` | พ.ศ. | ❌ | ปี พ.ศ. |
-| `documentSub.dateThai` | ประกาศ ณ วันที่ | ✅ | วันที่ประกาศ |
-| `documentSub.bookContent.subject` | หัวเรื่อง | ❌ | แสดงหลัง "ว่าด้วย" |
-| `documentSub.bookContent.content` | เนื้อหา | ✅ | เนื้อความระเบียบ |
+| `document.department` | หัวข้อ (ระเบียบ...) | ✅ | ต่อท้าย "ระเบียบ" |
+| `document.bookTitle` | ว่าด้วย | ✅ | หัวข้อเรื่องระเบียบ |
+| `document.bookNo` | ฉบับที่ | ❌ | ดึงเลขฉบับจาก bookNo |
+| `document.year` | พ.ศ. | ❌ | ปี พ.ศ. |
+| `document.dateThai` | ประกาศ ณ วันที่ | ✅ | วันที่ประกาศ |
+| `document.bookContent.subject` | หัวเรื่อง | ❌ | แสดงหลัง "ว่าด้วย" |
+| `document.bookContent.content` | เนื้อหา | ✅ | เนื้อความระเบียบ |
 | `bookLearner[].*` | ช่องลงนาม | ✅ | ผู้ลงนาม |
 
 ---
@@ -318,14 +318,14 @@
 ┌─────────────────────────────────────────────────────────┐
 │                      [LOGO]                             │
 │                                                         │
-│              คำสั่ง{documentSub.department}             │
-│              ที่ {documentSub.bookNo}                   │
-│              เรื่อง {documentSub.bookTitle}             │
+│              คำสั่ง{document.department}             │
+│              ที่ {document.bookNo}                   │
+│              เรื่อง {document.bookTitle}             │
 │              ────────────────────                       │
 │                                                         │
-│         {documentSub.bookContent.content}               │
+│         {document.bookContent.content}               │
 │                                                         │
-│              สั่ง ณ วันที่ {documentSub.dateThai}       │
+│              สั่ง ณ วันที่ {document.dateThai}       │
 │                                                         │
 │                    ┌─────────────────┐                  │
 │                    │ [ช่องลงนาม]      │                  │
@@ -337,12 +337,12 @@
 
 | Field | ตำแหน่งในเอกสาร | จำเป็น | หมายเหตุ |
 |-------|----------------|--------|----------|
-| `documentSub.department` | หัวข้อ (คำสั่ง...) | ✅ | ต่อท้าย "คำสั่ง" |
-| `documentSub.bookNo` | ที่ | ✅ | เลขที่คำสั่ง เช่น "ที่ 1/2569" |
-| `documentSub.bookTitle` | เรื่อง | ✅ | หัวข้อเรื่อง |
-| `documentSub.dateThai` | สั่ง ณ วันที่ | ✅ | วันที่สั่ง |
-| `documentSub.bookContent.subject` | หัวเรื่อง | ❌ | แสดงหลัง "เรื่อง" |
-| `documentSub.bookContent.content` | เนื้อหา | ✅ | เนื้อความคำสั่ง |
+| `document.department` | หัวข้อ (คำสั่ง...) | ✅ | ต่อท้าย "คำสั่ง" |
+| `document.bookNo` | ที่ | ✅ | เลขที่คำสั่ง เช่น "ที่ 1/2569" |
+| `document.bookTitle` | เรื่อง | ✅ | หัวข้อเรื่อง |
+| `document.dateThai` | สั่ง ณ วันที่ | ✅ | วันที่สั่ง |
+| `document.bookContent.subject` | หัวเรื่อง | ❌ | แสดงหลัง "เรื่อง" |
+| `document.bookContent.content` | เนื้อหา | ✅ | เนื้อความคำสั่ง |
 | `bookLearner[].*` | ช่องลงนาม | ✅ | ผู้ออกคำสั่ง |
 
 ---
@@ -355,15 +355,15 @@
 ┌─────────────────────────────────────────────────────────┐
 │                      [LOGO]                             │
 │                                                         │
-│            ข้อบังคับ{documentSub.department}            │
-│            ว่าด้วย {documentSub.bookTitle}              │
+│            ข้อบังคับ{document.department}            │
+│            ว่าด้วย {document.bookTitle}              │
 │            ฉบับที่ {edition}                            │
-│            พ.ศ. {documentSub.year}                      │
+│            พ.ศ. {document.year}                      │
 │            ────────────────────                         │
 │                                                         │
-│         {documentSub.bookContent.content}               │
+│         {document.bookContent.content}               │
 │                                                         │
-│            ประกาศ ณ วันที่ {documentSub.dateThai}       │
+│            ประกาศ ณ วันที่ {document.dateThai}       │
 │                                                         │
 │                    ┌─────────────────┐                  │
 │                    │ [ช่องลงนาม]      │                  │
@@ -376,11 +376,11 @@
 
 | Field | ตำแหน่งในเอกสาร | จำเป็น |
 |-------|----------------|--------|
-| `documentSub.department` | หัวข้อ (ข้อบังคับ...) | ✅ |
-| `documentSub.bookTitle` | ว่าด้วย | ✅ |
-| `documentSub.year` | พ.ศ. | ❌ |
-| `documentSub.dateThai` | ประกาศ ณ วันที่ | ✅ |
-| `documentSub.bookContent.content` | เนื้อหา | ✅ |
+| `document.department` | หัวข้อ (ข้อบังคับ...) | ✅ |
+| `document.bookTitle` | ว่าด้วย | ✅ |
+| `document.year` | พ.ศ. | ❌ |
+| `document.dateThai` | ประกาศ ณ วันที่ | ✅ |
+| `document.bookContent.content` | เนื้อหา | ✅ |
 | `bookLearner[].*` | ช่องลงนาม | ✅ |
 
 ---
@@ -392,8 +392,8 @@
 | Field | Type | คำอธิบาย | ใช้กับเอกสาร |
 |-------|------|----------|-------------|
 | `bookNameId` | String | GUID ประเภทเอกสาร (⭐ จำเป็น) | ทุกประเภท |
-| `documentMain` | Object | ข้อมูลเอกสารหลัก (บันทึกข้อความ) | ทุกประเภท |
-| `documentSub` | Object | ข้อมูลเอกสารรอง | ทุกประเภท (ยกเว้น Memo) |
+| `memo` | Object | ข้อมูลเอกสารหลัก (บันทึกข้อความ) | ทุกประเภท |
+| `document` | Object | ข้อมูลเอกสารรอง | ทุกประเภท (ยกเว้น Memo) |
 | `bookSigned` | Array | ผู้ลงนาม | Memo, Outbound, Stamp, Ministry |
 | `bookSubmited` | Array | ผู้เสนอผ่าน | ทุกประเภท (หน้า Submit) |
 | `bookLearner` | Array | ผู้รับภายใน/ผู้ลงนาม | ทุกประเภท |
@@ -401,7 +401,7 @@
 
 ---
 
-### 📄 documentMain (ข้อมูลบันทึกข้อความ)
+### 📄 memo (ข้อมูลบันทึกข้อความ)
 
 | Field | Type | คำอธิบาย | ตำแหน่งในเอกสาร |
 |-------|------|----------|----------------|
@@ -419,7 +419,7 @@
 
 ---
 
-### 📄 documentSub (ข้อมูลเอกสารรอง)
+### 📄 document (ข้อมูลเอกสารรอง)
 
 | Field | Type | คำอธิบาย | ใช้กับเอกสาร |
 |-------|------|----------|-------------|
@@ -521,7 +521,7 @@
 ```json
 {
   "bookNameId": "90F72F0E-528D-4992-907A-F2C6B37AD9A5",
-  "documentMain": {
+  "memo": {
     "bookName": "บันทึกข้อความ",
     "bookTitle": "ขออนุมัติส่งหนังสือเชิญประชุม",
     "bookNo": "สพธอ. 0101/ว 2568",
@@ -535,7 +535,7 @@
       "contentType": "html"
     }
   },
-  "documentSub": {
+  "document": {
     "bookName": "หนังสือส่งออก",
     "bookTitle": "ขอเชิญประชุม",
     "bookNo": "สพธอ. 0101/2568",
@@ -613,8 +613,8 @@
 | Field | Memo | Outbound | Stamp | Ministry | ประกาศ | ระเบียบ | คำสั่ง | ข้อบังคับ |
 |-------|:----:|:--------:|:-----:|:--------:|:------:|:------:|:-----:|:--------:|
 | bookNameId | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| documentMain | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| documentSub | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| memo | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| document | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | bookSigned | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | bookSubmited | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | bookLearner | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |

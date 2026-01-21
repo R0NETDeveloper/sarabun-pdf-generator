@@ -166,7 +166,7 @@ const htmlContent = quill.root.innerHTML;
 const requestBody = {
     bookNameId: "officialMemo",
     formatPdf: "A4",
-    documentMain: {
+    memo: {
         bookName: "บันทึกข้อความ",
         bookTitle: "เรื่อง...",
         bookNo: "สผ 0101/ว 2568",
