@@ -66,9 +66,9 @@ ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseContainerSupport -XX:MaxRAMPercentage=7
 # Default to production profile
 ENV SPRING_PROFILES_ACTIVE=prod
 
-# API Key - ต้องตั้งค่าตอน docker run
-# docker run -e API_KEY=your-secret-key ...
-ENV API_KEY=""
+# API Key - ส่งเข้ามาตอน docker run เท่านั้น (ไม่กำหนดค่าเริ่มต้นใน Dockerfile)
+# Production: docker run -e API_KEY=your-secret-key ...
+# Development: docker run -e SPRING_PROFILES_ACTIVE=dev ...
 
 # Run the application
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
